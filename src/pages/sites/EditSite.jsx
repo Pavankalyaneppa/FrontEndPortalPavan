@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate} from 'react-router-dom';
 import { fetchSiteDetails, updateSite } from '@/store/reducers/sites/sitesSlice';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,19 +9,16 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { Separator } from "@/components/ui/separator";
-import { unwrapResult } from '@reduxjs/toolkit';
 import Loading from '@/users/Loading';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   validateSiteName,
-  validateName,
   validateManagerEmail,
   validateManagerName,
   validateManagerPhone,
   validateLatitude,
   validateLongitude,
   validateTimezone,
-  validateEmail,
 } from '@/pages/validations/Validation';
 
 export default function EditSite() {
@@ -144,7 +141,6 @@ export default function EditSite() {
 
   const handleNestedChange = (section, e) => {
     if (typeof e === 'string') {
-      // Handle Select component case
       setFormData(prev => ({
         ...prev,
         [section]: {
@@ -153,7 +149,6 @@ export default function EditSite() {
         },
       }));
     } else {
-      // Handle regular input case
       const { name, value } = e.target;
       setFormData(prev => ({
         ...prev,

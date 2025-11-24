@@ -1,13 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { fetchManufacturers,searchManufacturers, deleteManufacturer } from '@/store/reducers/manufacturer/manufacturerSlice';
+import { fetchManufacturers,searchManufacturers } from '@/store/reducers/manufacturer/manufacturerSlice';
 import { useToast } from "@/components/ui/use-toast";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Card } from '@/components/ui/card';
 import { Button } from "@/components/ui/button";
 import { AddManufacturer } from './dialog/AddManufacturer';
-import { Info, Trash } from 'lucide-react';
+import { Info } from 'lucide-react';
 import DeleteOtp from '@/users/DeleteOtp';
 import Loading from '@/users/Loading';
 
@@ -21,7 +20,7 @@ const Manufacturers = () => {
   const [selectedStationId, setSelectedStationId] = useState(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
-  const { manufacturers, totalItems, totalPages, currentPage, loading, error } = useSelector((state) => {
+  const { manufacturers, totalPages, currentPage, loading, error } = useSelector((state) => {
   
     const manufacturerState = state.manufacturer || {};
     return {
@@ -33,15 +32,6 @@ const Manufacturers = () => {
       error: manufacturerState.error || null
     };
   });
-
-//   const filteredManufacturers = manufacturers.filter((manufacturer) =>
-//   //i added
-//   manufacturer.id?.toString().toLowerCase().includes(searchTerm.toLowerCase())||
-//   manufacturer.manufacturerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-//   manufacturer.contactInfo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-//   manufacturer.country?.toLowerCase().includes(searchTerm.toLowerCase())
-// );
-//  console.log(manufacturers);  
 
   useEffect(() => {
   const timerId = setTimeout(() => {
@@ -73,7 +63,6 @@ useEffect(() => {
   const handleDelete = async (e, id) => {
     e.stopPropagation();
     try {
-      // await dispatch(deleteManufacturer(id)).unwrap();
       setSelectedStationId(id);
       setIsDeleteDialogOpen(true);
       dispatch(fetchManufacturers({ page, pageSize }));
@@ -87,7 +76,7 @@ useEffect(() => {
   };
   const handleSearch = (e) => {
   setSearchTerm(e.target.value);
-  setPage(0); // Reset to first page on new search
+  setPage(0);
 };
 
   const handleInfoClick = (e, id) => {
@@ -95,16 +84,6 @@ useEffect(() => {
     navigate(`/manufacturers/${id}`);
   };
 
-  // Calculate total ports for a manufacturer
-  const getTotalPorts = (manufacturer) => {
-    let portCount = 0;
-    manufacturer.chargingStation?.forEach(station => {
-      portCount += station.chargingPort?.length || 0;
-    });
-    return portCount;
-  };
-
-  if (loading) return <div><Loading/></div>;
   if (error) return <div>Error: {error}</div>;
 
   return (
@@ -115,12 +94,12 @@ useEffect(() => {
         </div>
         <div className="mb-4 text-sm">
        <input
-  type="text"
-  placeholder="Search by name, country, or contact info..."
-  value={searchTerm}
-  onChange={handleSearch}
-  className="border rounded-md p-2 w-full"
-/>
+        type="text"
+        placeholder="Search by name, country, or contact info..."
+        value={searchTerm}
+        onChange={handleSearch}
+        className="border rounded-md p-2 w-full"
+      />
       </div>
         <div className="rounded-md border">
         <Table>
@@ -131,24 +110,23 @@ useEffect(() => {
               <TableHead>Contact Info</TableHead>
               <TableHead>Mobile Number</TableHead>
               <TableHead>Country</TableHead>
-
-              {/* <TableHead className="text-center">No. of Stations</TableHead>
-              <TableHead className="text-center">No. of Ports</TableHead> */}
               <TableHead className="text-center">Actions</TableHead>
-                            
-
             </TableRow>
           </TableHeader>
-     
          <TableBody>
-  {manufacturers.length > 0 ? (
-    manufacturers.map((manufacturer) => (
+          {loading ? ( 
+            <TableRow >
+              <TableCell colSpan={6} className="text-center py-4">
+              <Loading />
+              </TableCell>
+            </TableRow>
+          ):  manufacturers.length > 0 ? (
+       manufacturers.map((manufacturer) => (
       <TableRow key={manufacturer.id || manufacturer.manufacturerName} className="hover:bg-gray-100">
         <TableCell>{manufacturer.id || 'N/A'}</TableCell>
         <TableCell className="font-medium">{manufacturer.manufacturerName}</TableCell>
         <TableCell>{manufacturer.contactInfo}</TableCell>
         <TableCell>{manufacturer.mobileNumber || 'N/A'}</TableCell>
-
         <TableCell>{manufacturer.country || 'N/A'}</TableCell>
         <TableCell>
           <div>
@@ -162,17 +140,16 @@ useEffect(() => {
           </div>
         </TableCell>
       </TableRow>
-    ))
-  ) : (
-    <TableRow>
-      <TableCell colSpan={6} className="text-center py-4">
-        {searchTerm ? 'No manufacturers match your search' : 'No manufacturers found'}
-      </TableCell>
-    </TableRow>
-  )}
-</TableBody>
+        ))
+      ) : (
+        <TableRow>
+          <TableCell colSpan={6} className="text-center py-4">
+            {searchTerm ? 'No manufacturers match your search' : 'No manufacturers found'}
+          </TableCell>
+        </TableRow>
+      )}
+    </TableBody>
         </Table>
-         
         </div>
           <div className="flex items-center justify-center gap-2 py-4">
         <Button
@@ -194,7 +171,6 @@ useEffect(() => {
             {index + 1}
           </Button>
         ))}
-
         <Button
           variant="outline"
           size="sm"
@@ -202,10 +178,8 @@ useEffect(() => {
           disabled={currentPage + 1 === totalPages}
         >
           Next
-        </Button>
-      
+        </Button>      
       </div> 
-      {/* // to delete the manufacturer  */}
      {isDeleteDialogOpen && (
         <DeleteOtp
           userId={selectedStationId}
@@ -217,9 +191,9 @@ useEffect(() => {
           role={"manufacturer"}
         />
       )}
-
     </div>
   );
 };
 
 export default Manufacturers;
+// MANUFACTURER COMPONENT.................................

@@ -1,9 +1,5 @@
-
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import AxiosServices from '@/services/AxiosServices';
-
-
-
 const initialState = {
   fleets: [],
   currentFleet: null,
@@ -21,8 +17,8 @@ const initialState = {
   deleteFleetError: null,
   addVehicleStatus: 'idle',
   addVehicleError: null,
-  updateVehicleStatus: 'idle',
-  updateVehicleError: null,
+  updateFleetVehicleStatus: 'idle',
+  updateFleetVehicleError: null,
   deleteVehicleStatus: 'idle',
   deleteVehicleError: null,
 };
@@ -51,8 +47,6 @@ export const fetchFleetDetails = createAsyncThunk(
     }
   }
 );
-
-
 
 export const fetchFleetVehicles = createAsyncThunk(
   'fleet/fetchFleetVehicles',
@@ -116,26 +110,28 @@ export const addVehicleToFleet = createAsyncThunk(
 );
 
 
+// In FleetSlice.js - Update all cases to handle string vehicleId
+export const updateFleetVehicle = createAsyncThunk(
+  'fleet/updateFleetVehicle',
+  async ({ vehicleId, vehicleData }, { rejectWithValue }) => {
+    try {
+      const response = await AxiosServices.updateFleetVehicle(vehicleId, vehicleData);
+      return response;
+    } catch (error) {
+      return rejectWithValue(error.message || 'Failed to update vehicle');
+    }
+  }
+);
+
+// Also update fetchVehicleDetails to accept string vehicleId
 export const fetchVehicleDetails = createAsyncThunk(
   'fleet/fetchVehicleDetails',
-  async (vehicleId, { rejectWithValue }) => {
+  async (vehicleId, { rejectWithValue }) => { // Accept string vehicleId
     try {
       const response = await AxiosServices.getVehicleDetails(vehicleId);
       return response;
     } catch (error) {
       return rejectWithValue(error.message || 'Failed to fetch vehicle details');
-    }
-  }
-);
-
-export const updateVehicle = createAsyncThunk(
-  'fleet/updateVehicle',
-  async ({ vehicleId, vehicleData }, { rejectWithValue }) => {
-    try {
-      const response = await AxiosServices.updateVehicle(vehicleId, vehicleData);
-      return response;
-    } catch (error) {
-      return rejectWithValue(error.message || 'Failed to update vehicle');
     }
   }
 );
@@ -151,7 +147,6 @@ export const deleteVehicleFromFleet = createAsyncThunk(
     }
   }
 );
-
 
 const fleetSlice = createSlice({
   name: 'fleet',
@@ -173,8 +168,8 @@ const fleetSlice = createSlice({
     resetVehicleStatus: (state) => {
       state.addVehicleStatus = 'idle';
       state.addVehicleError = null;
-      state.updateVehicleStatus = 'idle';
-      state.updateVehicleError = null;
+      state.updateFleetVehicleStatus = 'idle';
+      state.updateFleetVehicleError = null;
       state.deleteVehicleStatus = 'idle';
       state.deleteVehicleError = null;
     },
@@ -313,8 +308,8 @@ const fleetSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchVehicleDetails.fulfilled, (state, action) => {
-        state.status = 'succeeded';
-        state.currentVehicle = action.payload;
+      state.status = 'succeeded';
+      state.currentVehicle = action.payload;
       })
       .addCase(fetchVehicleDetails.rejected, (state, action) => {
         state.status = 'failed';
@@ -323,23 +318,36 @@ const fleetSlice = createSlice({
       })
       
       // Update vehicle
-      .addCase(updateVehicle.pending, (state) => {
-        state.updateVehicleStatus = 'loading';
-        state.updateVehicleError = null;
+      .addCase(updateFleetVehicle.pending, (state) => {
+        state.updateFleetVehicleStatus = 'loading';
+        state.updateFleetVehicleError = null;
       })
-      .addCase(updateVehicle.fulfilled, (state, action) => {
-        state.updateVehicleStatus = 'succeeded';
-        const index = state.fleetVehicles.findIndex(vehicle => vehicle.id === action.payload.id);
-        if (index !== -1) {
-          state.fleetVehicles[index] = action.payload;
+   // In the extraReducers section - Fix the updateVehicle.fulfilled case
+      .addCase(updateFleetVehicle.fulfilled, (state, action) => {
+        state.updateFleetVehicleStatus = 'succeeded';
+        
+        const updatedVehicle = action.payload;
+        console.log('Vehicle update successful:', updatedVehicle);
+        
+        // Update in fleetVehicles array - use vehicleId string for comparison
+        if (state.fleetVehicles && Array.isArray(state.fleetVehicles)) {
+          const vehicleIndex = state.fleetVehicles.findIndex(
+            vehicle => vehicle.vehicleId === updatedVehicle.vehicleId
+          );
+          
+          if (vehicleIndex !== -1) {
+            state.fleetVehicles[vehicleIndex] = updatedVehicle;
+          }
         }
-        if (state.currentVehicle && state.currentVehicle.id === action.payload.id) {
-          state.currentVehicle = action.payload;
+        
+        // Update currentVehicle if it matches the updated vehicle
+        if (state.currentVehicle && state.currentVehicle.vehicleId === updatedVehicle.vehicleId) {
+          state.currentVehicle = updatedVehicle;
         }
       })
-      .addCase(updateVehicle.rejected, (state, action) => {
-        state.updateVehicleStatus = 'failed';
-        state.updateVehicleError = action.payload;
+      .addCase(updateFleetVehicle.rejected, (state, action) => {
+        state.updateFleetVehicleStatus = 'failed';
+        state.updateFleetVehicleError = action.payload;
       })
       
       // Delete vehicle from fleet

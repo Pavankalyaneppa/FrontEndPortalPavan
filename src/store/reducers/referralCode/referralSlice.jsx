@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 import { baseURL,baseOCPPURL } from '@/config';
-const API_BASE_URL = `${baseURL}/service/referral-codes`;
+const API_BASE_URL = `${baseURL}/services/referral-codes`;
 
 const initialState = {
   list: [],
@@ -13,7 +13,6 @@ const initialState = {
   deleteReferralStatus: 'idle',
 };
 
-// Async Thunks
 export const fetchReferrals = createAsyncThunk(
   'referral/fetchReferrals',
   async () => {
@@ -137,8 +136,6 @@ const referralSlice = createSlice({
 });
 
 export default referralSlice.reducer;
-
-// Selectors
 export const selectAllReferrals = (state) => state.referral.list;
 export const selectReferralById = (id) => (state) =>
   state.referral.list.find(item => item.id === id);

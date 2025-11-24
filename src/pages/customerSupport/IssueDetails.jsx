@@ -13,7 +13,7 @@ export default function IssueDetails() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const issue = location.state?.issue;
- const issueNotes = useSelector((state) => state.issues.issueNotes || []);
+  const issueNotes = useSelector((state) => state.issues.issueNotes || []);
   const from = location.state?.from || "/customer-support/issue-list";
 
   const [activeTab, setActiveTab] = useState("info");
@@ -22,7 +22,6 @@ export default function IssueDetails() {
   const [priority, setPriority] = useState(issue?.priority || "N/A");
   const [priorityDropdown, setPriorityDropdown] = useState(false);
 
-    const customerId = location.state?.customerId;
   const user = useSelector((state) => state.authentication.user);
   const employees = useSelector((state) => state.employee.employees);
 
@@ -32,24 +31,20 @@ export default function IssueDetails() {
   const [recipientId, setRecipientId] = useState("");
   const [taskId, setTaskId] = useState("");
 
-  // These states for editing notes of issue
-const [editingNoteId, setEditingNoteId] = useState(null);
-const [editTitle, setEditTitle] = useState("");
-const [editDescription, setEditDescription] = useState("");
-const [editSaving, setEditSaving] = useState(false);
+  const [editingNoteId, setEditingNoteId] = useState(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
 
-const handleEditClick = (note) => {
-  setEditingNoteId(note.id);
-  setEditTitle(note.title);
-  setEditDescription(note.description);
-};
+  const handleEditClick = (note) => {
+    setEditingNoteId(note.id);
+    setEditTitle(note.title);
+    setEditDescription(note.description);
+  };
 
-  
   const [issueId, setIssueId] = useState(issue?.id || "");
   const [saving, setSaving] = useState(false);
-  const [createdByRole, setCreatedByRole] = useState(
-    user?.roleId === 1 ? "ADMIN" : "EMPLOYEE"
-  );
+  const [createdByRole, setCreatedByRole] = useState( user?.roleId === 1 ? "ADMIN" : "EMPLOYEE" );
 
   if (!issue) return <p>No issue data found!</p>;
 
@@ -57,7 +52,6 @@ const handleEditClick = (note) => {
 
   const statusOptions = ["open", "inprogress", "resolved",];
   const priorityOptions = ["High", "Medium", "Low"];
-
 
   const handleStatusChange = async (newStatus) => {
     setStatus(newStatus);
@@ -76,27 +70,6 @@ const handleEditClick = (note) => {
     await dispatch(updateIssuePriority(issue.id, newPriority));
   } catch (err) {
     console.error(err);
-  }
-};
-
-const getPriorityBadge = (priority) => {
-  if (!priority)
-    return (
-      <span className="px-3 py-1.5 rounded-full bg-gray-100 text-gray-800 inline-block">
-        N/A
-      </span>
-    );
-  const p = priority.toLowerCase();
-  const baseClasses = "px-3 py-1.5 rounded-full inline-block";
-  switch (p) {
-    case "high":
-      return <span className={`${baseClasses} bg-orange-100 text-orange-800`}>High</span>;
-    case "medium":
-      return <span className={`${baseClasses} bg-yellow-100 text-yellow-800`}>Medium</span>;
-    case "low":
-      return <span className={`${baseClasses} bg-green-100 text-green-800`}>Low</span>;
-    default:
-      return <span className={`${baseClasses} bg-gray-100 text-gray-800`}>{priority}</span>;
   }
 };
 
@@ -133,10 +106,7 @@ const handleAddNote = async (e) => {
     await dispatch(addIssueNote(payload));
     await dispatch(fetchIssueNotes(issue.id));
 
-    // Hide the Add Note form after adding
     setIsAddingNote(false);
-
-    // Reset form
     setNoteTitle("");
     setNoteDescription("");
     setRecipientId("");
@@ -161,9 +131,9 @@ const handleSaveEdit = async (noteId) => {
     await dispatch(updateIssueNote(noteId, {
       title: editTitle,
       description: editDescription,
-      issueId: issue.id, // required to refresh notes
+      issueId: issue.id,
     }));
-    await dispatch(fetchIssueNotes(issue.id)); // refresh notes list
+    await dispatch(fetchIssueNotes(issue.id));
     setEditingNoteId(null);
   } catch (err) {
     console.error("Failed to update note:", err);
@@ -196,8 +166,6 @@ const handleSaveEdit = async (noteId) => {
           <TabsTrigger value="info" className="text-black font-medium">Issue Info</TabsTrigger>
           <TabsTrigger value="notes" className="text-black font-medium">Notes</TabsTrigger>
         </TabsList>
-
-        {/* Info Tab */}
         <TabsContent value="info" className="mt-4">
           <Card>
             <CardHeader>
@@ -219,8 +187,6 @@ const handleSaveEdit = async (noteId) => {
                     <h3 className="text-sm font-medium text-gray-500">Description</h3>
                     <p className="text-sm">{issue.comment || "N/A"}</p>
                   </div>
-
-                  {/* Status Dropdown */}
                   <div className="relative">
                     <h3 className="text-sm font-medium text-gray-500 mb-1">Status</h3>
                     <button
@@ -274,7 +240,6 @@ const handleSaveEdit = async (noteId) => {
                     {priority}
                     {priority !== "N/A" && <ChevronDown className="ml-2 h-4 w-4" />}
                 </button>
-
                 {priorityDropdown && (
                     <div className="absolute mt-2 w-40 bg-white shadow-lg rounded-md z-10 p-2 border border-gray-200">
                     {priorityOptions.map((opt) => (
@@ -315,8 +280,6 @@ const handleSaveEdit = async (noteId) => {
           </Card>
         </TabsContent>
 <TabsContent value="notes" className="mt-4 space-y-4">
-
-  {/* Add Note Button */}
   {!isAddingNote && (
     <Button
       className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-md"
@@ -325,8 +288,6 @@ const handleSaveEdit = async (noteId) => {
       Add Note
     </Button>
   )}
-
-  {/* Add Note Form */}
   {isAddingNote && (
     <Card className="shadow-md border border-gray-100 rounded-lg">
       <CardHeader>
@@ -346,8 +307,6 @@ const handleSaveEdit = async (noteId) => {
               required
             />
           </div>
-
-          {/* Description */}
           <div className="flex flex-col">
             <label className="text-sm font-medium text-gray-700 mb-1">Description</label>
             <textarea
@@ -359,8 +318,6 @@ const handleSaveEdit = async (noteId) => {
               required
             />
           </div>
-
-          {/* Recipient & Created By Role */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex flex-col">
               <label className="text-sm font-medium text-gray-700 mb-1">Recipient</label>
@@ -378,7 +335,6 @@ const handleSaveEdit = async (noteId) => {
                 ))}
               </select>
             </div>
-
             <div className="flex flex-col">
               <label className="text-sm font-medium text-gray-700 mb-1">Created By Role</label>
               <select
@@ -392,8 +348,6 @@ const handleSaveEdit = async (noteId) => {
               </select>
             </div>
           </div>
-
-          {/* Form Buttons */}
           <div className="flex justify-end space-x-2 pt-2">
             <Button
               variant="outline"
@@ -405,16 +359,13 @@ const handleSaveEdit = async (noteId) => {
               type="submit"
               disabled={saving}
               className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-md"
-            >
-              {saving ? "Saving..." : "Submit"}
+            > {saving ? "Saving..." : "Submit"}
             </Button>
           </div>
         </form>
       </CardContent>
     </Card>
   )}
-
-  {/* Existing Notes List */}
   {!isAddingNote && (
     <Card className="shadow-md border border-gray-100 rounded-lg">
       <CardHeader>
@@ -477,21 +428,17 @@ const handleSaveEdit = async (noteId) => {
                 note.createdDate[4]
               ).toLocaleString()}
             </span>
-          </div>
-          
-        </>
-      )}
-    </div>
-  ))
-)}
+          </div>          
+         </>
+        )}
+       </div>
+      ))
+     )}
       </CardContent>
     </Card>
-  )}
-
+   )}
 </TabsContent>
-
-
-      </Tabs>
-    </div>
-  );
+</Tabs>
+</div>
+);
 }

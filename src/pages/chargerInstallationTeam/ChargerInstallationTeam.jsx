@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { InfoIcon, Plus } from 'lucide-react';
+import AddTeamMember from './AddTeamMember';
 import {
   Table,
   TableBody,
@@ -13,7 +14,6 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchTeams, fetchAllTasks } from '@/store/reducers/chargerInstallation/ChargerInstallationSlice';
-import Loading from '@/users/Loading';
 export default function ChargerInstallationTeam() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -30,13 +30,15 @@ export default function ChargerInstallationTeam() {
     tasksCurrentPage,
     tasksTotalPages 
   } = useSelector((state) => state.chargerInstallation);
-
-
   const [globalFilter, setGlobalFilter] = useState('');
   const [page, setPage] = useState(0);
   const [tasksPage, setTasksPage] = useState(0);
   const [showAllTasks, setShowAllTasks] = useState(false);
   const pageSize = 10;
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const handleTeamMemberAdded = () => {
+    dispatch(fetchTeams({ page, size: pageSize, search: globalFilter }));
+  };
 
   // Handle page change for teams
   const handlePageChange = (newPage) => {
@@ -91,7 +93,7 @@ export default function ChargerInstallationTeam() {
         {showAllTasks ? (
           <h1 className="text-2xl font-bold">All Installation Tasks</h1>
         ) : (
-          <h1 className="text-2xl font-bold">Charger Installation Teams</h1>
+          <h1 className="text-2xl font-bold">Charger Installation Team</h1>
         )}
         
         <div className="flex gap-2">
@@ -104,14 +106,13 @@ export default function ChargerInstallationTeam() {
               <Button variant="outline" onClick={handleAllTasksClick}>
                 All Tasks
               </Button>
-              <Button onClick={() => navigate('/charger-installation-team/add')}>
+               <Button onClick={() => setIsAddDialogOpen(true)}>
                 Add Team
-              </Button>
+               </Button>
             </>
           )}
         </div>
       </div>
-
       <Input
         placeholder={
           showAllTasks 
@@ -133,19 +134,16 @@ export default function ChargerInstallationTeam() {
                   <TableHead>Employee Name</TableHead>
                   <TableHead>Task Name</TableHead>
                   <TableHead>Description</TableHead>
-                  {/* <TableHead>Location</TableHead> */}
                   <TableHead>Priority</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Due Date</TableHead>
                   <TableHead>Actions</TableHead>
                 </>
               ) : (
-                // Teams Table Headers
                 <>
                   <TableHead>Name</TableHead>
                   <TableHead>Mobile</TableHead>
                   <TableHead>Email</TableHead>
-                  {/* <TableHead>Location</TableHead> */}
                   <TableHead>Status</TableHead>
                   <TableHead>Assign Task</TableHead>
                   <TableHead>Actions</TableHead>
@@ -155,15 +153,14 @@ export default function ChargerInstallationTeam() {
           </TableHeader>
           <TableBody>
             {showAllTasks ? (
-              // All Tasks Table Body
               <>
                 {allTasksLoading ? (
                   <TableRow>
-                    <TableCell colSpan="8" className="text-center">Loading tasks...</TableCell>
+                    <TableCell colSpan="7" className="text-center">Loading tasks...</TableCell>
                   </TableRow>
                 ) : allTasksError ? (
                   <TableRow>
-                    <TableCell colSpan="8" className="text-center text-red-500">
+                    <TableCell colSpan="7" className="text-center text-red-500">
                       Error: {allTasksError}
                     </TableCell>
                   </TableRow>
@@ -176,9 +173,8 @@ export default function ChargerInstallationTeam() {
                       <TableCell>{task.taskName}</TableCell>
                       <TableCell className="max-w-xs truncate" title={task.description}>
                         {task.description}
-                      {/* </TableCell>
-                      <TableCell>{task.location}</TableCell>
-                      <TableCell> */}
+                        </TableCell>
+                        <TableCell>
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                           task.priority === "High" ? "bg-red-100 text-red-800" :
                           task.priority === "Medium" ? "bg-yellow-100 text-yellow-800" :
@@ -245,7 +241,7 @@ export default function ChargerInstallationTeam() {
                       {/* <TableCell>{member.location}</TableCell> */}
                       <TableCell>
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          member.active ? "bg-green-100 text-green-800" : "bg-gray-200 text-gray-800"
+                          member.active ? "bg-green-100 text-green-800 border-green-400" : "bg-red-100 text-red-800 border-red-400"
                         }`}>
                           {member.active ? "active" : "inactive"}
                         </span>
@@ -355,6 +351,11 @@ export default function ChargerInstallationTeam() {
     </>
   )}
 </div>
+<AddTeamMember 
+    open={isAddDialogOpen} 
+    onOpenChange={setIsAddDialogOpen}
+    onTeamMemberAdded={handleTeamMemberAdded}
+  />
     </div>
   );
 }

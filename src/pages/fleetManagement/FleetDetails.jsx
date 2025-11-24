@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import AddVehicle from './AddVehicle';
 import { useDispatch, useSelector } from 'react-redux';
 import { 
   fetchFleetDetails, 
@@ -8,10 +9,6 @@ import {
   deleteVehicleFromFleet,
   resetFleetDetails,
   updateFleet,
-  setCurrentFleet,
-  fetchFleets,
-  deleteFleet,
-  updateVehicle
 } from '@/store/reducers/fleet/FleetSlice';
 import { toast } from '@/components/ui/use-toast';
 import BackButton from '@/components/ui/BackButton';
@@ -31,8 +28,6 @@ import {
   Trash2, 
   RefreshCw, 
   Edit, 
-  Download,
-  BarChart3,
   AlertCircle
 } from 'lucide-react';
 import Loading from '@/users/Loading';
@@ -57,6 +52,7 @@ const FleetDetails = () => {
   const [vehicleToDelete, setVehicleToDelete] = useState(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editedFleet, setEditedFleet] = useState(null);
+  const [addVehicleOpen, setAddVehicleOpen] = useState(false); 
 
   useEffect(() => {
     if (id) {
@@ -83,9 +79,14 @@ const FleetDetails = () => {
   };
 
   const handleAddVehicle = () => {
-    navigate('/vehicle/add', { state: { fleetId: id } });
+  setAddVehicleOpen(true); 
   };
 
+  const handleRefreshVehicles = () => {
+    if (id) {
+      dispatch(fetchFleetVehicles(id));
+    }
+  };
   const handleEditFleet = () => {
     setEditDialogOpen(true);
   };
@@ -121,33 +122,6 @@ const FleetDetails = () => {
         variant: 'destructive',
       });
     }
-  };
-
-  const handleExportData = () => {
-    if (!currentFleet) return;
-    
-    const csvContent = [
-      ['Fleet ID', 'Fleet Name', 'Owner Name', 'Owner Email', 'Owner Phone', 'Base Location', 'Status'],
-      [
-        currentFleet.id || 'N/A',
-        currentFleet.fleetName || 'N/A',
-        currentFleet.ownerName || 'N/A',
-        currentFleet.ownerEmail || 'N/A',
-        currentFleet.ownerPhone || 'N/A',
-        currentFleet.baseLocation || 'N/A',
-        currentFleet.status || 'N/A'
-      ]
-    ].map(row => row.join(',')).join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `fleet-${currentFleet.fleetName || 'unknown'}-details.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
   };
 
   const handleDeleteClick = (vehicle) => {
@@ -429,10 +403,16 @@ const FleetDetails = () => {
           </Card>
         </TabsContent>
       </Tabs>
+     <AddVehicle
+          open={addVehicleOpen}
+          onOpenChange={setAddVehicleOpen}
+          onVehicleAdded={handleRefreshVehicles}
+          fleetId={id} 
+        />
 
       {editDialogOpen && editedFleet && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg max-w-md w-full">
+          <div className="bg-white p-6 rounded-lg max-w-md">
             <h3 className="text-lg font-semibold mb-4">Edit Fleet</h3>
             <div className=" grid grid-cols-2 gap-6">
               <div>

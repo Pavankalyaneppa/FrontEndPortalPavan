@@ -2,11 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useNavigate } from 'react-router-dom';
-import BackButton from '@/users/BackButton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import { useDispatch, useSelector } from 'react-redux';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { addTeam } from '@/store/reducers/chargerInstallation/ChargerInstallationSlice';
 import {
   validateName,
@@ -16,9 +15,8 @@ import {
 } from '@/pages/validations/Validation';
 import { ReloadIcon } from '@radix-ui/react-icons';
 
-const AddTeamMember = () => {
+const AddTeamMember = ({ open, onOpenChange, onTeamMemberAdded }) => {
   const { toast } = useToast();
-  const navigate = useNavigate();
   const dispatch = useDispatch();
 
   const [formErrors, setFormErrors] = useState({});
@@ -140,7 +138,11 @@ const AddTeamMember = () => {
         description: "Team member added successfully!",
       });
 
-      navigate("/charger-installation-team");
+      // Close dialog and callback
+      if (onTeamMemberAdded) {
+        onTeamMemberAdded();
+      }
+      onOpenChange(false);    
     } catch (error) {
       console.error("Error adding team member:", error);
       toast({
@@ -149,21 +151,18 @@ const AddTeamMember = () => {
         variant: "destructive",
       });
     } finally {
-      setIsSubmitting(false); // Stop loader
+      setIsSubmitting(false); 
     }
   };
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Add Team Member</h1>
-        <BackButton />
-      </div>
-
-      <div className="max-w-4xl mx-auto rounded-lg border p-5 bg-white shadow">
+     <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Add Team Member</DialogTitle>
+        </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
+          <div className="grid grid-cols-2 gap-4">
             {/* Full Name */}
             <div className="space-y-2">
               <Label htmlFor="username">Full Name</Label>
@@ -272,10 +271,11 @@ const AddTeamMember = () => {
 
           {/* Buttons */}
           <div className="flex justify-end space-x-4 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => navigate("/charger-installation-team")}
+           <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => onOpenChange(false)}
+              disabled={isSubmitting}
             >
               Cancel
             </Button>
@@ -292,8 +292,8 @@ const AddTeamMember = () => {
           </div>
 
         </form>
-      </div>
-    </div>
+    </DialogContent>
+    </Dialog>
   );
 };
 

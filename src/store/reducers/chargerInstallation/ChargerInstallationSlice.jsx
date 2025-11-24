@@ -34,7 +34,7 @@ export const fetchTechnicianTasks = createAsyncThunk(
     }
   }
 );
-// Thunk
+
 export const fetchAllEmployees = createAsyncThunk(
   'chargerInstallation/fetchAllEmployees',
   async (designation, { rejectWithValue }) => {   // accept designation here
@@ -58,7 +58,6 @@ export const fetchEmployeeById = createAsyncThunk(
     }
   }
 );
-
 
 export const addTeam = createAsyncThunk(
   'chargerInstallation/addTeam',
@@ -102,8 +101,6 @@ export const addTeam = createAsyncThunk(
   }
 );
 
-
-
 export const editTeam = createAsyncThunk(
   'chargerInstallation/editTeam',
   async ({ id, teamData }, { rejectWithValue, dispatch }) => {
@@ -116,15 +113,10 @@ export const editTeam = createAsyncThunk(
         designation: 'charger installer',
         isActive: teamData.active,
         joiningDate: teamData.joiningDate ? new Date(teamData.joiningDate.join('-')) : null,
-      };
-
-     
+      };     
       await AxiosServices.updateTeam(id, payload);
-      
       const updatedEmployee = await AxiosServices.getEmployeeById(id);
-      
       dispatch(fetchTeams({ page: 0, size: 10 }));
-      
       return updatedEmployee;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to update team member');
@@ -174,9 +166,6 @@ export const assignTeamTask = createAsyncThunk(
   }
 );
 
-
-
-
 export const updateTeamTaskProgress = createAsyncThunk(
   'chargerInstallation/updateTeamTaskProgress',
   async ({ id, taskName, progress }, { rejectWithValue }) => {
@@ -188,8 +177,6 @@ export const updateTeamTaskProgress = createAsyncThunk(
     }
   }
 );
-
-//for task notes......
 
 // Fetch notes by task ID
 export const fetchTaskNotes = createAsyncThunk(
@@ -203,7 +190,6 @@ export const fetchTaskNotes = createAsyncThunk(
     }
   }
 );
-
 
 // Add note to task
 export const addTaskNote = createAsyncThunk(
@@ -243,8 +229,6 @@ export const deleteTaskNote = createAsyncThunk(
     }
   }
 );
-
-
 
 const chargerInstallationSlice = createSlice({
   name: 'chargerInstallation',
@@ -327,9 +311,7 @@ builder
     state.error = action.payload;
   });
 
-builder 
-
-      
+builder       
       .addCase(fetchAllEmployees.pending, (state) => {
         state.allEmployeesLoading = true;
         state.allEmployeesError = null;
@@ -467,7 +449,6 @@ builder
   state.taskNotesError = action.payload;
 })
 
-
 //for all employee tasks....
  .addCase(fetchAllTasks.pending, (state) => {
       state.allTasksLoading = true;
@@ -484,8 +465,6 @@ builder
       state.allTasksLoading = false;
       state.allTasksError = action.payload;
     });
-
-
 }  
 });
 

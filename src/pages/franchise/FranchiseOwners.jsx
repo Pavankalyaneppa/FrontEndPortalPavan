@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
 import { 
   Table, 
   TableBody, 
@@ -19,20 +18,17 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
-import { InfoIcon, Trash } from 'lucide-react';
+import { InfoIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ReloadIcon } from '@radix-ui/react-icons';
 import DeleteOtp from '@/users/DeleteOtp';
 import {
   validateName,
   validateMobileNumber,
-  // validatePassword,
-  // validateConfirmPassword,
   validateCity,
   validateZipCode,
   validateEmail,
   validateUsername,
-  // validateForm as validateFormHelper
 } from '@/pages/validations/Validation';
 import {
   flexRender,
@@ -55,7 +51,7 @@ import {
 import AxiosServices from '@/services/AxiosServices';
 
 const FranchiseOwners = () => {
-  const { list, status, error, totalElements } = useSelector((state) => state.franchise);
+  const { list, totalElements } = useSelector((state) => state.franchise);
   const [currentPage, setCurrentPage] = useState(0);
   const [data, setData] = useState([]);
   const [globalFilter, setGlobalFilter] = useState('');
@@ -67,7 +63,7 @@ const FranchiseOwners = () => {
   const [columnFilters, setColumnFilters] = useState([]);
   const [whiteLabels, setWhiteLabels] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { user } = useSelector(state => state.authentication); // Assuming you have auth state
+  const { user } = useSelector(state => state.authentication);
   console.log("user",user.orgId);
   const pageSize = 10;
   const totalPages = Math.max(1, Math.ceil((totalElements || 0) / pageSize));
@@ -106,7 +102,6 @@ const FranchiseOwners = () => {
       id: "actions",
       header: "Actions",
       cell: ({ row }) => (
-        // <div className="flex justify-end gap-2">
         <div>
           <Button 
             variant="ghost" 
@@ -118,22 +113,11 @@ const FranchiseOwners = () => {
           >
             <InfoIcon className="h-4 w-4" />
           </Button>
-          {/* <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={(e) => {
-              e.stopPropagation();
-              row.original.onDelete();
-            }}
-          >
-            <Trash className="h-4 w-4" />
-          </Button> */}
         </div>
       ),
     },
   ];
 
-  // Form state
   const [formData, setFormData] = useState({
     orgName: "",
     fullname: "",
@@ -174,7 +158,6 @@ const FranchiseOwners = () => {
   
     setFormErrors(errors);
   }, [formData]);
-  
 
   const table = useReactTable({
     data,
@@ -198,7 +181,6 @@ const FranchiseOwners = () => {
     },
   });
 
-  // Fetch franchise owners list
   const fetchFranchiseOwners = useCallback(async () => {
     try {
       setLoading(true);
@@ -220,10 +202,8 @@ const FranchiseOwners = () => {
     }
   }, [dispatch, currentPage, globalFilter]);
 
-  // Fetch white labels for dropdown
   const fetchWhiteLabels = async () => {
     try {
-      // const response = await axios.get('http://localhost:8800/services/userprofile/getwhiteLabels');
       const response= await AxiosServices.getWhiteLabels();
       setWhiteLabels(response.data);
     } catch (error) {
@@ -269,17 +249,6 @@ const FranchiseOwners = () => {
     });
     
   };
-  // Handle white label selection change
-  const handleWhiteLabelChange = (value) => {
-    setFormData(prev => ({
-      ...prev,
-      orgId: value
-    }));
-    setFormErrors(prev => ({
-      ...prev,
-      orgId: validateRequiredField(value, 'orgId')
-    }));
-  };
 
 const handleAddFranchiseOwner = async (e) => {
     e.preventDefault();
@@ -302,30 +271,21 @@ const handleAddFranchiseOwner = async (e) => {
 
   if (missingFields.length > 0) {
     toast({
-      // title: "Validation Error",
       description: `Please fill all required fields: ${missingFields.join(", ")}`,
       variant: "destructive",
     });
     return;
   }
   if (Object.keys(formErrors).length > 0) {
-        // Convert formErrors object to a readable string
     const errorMessages = Object.values(formErrors).filter(Boolean).join('\n');
-    
     toast({
-      // title: "Validation Error",
       description: errorMessages,
       variant: "destructive",
     });
     return;
   }    
     try {
-      setIsSubmitting(true);
-      // const response = await axios.post('http://localhost:8800/services/userprofile/add', {
-      //   ...formData,
-      //   rolename: "FranchiseOwner",
-      // });
-      
+      setIsSubmitting(true);      
       const response= await AxiosServices.addFranchise(formData);
       if (response.status === 201) {
         toast({
@@ -347,7 +307,6 @@ const handleAddFranchiseOwner = async (e) => {
     console.log(error);
     let errorMessage = "Failed to add site";
     
-    // Check for unique constraint violation (site name already exists)
     if (error.response?.data.includes('ConstraintViolationException') || 
         error.response?.data.includes('could not execute statement')) {
       errorMessage = "Mobile Number already exists. Please choose a different Number.";
@@ -364,7 +323,6 @@ const handleAddFranchiseOwner = async (e) => {
     }
   };
 
-  // Reset form
   const resetForm = () => {
     setFormData({
       orgName: "",
@@ -384,12 +342,9 @@ const handleAddFranchiseOwner = async (e) => {
     });
   };
 
-  // Delete franchise owner
   const handleDeleteFranchiseOwner = async () => {
     try {
       const userId = currentOwner.id;
-      // await axios.delete(`http://localhost:8800/services/userprofile/deleteUser/${userId}`);
-  
       toast({
         title: "Success",
         description: "Franchise owner deleted successfully!",
@@ -405,7 +360,6 @@ const handleAddFranchiseOwner = async (e) => {
     }
   };
 
-  // View franchise owner details
   const handleViewDetails = async (owner) => {
     navigate(`/franchiseOwners/${owner.userId}/${owner.owner_orgId}/${owner.owner_orgName}`);
   };
@@ -422,9 +376,7 @@ const handleAddFranchiseOwner = async (e) => {
         value={globalFilter}
         onChange={(e) => setGlobalFilter(e.target.value)}
         className="mb-4"
-      />
-      
-      {/* Franchise Owners Table */}
+      />      
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -505,51 +457,48 @@ const handleAddFranchiseOwner = async (e) => {
           Next
         </Button>
       </div>
-
-      {/* Add Franchise Owner Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
         <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Add New Franchise Owner</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleAddFranchiseOwner} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-    {/* Only show White Label Organization field if user.roleId is 1 */}
-    {Number(user?.roleId) === 1 && (
-      <div className="space-y-2">
-        <Label htmlFor="orgId">White Label Organization *</Label>
-       {Number(user?.orgId) === 1 ? (
-    <Select
-      onValueChange={(value) =>
-        setFormData((prev) => ({ ...prev, orgId: value }))
-      }
-      value={formData.orgId?.toString() || ""}
-    >
-      <SelectTrigger>
-        <SelectValue placeholder="Select a White Label" />
-      </SelectTrigger>
-      <SelectContent>
-        {whiteLabels.map((whiteLabel) => (
-          <SelectItem
-            key={whiteLabel.id}
-            value={whiteLabel.id.toString()}
-          >
-            {whiteLabel.orgName}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  ) : (
-    <Input
-      type="hidden"
-      id="orgId"
-      name="orgId"
-      value={user.orgId}
-      readOnly
-    />
-  )}
-      </div>
-    )}
+            <div className="grid grid-cols-2 gap-4">
+              {Number(user?.roleId) === 1 && (
+                <div className="space-y-2">
+                  <Label htmlFor="orgId">White Label Organization *</Label>
+                {Number(user?.orgId) === 1 ? (
+              <Select
+                onValueChange={(value) =>
+                  setFormData((prev) => ({ ...prev, orgId: value }))
+                }
+                value={formData.orgId?.toString() || ""}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a White Label" />
+                </SelectTrigger>
+                <SelectContent>
+                  {whiteLabels.map((whiteLabel) => (
+                    <SelectItem
+                      key={whiteLabel.id}
+                      value={whiteLabel.id.toString()}
+                    >
+                      {whiteLabel.orgName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Input
+                type="hidden"
+                id="orgId"
+                name="orgId"
+                value={user.orgId}
+                readOnly
+              />
+            )}
+                </div>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="orgName">Organization Name *</Label>
                 <Input 
@@ -599,28 +548,6 @@ const handleAddFranchiseOwner = async (e) => {
                   onChange={handleInputChange} 
                 />
               </div>
-              {/* <div className="space-y-2">
-                <Label htmlFor="password">Password *</Label>
-                <Input 
-                  id="password" 
-                  name="password" 
-                  type="password" 
-                  value={formData.password} 
-                  onChange={handleInputChange} 
-                />
-                {formErrors.password && <p className="text-sm text-red-500">{formErrors.password}</p>}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm Password *</Label>
-                <Input 
-                  id="confirmPassword" 
-                  name="confirmPassword" 
-                  type="password" 
-                  value={formData.confirmPassword} 
-                  onChange={handleInputChange} 
-                />
-                {formErrors.confirmPassword && <p className="text-sm text-red-500">{formErrors.confirmPassword}</p>}
-              </div> */}
               <div className="space-y-2">
                 <Label htmlFor="address">Address *</Label>
                 <Input 
@@ -688,8 +615,6 @@ const handleAddFranchiseOwner = async (e) => {
           </form>
         </DialogContent>
       </Dialog>
-
-      {/* Delete Franchise Owner Dialog */}
       {isDeleteDialogOpen && currentOwner && (
         <DeleteOtp 
           userId={currentOwner.id}
@@ -704,5 +629,4 @@ const handleAddFranchiseOwner = async (e) => {
     </div>
   );
 };
-
 export default FranchiseOwners;

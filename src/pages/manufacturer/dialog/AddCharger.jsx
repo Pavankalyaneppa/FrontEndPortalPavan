@@ -9,21 +9,13 @@ import { useDispatch, useSelector } from 'react-redux';
 import { PlusCircle, Trash2 } from 'lucide-react';
 import { fetchManufacturerById, updateManufacturer } from '@/store/reducers/manufacturer/manufacturerSlice';
 import BackButton from '@/users/BackButton';
-import { 
-  validateChargerType,
-  validateTotalCapacity,
-  validateCurrentType,
-  validateConnectorType,
-  validatePortCapacity,
-  validatePortDisplayName
-} from '@/pages/validations/Validation';
+import { validateChargerType, validateTotalCapacity, validateCurrentType, validateConnectorType, validatePortCapacity, validatePortDisplayName } from '@/pages/validations/Validation';
 
 export function AddCharger({ onSuccess }) {
   const { id } = useParams();
   const dispatch = useDispatch();
   const { toast } = useToast();
   const navigate=useNavigate();
-  // State management
   const [formErrors, setFormErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -46,63 +38,37 @@ export function AddCharger({ onSuccess }) {
     }]
   });
 
-  // Redux state
   const { loading: reduxLoading, error, selectedManufacturer } = useSelector((state) => state.manufacturer);
   const isLoading = isSubmitting || reduxLoading;
 
-  // Load manufacturer data
   useEffect(() => {
     if (id) {
       dispatch(fetchManufacturerById(id));
     }
   }, [dispatch, id]);
+useEffect(() => {
+  if (selectedManufacturer) {
+    setManufacturerData({
+      manufacturerName: selectedManufacturer.manufacturerName || '',
+      country: selectedManufacturer.country || '',
+      contactInfo: selectedManufacturer.contactInfo || '',
+      chargers: [{
+        chargerType: '',
+        totalCapacityKW: '',
+        currentType: '',
+        ports: [{
+          connectorType: '',
+          portCapacityKW: '',
+          maxInputVoltageV: '',
+          maxOutputVoltageV: '',
+          outputCurrentA: '',
+          portDisplayName: ''
+        }]
+      }]
+    });
+  }
+}, [selectedManufacturer]);
 
-  // Initialize form with manufacturer data
-  useEffect(() => {
-    if (selectedManufacturer) {
-      setManufacturerData({
-        manufacturerName: selectedManufacturer.manufacturerName || '',
-        country: selectedManufacturer.country || '',
-        contactInfo: selectedManufacturer.contactInfo || '',
-        chargers: selectedManufacturer.chargingStation?.length > 0 
-          ? selectedManufacturer.chargingStation.map(station => ({
-              chargerType: station.chargerType || '',
-              totalCapacityKW: station.totalCapacityKW || '',
-              currentType: station.currentType || '',
-              ports: station.chargingPort?.map(port => ({
-                connectorType: port.connectorType || '',
-                portCapacityKW: port.portCapacityKW || '',
-                maxInputVoltageV: port.maxInputVoltageV || '',
-                maxOutputVoltageV: port.maxOutputVoltageV || '',
-                outputCurrentA: port.outputCurrentA || '',
-                portDisplayName: port.portDisplayName || ''
-              })) || [{
-                connectorType: '',
-                portCapacityKW: '',
-                maxInputVoltageV: '',
-                maxOutputVoltageV: '',
-                outputCurrentA: '',
-                portDisplayName: ''
-              }]
-            }))
-          : [{
-              chargerType: '',
-              totalCapacityKW: '',
-              currentType: '',
-              ports: [{
-                connectorType: '',
-                portCapacityKW: '',
-                maxInputVoltageV: '',
-                maxOutputVoltageV: '',
-                outputCurrentA: '',
-                portDisplayName: ''
-              }]
-            }]
-      });
-    }
-  }, [selectedManufacturer]);
-
-  // Form handlers
   const handleChange = (e) => {
     setManufacturerData({
       ...manufacturerData,
@@ -183,7 +149,6 @@ export function AddCharger({ onSuccess }) {
     });
   };
 
-  // Form validation
   const validateForm = () => {
     let isValid = true;
     const newErrors = { chargers: [] };
@@ -215,7 +180,6 @@ export function AddCharger({ onSuccess }) {
     setFormErrors(newErrors);
     return isValid;
   };
-
 const handleSubmit = async () => {
   setIsSubmitting(true);
   
@@ -229,39 +193,47 @@ const handleSubmit = async () => {
     return;
   }
 
+  // Filter out empty chargers (the ones user hasn't filled)
+  const newChargers = manufacturerData.chargers.filter(charger => 
+    charger.chargerType && charger.totalCapacityKW && charger.currentType
+  ).map(charger => ({
+    chargerType: charger.chargerType,
+    totalCapacityKW: parseFloat(charger.totalCapacityKW),
+    currentType: charger.currentType,
+    ports: charger.ports.map(port => ({
+      connectorType: port.connectorType,
+      portCapacityKW: parseFloat(port.portCapacityKW),
+      maxInputVoltageV: parseFloat(port.maxInputVoltageV) || 0,
+      maxOutputVoltageV: parseFloat(port.maxOutputVoltageV) || 0,
+      outputCurrentA: parseFloat(port.outputCurrentA) || 0,
+      portDisplayName: port.portDisplayName
+    }))
+  }));
+
+  // Send the complete manufacturer data with existing fields + new chargers
   const formattedData = {
     manufacturerId: id,
-    manufacturerName: manufacturerData.manufacturerName,
-    country: manufacturerData.country,
-    contactInfo: manufacturerData.contactInfo,
-    chargers: manufacturerData.chargers.map(charger => ({
-      chargerType: charger.chargerType,
-      totalCapacityKW: parseFloat(charger.totalCapacityKW),
-      currentType: charger.currentType,
-      ports: charger.ports.map(port => ({
-        connectorType: port.connectorType,
-        portCapacityKW: parseFloat(port.portCapacityKW),
-        maxInputVoltageV: parseFloat(port.maxInputVoltageV),
-        maxOutputVoltageV: parseFloat(port.maxOutputVoltageV),
-        outputCurrentA: parseFloat(port.outputCurrentA),
-        portDisplayName: port.portDisplayName
-      }))
-    }))
+    manufacturerName: selectedManufacturer.manufacturerName,
+    country: selectedManufacturer.country,
+    contactInfo: selectedManufacturer.contactInfo,
+    mobileNumber: selectedManufacturer.mobileNumber, // Make sure this is included
+    chargers: newChargers
   };
 
   try {
     const response = await dispatch(updateManufacturer({ formattedData, id })).unwrap();
-    
     if (response) {
       toast({
         title: 'Success',
         description: 'Charger added successfully',
       });
       
-      setManufacturerData({
-        manufacturerName: manufacturerData.manufacturerName,
-        country: manufacturerData.country,
-        contactInfo: manufacturerData.contactInfo,
+      // Refetch the manufacturer to get updated data
+      await dispatch(fetchManufacturerById(id));
+      
+      // Reset only the chargers part, keep manufacturer data intact
+      setManufacturerData(prev => ({
+        ...prev,
         chargers: [{
           chargerType: '',
           totalCapacityKW: '',
@@ -275,7 +247,7 @@ const handleSubmit = async () => {
             portDisplayName: ''
           }]
         }]
-      });
+      }));
 
       if (onSuccess) onSuccess();
       navigate(`/manufacturers/${id}`);
@@ -298,8 +270,7 @@ const handleSubmit = async () => {
         <div>
           <BackButton to={"Manufacturers"}/>
         </div>
-      </div>
-      
+      </div>      
       <div className="grid grid-cols-3 gap-4">
         <div>
           <Label htmlFor="manufacturerName">Manufacturer Name</Label>
@@ -335,7 +306,6 @@ const handleSubmit = async () => {
           />
         </div>
       </div>
-
       <div className="space-y-4">
         <div className="flex justify-between items-center">
           <h3 className="text-lg font-semibold">Charging Stations</h3>
@@ -343,7 +313,6 @@ const handleSubmit = async () => {
             <PlusCircle className="h-4 w-4 mr-2" /> Add Charger
           </Button>
         </div>
-
         {manufacturerData.chargers.map((charger, chargerIndex) => (
           <div key={chargerIndex} className="space-y-4 p-4 border rounded-lg">
             <div className="flex justify-between items-center">
@@ -359,7 +328,6 @@ const handleSubmit = async () => {
                 </Button>
               )}
             </div>
-
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>Charger Type</Label>
@@ -394,7 +362,6 @@ const handleSubmit = async () => {
                 <p className="text-xs text-red-500 mt-1">{validateCurrentType(charger.currentType)}</p>
               )}
             </div>
-            
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <Label>Ports</Label>
@@ -407,7 +374,6 @@ const handleSubmit = async () => {
                   <PlusCircle className="h-4 w-4 mr-2" /> Add Port
                 </Button>
               </div>
-
               {charger.ports.map((port, portIndex) => (
                 <div key={portIndex} className="p-3 border rounded-md space-y-3">
                   <div className="flex justify-between items-center">
@@ -423,7 +389,6 @@ const handleSubmit = async () => {
                       </Button>
                     )}
                   </div>
-
                   <div className="grid grid-cols-3 gap-4">
                     <div>
                       <Label>Connector Type</Label>
@@ -467,7 +432,6 @@ const handleSubmit = async () => {
           </div>
         ))}
       </div>
-
       <div className="flex justify-end">
         <Button 
           type="button" 
@@ -480,7 +444,6 @@ const handleSubmit = async () => {
     </div>
   );
 }
-
 AddCharger.propTypes = {
   onSuccess: PropTypes.func,
 };

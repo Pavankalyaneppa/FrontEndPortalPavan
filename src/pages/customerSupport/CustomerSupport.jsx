@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { PlusIcon } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
+import AddCustomerSupport from "./AddCustomerSupport";
 
 function CustomerSupport() {
   const navigate = useNavigate();
@@ -17,17 +18,8 @@ function CustomerSupport() {
   const size = 10;
   const designation = "Customer Support";
   const [selectedCategory, setSelectedCategory] = useState("all");
-
   const { employees, loading, employeeIssues, pagination } = useSelector((state) => state.employee);
- 
-  const categories = Array.from(
-  new Set(
-    Object.values(employeeIssues || {})
-      .flat()
-      .map(issue => issue.category)
-      .filter(Boolean)
-  )
-);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
 useEffect(() => {
     dispatch(fetchEmployeesPaginated({ page, size, designation, search }));
@@ -61,14 +53,14 @@ useEffect(() => {
 
   return (
     <div className="container mx-auto p-4">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-bold">Customer Support</h1>
         <div className="flex gap-4">
-           <Button
-            onClick={() => navigate("/customer-support/add")}
+          <Button
+            onClick={() => setIsAddDialogOpen(true)}
             className="bg-green-600 hover:bg-green-500 text-white flex items-center gap-2"
           >
-            Add Support
+            Add Support                                   
           </Button>
         </div>
       </div>
@@ -78,13 +70,13 @@ useEffect(() => {
       value={search}
       onChange={(e) => {
         setSearch(e.target.value);
-        setPage(0); // reset to first page on new search
+        setPage(0);
       }}
       className=""
     />
 </div>
-      <Card>
-        <CardContent>
+      <Card className="rounded-lg">
+        <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
@@ -155,7 +147,7 @@ useEffect(() => {
               ) : (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center">
-                    No customers found
+                    No customer support found.
                   </TableCell>
                 </TableRow>
               )}
@@ -193,9 +185,18 @@ useEffect(() => {
               Next
             </Button>
           </div>
+          {/* Add this at the bottom */}
+            <AddCustomerSupport
+              open={isAddDialogOpen}
+              onOpenChange={setIsAddDialogOpen}
+              onCustomerSupportAdded={() => {
+                // Refresh your data here
+                dispatch(fetchEmployeesPaginated({ page, size, designation, search }));
+              }}
+            />
     </div>
+
+    
   );
 }
 export default CustomerSupport
-
-//today's zip file (27-09-2025)

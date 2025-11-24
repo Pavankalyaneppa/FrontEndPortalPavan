@@ -68,7 +68,6 @@ export const {
   setDateRange,
 } = dashboardSlice.actions;
 
-// Thunk action creators
 export const fetchDashboardStats = (orgId) => async (dispatch, getState) => {
   try {
     dispatch(getDashboardDataStart());

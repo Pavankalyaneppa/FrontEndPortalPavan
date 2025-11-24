@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert } from "@/components/ui/alert";
 import { ReloadIcon } from "@radix-ui/react-icons";
 import { Eye, EyeOff } from "lucide-react";
-import { baseURL,baseOCPPURL } from '@/config';
+import { baseURL } from '@/config';
 export default function ResetPassword() {
   const [searchParams] = useSearchParams();
   const [email, setEmail] = useState('');
@@ -29,7 +29,7 @@ export default function ResetPassword() {
     if (emailParam && tokenParam) {
       setEmail(emailParam);
       setToken(tokenParam);
-      setTokenValid(true); // In real app, validate token with backend
+      setTokenValid(true);
     } else {
       setTokenValid(false);
     }
@@ -60,25 +60,25 @@ export default function ResetPassword() {
       } else {
         setError(response.data.message || 'Failed to update password');
       }
-    } catch (err) {
-      setError(err.response?.data?.message || 'Error updating password');
-      console.error('Error:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      } catch (err) {
+        setError(err.response?.data?.message || 'Error updating password');
+        console.error('Error:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  if (tokenValid === null) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardContent className="text-center">
-            <p>Loading...</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+    if (tokenValid === null) {
+      return (
+        <div className="flex h-screen items-center justify-center">
+          <Card className="w-full max-w-md">
+            <CardContent className="text-center">
+              <p>Loading...</p>
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
 
   if (!tokenValid) {
     return (
@@ -117,14 +117,12 @@ export default function ResetPassword() {
               <Alert variant="destructive">
                 <p>{error}</p>
               </Alert>
-            )}
-           
+            )}           
             {message && (
               <Alert>
                 <p>{message}</p>
               </Alert>
-            )}
-           
+            )}           
             <div className="space-y-2">
               <label>New Password</label>
               <div className="relative">
@@ -145,8 +143,7 @@ export default function ResetPassword() {
                     )}
                 </button>
               </div>
-            </div>
-           
+            </div>           
             <div className="space-y-2">
               <label>Confirm Password</label>
               <div className="relative">
@@ -168,13 +165,11 @@ export default function ResetPassword() {
                 </button>
               </div>
             </div>
-
             <Button
               type="submit"
               disabled={isLoading}
               className="w-full"
-            >
-              {isLoading ? (
+            > {isLoading ? (
                 <>
                   <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />
                   Updating...

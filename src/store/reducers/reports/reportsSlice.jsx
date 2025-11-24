@@ -1,6 +1,5 @@
 import { createSlice } from '@reduxjs/toolkit';
 import AxiosServices from '@/services/AxiosServices';
-
 const initialState = {
   reportData: null,
   sites: [],
@@ -11,12 +10,11 @@ const initialState = {
     reportType: '',
     selectedItem: '',
     selectedItemId: null,
-    dateRange: '7', // Default to 7 days
+    dateRange: '7',
     startDate: null,
     endDate: null,
   }
 };
-
 function getDefaultStartDate(range) {
   const days = parseInt(range, 10);
   if (isNaN(days)) return null;
@@ -25,7 +23,6 @@ function getDefaultStartDate(range) {
   date.setDate(date.getDate() - days + 1);
   return date.toISOString().split('T')[0];
 }
-
 const reportsSlice = createSlice({
   name: 'reports',
   initialState,
@@ -60,7 +57,6 @@ const reportsSlice = createSlice({
     }
   }
 });
-
 export const { 
   setLoading, 
   setError, 
@@ -71,7 +67,6 @@ export const {
   resetFilters
 } = reportsSlice.actions;
 
-// Thunk actions
 export const fetchSites = () => async (dispatch) => {
   try {
     dispatch(setLoading(true));
@@ -101,12 +96,10 @@ export const fetchReportData = (filters) => async (dispatch) => {
     dispatch(setLoading(true));
     dispatch(setError(null));
 
-    // Validate inputs
     if (!filters.reportType || !filters.selectedItemId) {
       throw new Error('Please select a site or station');
     }
 
-    // Prepare params for API call
     const params = {
       siteId: filters.reportType === 'sites' ? filters.selectedItemId : null,
       stationId: filters.reportType === 'stations' ? filters.selectedItemId : null,
@@ -115,17 +108,15 @@ export const fetchReportData = (filters) => async (dispatch) => {
     };
 
     console.log(params);
-    // Validate custom date range if selected
     if (filters.dateRange === 'Custom' && (!filters.startDate || !filters.endDate)) {
       throw new Error('Please select both start and end dates');
     }
 
     const response = await AxiosServices.getReportData(params);
-    // console.log("slice",response);
     dispatch(setReportData(response));
   } catch (error) {
     dispatch(setError(error.message));
-    dispatch(setReportData(null)); // Clear previous data on error
+    dispatch(setReportData(null));
   } finally {
     dispatch(setLoading(false));
   }

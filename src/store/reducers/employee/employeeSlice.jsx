@@ -5,7 +5,7 @@ export const fetchEmployeeById = createAsyncThunk(
   "employee/fetchById",
   async (id, { rejectWithValue }) => {
     try {
-      const response = await getEmployeeById(id);
+      const response = await AxiosServices.getEmployeeById(id);
       return response;
     } catch (error) {
         return rejectWithValue(error.response?.data?.message || error.message || "Something went wrong");
@@ -36,7 +36,7 @@ export const fetchEmployees = createAsyncThunk(
     }
   }
 );
-// Fetch employees with pagination + filters
+
 export const fetchEmployeesPaginated = createAsyncThunk(
   "employees/fetchPaginated",
   async ({ page = 0, size = 10, designation = "", search = "" }, { rejectWithValue }) => {
@@ -182,43 +182,34 @@ const employeeSlice = createSlice({
         state.loading.issues = true;
         state.error = null;
       })
-      // .addCase(fetchIssuesByEmployeeId.fulfilled, (state, action) => {
-      //   state.loading.issues = false;
-      //   const { employeeId, issues } = action.payload;
-      //   state.employeeIssues[employeeId] = issues;  // save per employee
-      // })
       .addCase(fetchIssuesByEmployeeId.fulfilled, (state, action) => {
-  state.loading.issues = false;
-  const { employeeId, issues } = action.payload;
-  state.employeeIssues = {
-    ...state.employeeIssues,
-    [employeeId]: [...issues], // new array reference
-  };
-})      .addCase(fetchIssuesByEmployeeId.rejected, (state, action) => {
+      state.loading.issues = false;
+      const { employeeId, issues } = action.payload;
+      state.employeeIssues = {
+        ...state.employeeIssues,
+        [employeeId]: [...issues],
+      };
+    })      
+        .addCase(fetchIssuesByEmployeeId.rejected, (state, action) => {
         state.loading.issues = false;
         state.error = action.payload;
       });
-  builder
-    // Edit Employee
-    .addCase(editEmployee.pending, (state) => {
-      state.loading.byId = true;
-      state.error = null;
-    })
-    .addCase(editEmployee.fulfilled, (state, action) => {
+      builder
+      .addCase(editEmployee.pending, (state) => {
+        state.loading.byId = true;
+        state.error = null;
+      })
+      .addCase(editEmployee.fulfilled, (state, action) => {
       state.loading.byId = false;
-      const { id, updatedEmployee } = action.payload;
-      
-      // Update employee in employees array if exists
+      const { id, updatedEmployee } = action.payload;      
       const index = state.employees.findIndex(emp => emp.id === id);
       if (index !== -1) {
         state.employees[index] = { ...state.employees[index], ...updatedEmployee };
       }
-
-      // Update single employee if loaded
       if (state.employee?.id === id) {
         state.employee = { ...state.employee, ...updatedEmployee };
       }
-    })
+     })
     .addCase(editEmployee.rejected, (state, action) => {
       state.loading.byId = false;
       state.error = action.payload;
@@ -232,7 +223,6 @@ const employeeSlice = createSlice({
   .addCase(fetchResolvedIssuesByEmployeeId.fulfilled, (state, action) => {
     state.loading.issues = false;
     const { employeeId, resolvedIssues } = action.payload;
-    // Save resolved issues per employee
     if (!state.employeeIssues) state.employeeIssues = {};
     state.employeeIssues[employeeId] = resolvedIssues;
   })
@@ -240,7 +230,6 @@ const employeeSlice = createSlice({
     state.loading.issues = false;
     state.error = action.payload;
   });
-
   },
 });
 export default employeeSlice.reducer;

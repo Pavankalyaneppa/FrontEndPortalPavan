@@ -93,16 +93,12 @@ const formatProfileData = (data, profileType) => {
     }
   };
   
-
-// Thunk action creator
 export const addProfile = (data, profileType) => async (dispatch) => {
   try {
     dispatch(addProfileStart());
     const formattedData = formatProfileData(data, profileType);
     await AxiosServices.addProfile(formattedData);
-    dispatch(addProfileSuccess());
-    
-    // Refresh the profiles list after successful addition
+    dispatch(addProfileSuccess());    
     dispatch(fetchProfiles(profileType, { 
       page: 0, 
       size: 10, 

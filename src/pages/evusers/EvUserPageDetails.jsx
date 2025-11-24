@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { toast } from "@/components/ui/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card } from '@/components/ui/card';
+import { useDispatch, useSelector } from "react-redux";
 import { Input } from "@/components/ui/input";
+import { fetchWalletDetails, fetchWalletTransaction } from "@/store/reducers/evuser/evuserSlice";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -16,8 +17,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { InfoIcon,PencilIcon,Trash } from 'lucide-react';
-
+import { PencilIcon,Trash } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -26,12 +26,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-
 import {
   validateName,
   validateMobileNumber,
-  // validatePassword,
-  // validateConfirmPassword,
   validateCity,
   validateZipCode,
   validateEmail,
@@ -42,55 +39,74 @@ import {
   validateUsername,
   validateVehicleType,
   validateRegistrationNo,
-   validateForm as validateFormHelper,
-   validateEditForm as validateEditFormHelper
-} from '@/pages/validations/Validation';
+  validateForm as validateFormHelper,
+  validateEditForm as validateEditFormHelper } from '@/pages/validations/Validation';
 import Loading from '@/users/Loading';
 import BackButton from '@/users/BackButton';
 import StatusButton from '@/users/StatusButton';
 import { ReloadIcon } from '@radix-ui/react-icons';
 import DeleteOtp from '@/users/DeleteOtp';
 import AxiosServices, { getVehicles } from '@/services/AxiosServices';
-import { useSelector } from 'react-redux';
 const MAX_RFID_REQUESTS = 5;
 
 const EvUserPageDetails = () => {
   const { id } = useParams();
-  const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
   const [rfidRequests, setRfidRequests] = useState([]);
   const [isRfidDialogOpen, setIsRfidDialogOpen] = useState(false);
   const [useDefaultAddress, setUseDefaultAddress] = useState(true);
-  const[isSubmitting,setIsSubmitting]=useState(false);
+  const [isSubmitting,setIsSubmitting]=useState(false);
   const [vehicleList, setVehicleList] = useState([]);
-  
   const [loadingVehicles, setLoadingVehicles] = useState(false);
-  const[isEditVehicleDialogOpen,setIsEditVehicleDialogOpen]=useState(false);
-  const[isAddVehicleDialogOpen,setIsAddVehicleDialogOpen]=useState(false);
+  const [isEditVehicleDialogOpen,setIsEditVehicleDialogOpen]=useState(false);
+  const [isAddVehicleDialogOpen,setIsAddVehicleDialogOpen]=useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [vechileId,setVechileId]= useState(null);
   const [editFormErrors, setEditFormErrors] = useState({});
   console.log(currentUser);
- const { user } = useSelector(state => state.authentication);
+  const { user } = useSelector(state => state.authentication);
   console.log("user",user.orgId);
   const [formErrors, setFormErrors] = useState({});
+  const {walletDetails, walletStatus, walletHistory, walletError} = useSelector((state) => state.evuser);
 
- const [editFormData, setEditFormData] = useState({
+ const [currentPage, setCurrentPage] = useState(1);
+ const recordsPerPage = 10;
+ const indexOfLastRecord = currentPage * recordsPerPage;
+ const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
+ const currentRecords = walletHistory.slice(indexOfFirstRecord, indexOfLastRecord);
+ const totalPages = Math.ceil(walletHistory.length / recordsPerPage);
+
+const getPageNumbers = () => {
+  const maxVisible = 5; 
+
+  let start = Math.max(currentPage - Math.floor(maxVisible / 2), 1);
+  let end = start + maxVisible - 1;
+
+  if (end > totalPages) {
+    end = totalPages;
+    start = Math.max(end - maxVisible + 1, 1);
+  }
+
+  let pages = [];
+  for (let i = start; i <= end; i++) pages.push(i);
+  return pages;
+};
+
+
+  const [editFormData, setEditFormData] = useState({
     fullname: "",
     username: "",
     email: "",
     mobileNumber: "",
     rolename: "Driver",
-    // password: "",
-    // confirmPassword: "",
     address: "",
     city: "",
     country: "",
     state: "",
     zipCode: "",
-    // passwordChange: false,
     connectorType:"",
     model:"",
     vin:"",
@@ -98,6 +114,18 @@ const EvUserPageDetails = () => {
     make:"",
     vehicleType:"", 
   });
+
+useEffect (() => {
+  if(id) {
+    dispatch(fetchWalletDetails(id));
+  }
+}, [id]);
+
+useEffect(() => {
+  if (walletDetails?.id) {
+    dispatch(fetchWalletTransaction(walletDetails.id));
+  }
+}, [walletDetails, dispatch]);
 
   useEffect(() => {
   const errors = {};
@@ -147,11 +175,10 @@ const EvUserPageDetails = () => {
   vin: "",
   registrationNo: "",
   model: "",
-  year: "",  // Changed from Year to year (lowercase)
-  make: "",   // Added make field
-  vehicleType: "", // Changed from vechileType to vehicleType
+  year: "",
+  make: "",
+  vehicleType: "",
 });
-
 
   useEffect(() => {
   const errors = {};
@@ -186,7 +213,6 @@ const EvUserPageDetails = () => {
     make: "", 
     type: ""
   });
-// rfid section
 
  const [addressParts, setAddressParts] = useState({
   street: "",
@@ -195,6 +221,7 @@ const EvUserPageDetails = () => {
   country: currentUser?.country||'',
   zipCode: currentUser?.zipCode,
 });
+
 const [newRfid, setNewRfid] = useState({
   firstName: '',
   lastName: '',
@@ -216,7 +243,7 @@ const [newRfid, setNewRfid] = useState({
   };
    const handleRequestRfid = async () => {
     try {
-       setIsSubmitting(true); // Add this line
+       setIsSubmitting(true);
       if (rfidRequests.length >= MAX_RFID_REQUESTS) {
         toast({
           title: "Limit Reached",
@@ -254,7 +281,7 @@ const [newRfid, setNewRfid] = useState({
       });
     }
      finally {
-    setIsSubmitting(false); // Add this line
+    setIsSubmitting(false);
   }
   };
 
@@ -282,7 +309,6 @@ const handleDelete = async (id) => {
   try {
     const response = await AxiosServices.deleteRfid(id);
     console.log(response);
-
     if (response.status === 200 || response.status === 204) {
       toast({
         title: "Success",
@@ -307,44 +333,16 @@ const handleDelete = async (id) => {
   }
 };
 
-  // const fetchUserVehicles = async () => {
-  //   const response = await axios.get(`http://localhost:8800/api/mobile/myEV/${id}`);
-  //   return response.data;
-  // };
-
-  // const fetchVehicles = async () => {
-  //   try {
-  //     setLoadingVehicles(true);
-  //     const data = await getVehicles(id);
-  //     console.log("Vehicle Data from Backend:", data);
-  //     setVehicleList(data);
-  //   } catch (error) {
-  //     console.error("Error fetching vehicles:", error);
-  //     toast({
-  //       title: "Error",
-  //       description: "Failed to load vehicle details",
-  //       variant: "destructive"
-  //     });
-  //   } finally {
-  //     setLoadingVehicles(false);
-  //   }
-  // };
-
  const fetchVehicles = async () => {
   try {
     setLoadingVehicles(true);
     const response = await getVehicles(id);
     console.log("Vehicle Data from Backend:", response);
 
-    // ✅ Use only the array part
     setVehicleList(response?.data || []);
   } catch (error) {
     console.error("Error fetching vehicles:", error);
-    toast({
-      title: "Error",
-      description: "Failed to load vehicle details",
-      variant: "destructive"
-    });
+   
   } finally {
     setLoadingVehicles(false);
   }
@@ -356,10 +354,8 @@ const handleDelete = async (id) => {
     }
   }, [id]);
 
-  // Fetch user details from API
   const fetchUserDetails = async (userId) => {
     try {
-      // const userResponse = await axios.get(`http://localhost:8800/services/userprofile/userDetails/${userId}`);
       const userResponse = await AxiosServices.getUserDetails(userId);
       return userResponse;
     } catch (error) {
@@ -373,7 +369,22 @@ const handleDelete = async (id) => {
     }
   };
 
-  const handleInfoClick = (vehicle) => {
+const handleInfoClick = (vehicle) => {
+  console.log("🔄 Editing vehicle:", vehicle);
+  console.log("🆔 Vehicle ID from row:", vehicle.id);
+  console.log("📋 Vehicle data:", vehicle);
+  
+  // Make sure we have the vehicle ID
+  if (!vehicle.id) {
+    console.error("❌ No vehicle ID found in vehicle object!");
+    toast({
+      title: "Error",
+      description: "Cannot edit vehicle: No ID found",
+      variant: "destructive",
+    });
+    return;
+  }
+  
   setVehicleFormData({
     connectorType: vehicle.connectorType || "",
     description: vehicle.description || "",
@@ -384,34 +395,19 @@ const handleDelete = async (id) => {
     make: vehicle.make || "",
     vehicleType: vehicle.vehicleType || ""
   });
+  
+  setVechileId(vehicle.id); // This is crucial!
+  console.log("✅ Vehicle ID set in state:", vehicle.id);
   setIsEditVehicleDialogOpen(true);
 };
-
-  // Fetch RFID requests from API
-  // const fetchRfidRequests = async (userId) => {
-  //   try {
-  //     // const response = await axios.get(`http://localhost:8800/services/rfid/userRequests/${userId}`);
-  //     const response= await AxiosServices.getRfidRequests(userId);
-  //     setRfidRequests(response.data);
-  //     console.log(response.data);
-  //   } catch (error) {
-  //     // console.error('Error fetching RFID requests:', error);
-  //     toast({
-  //       title: "Error",
-  //       description: "Failed to fetch RFID requests",
-  //       variant: "destructive",
-  //     });
-  //   }
-  // };
 
   const fetchRfidRequests = async (userId) => {
   try {
     const response = await AxiosServices.getRfidRequests(userId);
-    // Check if response exists and has data
     if (response && response.data) {
       setRfidRequests(response.data);
     } else {
-      setRfidRequests([]); // Set empty array if no data
+      setRfidRequests([]);
     }
   } catch (error) {
     console.error('Error fetching RFID requests:', error);
@@ -420,14 +416,12 @@ const handleDelete = async (id) => {
       description: error.response?.data?.message || "Failed to fetch RFID requests",
       variant: "destructive",
     });
-    setRfidRequests([]); // Set empty array on error
+    setRfidRequests([]);
   }
 };
 
-  // Load user details and RFID requests on component mount
   useEffect(() => {
-    const loadDetails = async () => {
-      
+    const loadDetails = async () => {      
       try {
         setLoading(true);
         const details = await fetchUserDetails(id);
@@ -450,9 +444,7 @@ const handleDelete = async (id) => {
                 zipCode: details.address?.[0]?.zipCode || '',
               });
             }
-
           fetchRfidRequests(id);
-        
         setLoading(false);
       } catch (error) {
         console.error("Failed to load user details", error);
@@ -493,26 +485,7 @@ const handleDelete = async (id) => {
     } 
   }
   };
-  const handleAddressCheckboxChange = (checked) => {
-    setUseDefaultAddress(checked);
-    setNewRfid(prev => ({
-      ...prev,
-      useDefaultAddress: checked,
-      address: checked && currentUser?.address?.length > 0 ? currentUser.address[0] : prev.address
-    }));
-  };
-// rfid related code
 
-  const handleAddressFieldChange = (e) => {
-    const { name, value } = e.target;
-    setNewRfid(prev => ({
-      ...prev,
-      address: {
-        ...prev.address,
-        [name]: value
-      }
-    }));
-  };
   useEffect(() => {
   const fullAddress = `${addressParts.street}, ${addressParts.city}, ${addressParts.state}, ${addressParts.country} - ${addressParts.zipCode}`;
   setNewRfid((prev) => ({
@@ -634,6 +607,22 @@ const handleAddVehicle = async (e) => {
 const handleUpdateVehicle = async (e) => {
   e.preventDefault();
 
+  console.log("🔍 === VEHICLE UPDATE DEBUG START ===");
+  console.log("1. Vehicle ID to update:", vechileId);
+  console.log("2. Vehicle form data:", vehicleFormData);
+  console.log("3. User ID:", id);
+
+  if (!vechileId) {
+    console.error("❌ CRITICAL: Vehicle ID is null/undefined!");
+    toast({
+      title: "Error",
+      description: "Vehicle ID is missing. Cannot update vehicle.",
+      variant: "destructive",
+    });
+    return;
+  }
+
+  // Validation
   const newErrors = {
     connectorType: validateConnectorType(vehicleFormData.connectorType),
     model: validateModel(vehicleFormData.model),
@@ -658,31 +647,91 @@ const handleUpdateVehicle = async (e) => {
 
   try {
     setIsSubmitting(true);
-    const response = await AxiosServices.updateVehicle(vechileId
-      , vehicleFormData);
     
-    if (response.status === 200) {
+    // Prepare update data
+    const updateData = {
+      vin: vehicleFormData.vin || "",
+      year: vehicleFormData.year || "",
+      make: vehicleFormData.make || "",
+      model: vehicleFormData.model || "",
+      description: vehicleFormData.description || "",
+      connectorType: vehicleFormData.connectorType || "",
+      vehicleType: vehicleFormData.vehicleType || "",
+      registrationNo: vehicleFormData.registrationNo || ""
+    };
+
+    console.log("4. Data being sent:", updateData);
+    console.log("5. Full URL will be:", `/api/mobile/updateEV/${vechileId}`);
+    
+    // Make the API call
+    console.log("6. Making API call...");
+    const response = await AxiosServices.updateVehicle(vechileId, updateData);
+    
+    console.log("7. API Response received:", response);
+    console.log("8. Response data:", response.data);
+    
+    if (response.data.success) {
+      console.log("✅ Vehicle updated successfully!");
       toast({
         title: "Success",
-        description: 'Vehicle updated successfully',
+        description: response.data.message || "Vehicle updated successfully",
       });
+      
       setIsEditVehicleDialogOpen(false);
-      fetchVehicles(); // Refresh the vehicle list
+      fetchVehicles(); // Refresh the list
+      
+      // Reset form
+      setVehicleFormData({
+        connectorType: "",
+        description: "",
+        vin: "",
+        registrationNo: "",
+        model: "",
+        year: "",
+        make: "",
+        vehicleType: ""
+      });
+      setVechileId(null);
     } else {
+      console.warn("⚠️ API returned success:false");
       throw new Error(response.data.message || 'Update failed');
     }
   } catch (error) {
-    console.error('Update failed:', error);
+    console.error("❌ UPDATE FAILED:");
+    console.error("Error object:", error);
+    console.error("Error response:", error.response);
+    console.error("Error message:", error.message);
+    console.error("Error config:", error.config);
+    
+    let errorMessage = 'Vehicle update failed';
+    
+    if (error.response) {
+      console.error("HTTP Status:", error.response.status);
+      console.error("Response headers:", error.response.headers);
+      console.error("Response data:", error.response.data);
+      
+      if (error.response.status === 404) {
+        errorMessage = `Vehicle not found (ID: ${vechileId}). Please check if the vehicle exists.`;
+      } else if (error.response.status === 500) {
+        errorMessage = error.response.data?.message || 'Server error occurred';
+      } else if (error.response.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    
     toast({
       title: "Error",
-      description: error.message || 'Vehicle update failed',
+      description: errorMessage,
       variant: "destructive"
     });
   } finally {
     setIsSubmitting(false);
+    console.log("🔍 === VEHICLE UPDATE DEBUG END ===");
   }
-
 };
+
 const handleVehicleInputBlur = (e) => {
   const { name, value } = e.target;
   setVehicleFormErrors(prev => ({
@@ -1009,9 +1058,8 @@ const handleUpdateUser = async (e) => {
                       <TableCell>{vehicle.description}</TableCell>
                       <TableCell>{vehicle.vin}</TableCell>
                       <TableCell>{vehicle.registrationNo}</TableCell>
-
                       <TableCell className="text-right">
-                                          <div className="flex justify-end gap-2">
+                         <div className="flex justify-end gap-2">
                                            
                                             <Button 
                                               key={vehicle.vin}
@@ -1034,6 +1082,7 @@ const handleUpdateUser = async (e) => {
                                             </Button>
                                           </div>
                                         </TableCell>
+                                         
                     </TableRow>
                   ))}
                 </TableBody>
@@ -1123,7 +1172,6 @@ const handleUpdateUser = async (e) => {
       </TableBody>
     </Table>
 
-    {/* === Second Table: RFID Requests === */}
     <h3 className="text-lg font-semibold mt-4 mb-2">RFID Requests</h3>
     <Table className="border">
       <TableHeader>
@@ -1163,9 +1211,6 @@ const handleUpdateUser = async (e) => {
                 </TableCell>
                 <TableCell>
                   <div className="flex space-x-2">
-                    {/* <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handleActivate(rfid)}>
-                      <PencilIcon className="h-4 w-4 text-500" />
-                    </Button> */}
                     <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handleDelete(rfid.id)}>
                       <Trash className="h-4 w-4 text-500" />
                     </Button>
@@ -1179,37 +1224,146 @@ const handleUpdateUser = async (e) => {
               No RFID requests found
             </TableCell>
           </TableRow>
-        )}
-      </TableBody>
-    </Table>
-  </div>
-</TabsContent>
-
-        <TabsContent value="wallet">
+          )}
+        </TableBody>
+       </Table>
+      </div>
+     </TabsContent>
+     
+       <TabsContent value="wallet">
           <div className="bg-white rounded-lg shadow p-6 mt-4">
             <h2 className="text-xl font-semibold mb-4">Wallet Details</h2>
-            <p className="text-gray-600">Wallet details will be displayed here.</p>
+            {walletStatus === "loading" && (
+              <p className="text-blue-500">Loading wallet details...</p>
+            )}
+            {walletStatus === "failed" && (
+              <p className="text-red-500">{walletError}</p>
+            )}
+            {walletStatus === "succeeded" && walletDetails && (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-gray-600 font-medium">Balance:</p>
+                  <p className="font-semibold text-lg">
+                    ₹ {walletDetails.accountBalance}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-gray-600 font-medium">Wallet Id:</p>
+                  <p className="text-black">
+                    {walletDetails.id || "N/A"}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         </TabsContent>
-
-        <TabsContent value="transactions">
-          <div className="bg-white rounded-lg shadow p-6 mt-4">
-            <h2 className="text-xl font-semibold mb-4">Transaction History</h2>
-            <p className="text-gray-600">Transaction history will be shown here.</p>
+     <TabsContent value="transactions">
+        <div className="bg-white rounded-xl mt-4">
+        <h2 className="text-2xl font-semibold mb-6">Transaction History</h2>
+        {currentRecords?.length === 0 ? (
+          <div className="text-center py-10 text-gray-500">
+            <p className="text-lg">No wallet transactions found.</p>
           </div>
-        </TabsContent>
+        ) : (
+          <div className="overflow-x-auto">
+          <table className="min-w-full bg-white border border-gray-200 rounded-lg">
+      <thead className="bg-gray-100">
+      <tr>
+        <th className="px-4 py-2 text-left font-semibold text-gray-700 min-w-[160px]">Date</th>
+        <th className="px-4 py-2 text-left font-semibold text-gray-700 min-w-[120px]">Debit</th>
+        <th className="px-4 py-2 text-left font-semibold text-gray-700 min-w-[120px]">Credit</th>
+        <th className="px-4 py-2 text-left font-semibold text-gray-700 min-w-[140px]">Balance</th>
+        <th className="px-4 py-2 text-left font-semibold text-gray-700 min-w-[140px]">Status</th>
+        <th className="px-4 py-2 text-left font-semibold text-gray-700 min-w-[240px]">Comment</th>
+      </tr>
+    </thead>
+    <tbody>
+    {currentRecords.map((t) => (
+      <tr key={t.id} className="border-b hover:bg-gray-50 transition-all">
+        <td className="px-6 py-4 text-sm">
+          {new Date(t.createTimeStamp).toLocaleString("en-IN", {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit"
+          })}
+        </td>
+        <td className="px-6 py-4 text-red-600 font-medium">
+          {t.amtDebit ? `₹${t.amtDebit}` : "-"}
+        </td>
+        <td className="px-6 py-4 text-green-600 font-medium">
+          {t.amtCredit ? `₹${t.amtCredit}` : "-"}
+        </td>
+        <td className="px-6 py-4 font-semibold text-gray-800">
+          ₹ {Number(t.currentBalance).toFixed(2)}
+        </td>
+        <td className="px-6 py-4">
+          <span
+            className={`px-3 py-1 text-xs rounded-full font-medium 
+              ${
+                t.status === "COMPLETED"
+                  ? "bg-yellow-100 text-yellow-700"
+                  : t.status === "FAILED"
+                  ? "bg-red-100 text-red-700"
+                  : "bg-blue-100 text-blue-700"
+              }
+            `}
+          >
+            {t.status}
+          </span>
+        </td>
+        <td className="px-6 py-4 text-sm text-gray-600">
+          {t.comment || "-"}
+        </td>
+        </tr>
+        ))}
+      </tbody>
+      </table>
+      <div className="flex justify-center items-center gap-3 py-4">
+      <button
+    disabled={currentPage === 1}
+    onClick={() => setCurrentPage((p) => p - 1)}
+    className={`px-3 py-1.5 rounded-md border text-sm
+      ${currentPage === 1 ? "opacity-40 cursor-not-allowed" : "hover:bg-gray-100"}
+    `}
+  >
+    Previous
+  </button>
+  {getPageNumbers().map((page) => (
+    <button
+      key={page}
+      onClick={() => setCurrentPage(page)}
+      className={`px-3 py-1.5 rounded-md border text-center text-sm
+        ${currentPage === page ? "bg-green-600 text-white" : "hover:bg-gray-100"}
+      `}
+    >
+      {page}
+    </button>
+  ))}
+  {/* Next */}
+  <button
+    disabled={currentPage === totalPages}
+    onClick={() => setCurrentPage((p) => p + 1)}
+    className={`px-3 py-1.5 rounded-md border text-sm 
+      ${currentPage === totalPages ? "opacity-40 cursor-not-allowed" : "hover:bg-gray-100"}
+    `}
+  >
+    Next
+  </button>
+</div>     
+      </div>
+      )}
+    </div>
+       </TabsContent>
       </Tabs>
-
-
-
-{/* // to add ev vehicle dialogbox */}
       <Dialog open={isAddVehicleDialogOpen} onOpenChange={setIsAddVehicleDialogOpen}>
-  <DialogContent className="sm:max-w-[800px] max-h-[80vh] overflow-y-auto">
-    <DialogHeader>
+      <DialogContent className="sm:max-w-[800px] max-h-[80vh] overflow-y-auto">
+      <DialogHeader>
       <DialogTitle>Add New Vehicle</DialogTitle>
-    </DialogHeader>
-    <form onSubmit={handleAddVehicle} className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
+      </DialogHeader>
+       <form onSubmit={handleAddVehicle} className="space-y-4">
+       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="connectorType">Connector Type *</Label>
           <Input
@@ -1220,8 +1374,7 @@ const handleUpdateUser = async (e) => {
             required
           />
                 {formErrors.connectorType && (  <p className="text-xs text-red-500 mt-1">{formErrors.connectorType}</p>)}
-        </div>
-        
+        </div>        
         <div className="space-y-2">
           <Label htmlFor="model">Model *</Label>
           <Input
@@ -1321,8 +1474,7 @@ const handleUpdateUser = async (e) => {
   </DialogContent>
 </Dialog>
 
-{/* // to edit ev vehicle dialogbox */}
-      <Dialog open={isEditVehicleDialogOpen} onOpenChange={setIsEditVehicleDialogOpen}>
+ <Dialog open={isEditVehicleDialogOpen} onOpenChange={setIsEditVehicleDialogOpen}>
   <DialogContent className="sm:max-w-[800px] max-h-[80vh] overflow-y-auto">
     <DialogHeader>
       <DialogTitle>Edit Vehicle</DialogTitle>
@@ -1351,7 +1503,6 @@ const handleUpdateUser = async (e) => {
           />
                 {formErrors.model && (  <p className="text-xs text-red-500 mt-1">{formErrors.model}</p>)}
         </div>
-        
         <div className="space-y-2">
           <Label htmlFor="edit-vin">VIN *</Label>
           <Input
@@ -1361,9 +1512,8 @@ const handleUpdateUser = async (e) => {
             onChange={handleVehicleInputChange}
             required
           />
-                {formErrors.vin && (  <p className="text-xs text-red-500 mt-1">{formErrors.vin}</p>)}
-        </div>
-        
+                {formErrors.vin && (<p className="text-xs text-red-500 mt-1">{formErrors.vin}</p>)}
+        </div>        
         <div className="space-y-2">
           <Label htmlFor="edit-registrationNo">Registration No *</Label>
           <Input
@@ -1374,8 +1524,7 @@ const handleUpdateUser = async (e) => {
             required
           />
                 {formErrors.registrationNo && (  <p className="text-xs text-red-500 mt-1">{formErrors.registrationNo}</p>)}
-        </div>
-        
+        </div>        
         <div className="space-y-2">
           <Label htmlFor="edit-year">Year *</Label>
           <Input
@@ -1397,8 +1546,7 @@ const handleUpdateUser = async (e) => {
             required
           />
                 {formErrors.make && (  <p className="text-xs text-red-500 mt-1">{formErrors.make}</p>)}
-        </div>
-        
+        </div>        
         <div className="space-y-2">
           <Label htmlFor="edit-vehicleType">Vehicle Type *</Label>
           <Input
@@ -1409,8 +1557,7 @@ const handleUpdateUser = async (e) => {
             required
           />
                 {formErrors.vehicleType && (  <p className="text-xs text-red-500 mt-1">{formErrors.vehicleType}</p>)}
-        </div>
-        
+        </div>        
         <div className="space-y-2 col-span-2">
           <Label htmlFor="edit-description">Description</Label>
           <Input
@@ -1441,10 +1588,8 @@ const handleUpdateUser = async (e) => {
       </DialogFooter>
     </form>
   </DialogContent>
-</Dialog>
+</Dialog>   
 
-   
-{/* RFID Request Dialog */}
 <Dialog open={isRfidDialogOpen} onOpenChange={setIsRfidDialogOpen}>
   <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
     <DialogHeader>
@@ -1670,3 +1815,4 @@ const handleUpdateUser = async (e) => {
 };
 
 export default EvUserPageDetails;
+// After Adding Wallet Transactions..

@@ -12,7 +12,7 @@ import SingleSite from './pages/sites/SingleSite';
 import { Toaster } from "@/components/ui/toaster";
 import Stations from './pages/stations/Stations';
 import StationDetails from './pages/stations/StationDetails';
-import  EVChargerDashboard  from './pages/dashboard/EvChargerDashboard';
+import EVChargerDashboard  from './pages/dashboard/EvChargerDashboard';
 import Profiles from './pages/profile/Profiles';
 import RFIDRequests from './pages/rfid/RFIDRequest';
 import RFIDActivate from './pages/rfid/RFIDActivate';
@@ -31,7 +31,6 @@ import ChargingStatus from './evusers/ChargingStatus';
 import EvDashboardLayout from './evusers/EvDashboardLayout';
 import EvConnecting from './evusers/EvConnecting';
 import SetPassword from './setpassword/SetPassword';
-// import DeleteOtp from './users/DeleteOtp';
 import WhitelabelPageDetails from '@/pages/whitelabels/WhitelabelPageDetails';
 import EditIssuePage from './pages/issues/dialog/EditIssue';
 import FranchisePageDetails from './pages/franchise/FranchisePageDetails';
@@ -53,6 +52,7 @@ import EditCustomerSupport from './pages/customerSupport/EditCustomerSupport';
 import CustomerSupportTasks from './pages/singleCustomer/CustomerSupportTasks';
 import SolvedIssues from './pages/singleCustomer/SolvedIssues';
 import IssueDetails from './pages/customerSupport/IssueDetails';
+import EmployeeProfile from './pages/user/EmployeeProfile';
 
 //pavan's
 import ChargerInstallationTeam from './pages/chargerInstallationTeam/ChargerInstallationTeam';
@@ -80,42 +80,42 @@ const router = createBrowserRouter([
         </ValidationRoute>
       </ProtectedRoute>),
     children:[
-      {path:"/",element:<EVChargerDashboard/>},
-      {path:"/sites",element:<Sites/>},
-      {path:"/add-site",element:<AddSite/>},
-      {path:"/site/:id",element:<SingleSite/>},
-      {path:"/editsite/:id",element:<EditSite/>},
-      {path: "/stations", element: <Stations /> },
-      {path: "/add-stations", element: <AddStationPage /> },
-      {path: "/stations/:id", element: <StationDetails /> },
-      // {path: "/userdetails", element: <Profiles/> },
-      {path: "/whitelabels", element: <WhiteLabels /> },
-      {path: "/whitelabels/:id/:orgId/:orgName", element: <WhitelabelPageDetails/> },
-      {path: "/franchiseOwners", element: <FranchiseOwners /> },
-      {path: "/franchiseOwners/:id/:orgId/:orgName", element: <FranchisePageDetails /> },
-      {path: "/evusers", element: <EVUsers /> },
-      {path: "/evusers/:id", element: <EvUserPageDetails/> },
-      {path: "/profiles/:type", element: <Profiles /> },
-      {path: "/rfid", element: <RFIDRequests /> },
-      {path: "/rfid",element: <RFIDActivate />},
-      {path: "/issues-tracker", element: <IssuesTracker /> },
-      {path: "/issues/:id", element: <EditIssuePage/> },
-      {path: "/reports", element: <Reports /> },
-      {path: "/adminProfile", element: <UserAdminProfile /> },
-      {path:"/ocpp",element:<OCPP />},
-      {path:"/manufacturers",element:<Manufacturers />},
-      {path:"/manufacturers/:id",element:<ManufacturerDetails />},
-      {path:"/addcharger/:id",element:<AddCharger/>},
-      {path:"/referral-codes", element:<ReferralCodes />},
-      {path:"/referral-codes/:id/edit", element:<EditReferralCode />},
-      {path:"/referral-codes/:id" ,element:< ReferralCodeInfo  />},
-      {path: "/loading", element: <Chargerhealth /> },
-      {path: "/1loading1", element: <Chargerhealth /> },
+      { path:"/",element:<EVChargerDashboard/>},
+      { path:"/sites",element:<Sites/>},
+      { path:"/add-site",element:<AddSite/>},
+      { path:"/site/:id",element:<SingleSite/>},
+      { path:"/editsite/:id",element:<EditSite/>},
+      { path: "/stations", element: <Stations /> },
+      { path: "/add-stations", element: <AddStationPage /> },
+      { path: "/stations/:id", element: <StationDetails /> },
+      { path: "/whitelabels", element: <WhiteLabels /> },
+      { path: "/whitelabels/:id/:orgId/:orgName", element: <WhitelabelPageDetails/> },
+      { path: "/franchiseOwners", element: <FranchiseOwners /> },
+      { path: "/franchiseOwners/:id/:orgId/:orgName", element: <FranchisePageDetails /> },
+      { path: "/evusers", element: <EVUsers /> },
+      { path: "/evusers/:id", element: <EvUserPageDetails/> },
+      { path: "/profiles/:type", element: <Profiles /> },
+      { path: "/rfid", element: <RFIDRequests /> },
+      { path: "/rfid",element: <RFIDActivate />},
+      { path: "/issues-tracker", element: <IssuesTracker /> },
+      { path: "/issues/:id", element: <EditIssuePage/> },
+      { path: "/reports", element: <Reports /> },
+      { path: "/adminProfile", element: <UserAdminProfile /> },
+      { path: "/employeeProfile", element: <EmployeeProfile /> },
+      { path:"/ocpp",element:<OCPP />},
+      { path:"/manufacturers",element:<Manufacturers />},
+      { path:"/manufacturers/:id",element:<ManufacturerDetails />},
+      { path:"/addcharger/:id",element:<AddCharger/>},
+      { path:"/referral-codes", element:<ReferralCodes />},
+      { path:"/referral-codes/:id/edit", element:<EditReferralCode />},
+      { path:"/referral-codes/:id" ,element:< ReferralCodeInfo  />},
+      { path: "/loading", element: <Chargerhealth /> },
+      { path: "/1loading1", element: <Chargerhealth /> },
       { path: "/customer-support", element: <CustomerSupport/>},
       { path: "/customer-support/:id", element: <CustomerSupportDetails /> },
       { path: "/customer-support/tasks", element: <CustomerSupportTasks /> },
       { path: "/customer-support/tasks/:id", element: <CustomerSupportTaskDetails /> },
-      {path: "/customer-support/add", element: <AddCustomerSupport />},
+      { path: "/customer-support/add", element: <AddCustomerSupport />},
       { path: "/customer-support/edit/:id", element: <EditCustomerSupport /> },
       { path: "/customer-support/solved", element: <SolvedIssues /> },
       { path: "/customer-support/issue-details/:id", element: <IssueDetails /> },
@@ -123,7 +123,7 @@ const router = createBrowserRouter([
       { path: "/technician-dashboard", element: <TechnicianDashboard /> },
       { path: "/technician/tasks/:id", element: <TechnicianDashboardDetails />},
       { path: "/technician-profile", element: <TechnicianProfile />},
-      {path: "/technician/tasks/completed-tasks", element:<CompletedTasks/>},
+      { path: "/technician/tasks/completed-tasks", element:<CompletedTasks/>},
       { path: "/charger-installation-team", element: <ChargerInstallationTeam /> },
       { path: "/charger-installation-team/add", element: <AddTeamMember /> },
       { path: "/charger-installation-team/:id", element: <TeamMemberDetails /> },
@@ -135,6 +135,9 @@ const router = createBrowserRouter([
       { path: "/vehicle/:id", element: <VehicleDetails />},
       { path: "/fleet/revenue", element: <RevenueDashboard />},
       { path: "/FranchiseRequests", element: <FranchiseRequests />},
+      { path: "/sites-requests", element: <FranchiseRequests />},
+      { path: "/stations-requests",element: <FranchiseRequests />},
+
     ]
   },
 

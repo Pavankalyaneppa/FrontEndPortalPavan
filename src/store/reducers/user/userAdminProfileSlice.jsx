@@ -67,9 +67,4 @@ export const updateUserProfile = (userId, data) => async (dispatch) => {
     dispatch(updateUserProfileFailure(error.message));
   }
 };
-
-
-
 export default userAdminProfileSlice.reducer;
-
-

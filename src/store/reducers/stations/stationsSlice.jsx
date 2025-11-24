@@ -11,13 +11,11 @@ const initialState = {
 };
 
 function parseStationsPayload(payload) {
-  // Accepts the payload and normalizes it to our state shape
   console.log(payload);
   let list = [];
   let totalElements = 0;
   let currentPage = 0;
   let totalPages=0;
-  // Check various possible shapes
   if (payload) {
     if (Array.isArray(payload.sites)) {
       list = payload.sites;
@@ -28,17 +26,12 @@ function parseStationsPayload(payload) {
     } else if (Array.isArray(payload)) {
       list = payload;
     } else if (payload.data) {
-      // Some APIs wrap in .data
       list = payload.data;
     }
   }
-     // totalElements or totalItems or totalPages*size fallback
     totalElements =payload.totalItems;
     totalPages=payload.totalPages;
-
     currentPage = payload.currentPage ?? payload.page ?? 0;
-  
-
   return { list, totalElements, currentPage,totalPages };
 }
 
@@ -75,7 +68,6 @@ export const {
   getStationDetailsSuccess,
 } = stationsSlice.actions;
 
-// Thunk action creators
 export const fetchStations = (params) => async (dispatch) => {
   try {
     dispatch(getStationsStart());
@@ -105,16 +97,6 @@ export const searchStations = ({ search = '', page = 0, size = 10, searchField =
     dispatch(getStationsFailure(error.message || 'Search failed'));
   }
 };
-
-// export const searchStations = ({ siteName = '', stationStatus = '', currentType = '', page = 0, size = 10 }) => async (dispatch) => {
-//   try {
-//     dispatch(getStationsStart());
-//     const response = await AxiosServices.searchStations({ siteName, stationStatus, currentType, page, size });
-//     dispatch(getStationsSuccess(response));
-//   } catch (error) {
-//     dispatch(getStationsFailure(error.message || 'Search failed'));
-//   }
-// };
 
 export const fetchStationDetails = (id) => async (dispatch) => {
   try {

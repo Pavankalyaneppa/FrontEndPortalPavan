@@ -40,7 +40,6 @@ export const {
   getProfilesFailure,
 } = whitelabelSlice.actions;
 
-// Fetch regular white label list
 export const fetchWhiteLabellist = (params) => async (dispatch) => {
   try {
     dispatch(getProfilesStart());
@@ -51,12 +50,11 @@ export const fetchWhiteLabellist = (params) => async (dispatch) => {
   }
 };
 
-// Fetch white labels with search
 export const fetchSearchWhiteLabellist = (params) => async (dispatch) => {
   try {
     dispatch(getProfilesStart());
     const response = await AxiosServices.unifiedSearch(params);
-    dispatch(getProfilesSuccess(response.data)); // No need to extract nested object
+    dispatch(getProfilesSuccess(response.data)); 
   } catch (error) {
     dispatch(getProfilesFailure(error.message));
   }

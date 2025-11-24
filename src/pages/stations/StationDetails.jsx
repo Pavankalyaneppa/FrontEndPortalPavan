@@ -5,35 +5,24 @@ import { fetchStationDetails } from '@/store/reducers/stations/stationsSlice';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import AxiosServices from '@/services/AxiosServices';
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import BackButton from '@/users/BackButton';
 import Loading from '@/users/Loading';
 import { toast } from '@/components/ui/use-toast';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import {
-  StarFilledIcon, StarIcon, EyeNoneIcon, LightningBoltIcon, BarChartIcon,
-  PersonIcon, CalendarIcon, IdCardIcon, TimerIcon, InfoCircledIcon
-} from "@radix-ui/react-icons";
-import axios from 'axios';
-import AxiosServices from '@/services/AxiosServices';
-
+import { StarFilledIcon, StarIcon, EyeNoneIcon, BarChartIcon } from "@radix-ui/react-icons";
+import { updatePortPrice } from '@/services/AxiosServices';
 export default function StationDetails() {
   const dispatch = useDispatch();
-  const navigate = useNavigate();
   const { id } = useParams();
   const { currentStation, status, error } = useSelector((state) => state.stations);
   console.log(currentStation);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [stationStatus, setStationStatus] = useState(currentStation?.stationStatus || 'Inactive');
+  const [billingAmounts, setBillingAmounts] = useState({});
 
   useEffect(() => {
     if (id) {
@@ -41,11 +30,18 @@ export default function StationDetails() {
     }
   }, [dispatch, id]);
 
+
   useEffect(() => {
-    if (currentStation) {
-      setStationStatus(currentStation.stationStatus || 'Inactive');
-    }
-  }, [currentStation]);
+  if (currentStation) {
+    setStationStatus(currentStation.stationStatus || 'Inactive');
+    const billings = {};
+    currentStation.port?.forEach((p) => {
+      billings[p.id] = p.billingAmount ?? p.portPrice ?? 0;
+    });
+    setBillingAmounts(billings);
+  }
+}, [currentStation]);
+
 const handleStatusChange = async (newStatus) => {
   try {
     setStationStatus(newStatus);
@@ -60,8 +56,6 @@ const handleStatusChange = async (newStatus) => {
       description: 'Status updated successfully',
       variant: 'default',
     });
-    // Update station list or current station as needed
-    // dispatch(fetchStations({ page: currentPage, size: pageSize })); 
   } catch (error) {
     toast({
       title: 'Error',
@@ -73,6 +67,30 @@ const handleStatusChange = async (newStatus) => {
   }
 };
 
+const handleUpdateBillingAmount = async (portId) => {
+  try {
+    const newBillingAmount = billingAmounts[portId];
+    console.log('Updating port billing:', { portId, newBillingAmount });
+    
+    await updatePortPrice(portId, newBillingAmount);
+    
+    toast({
+      title: 'Success',
+      description: `Port ${portId} billing amount updated successfully.`,
+      variant: 'default',
+    });
+    
+    dispatch(fetchStationDetails(id));
+    
+  } catch (error) {
+    console.error('Update billing error:', error);
+    toast({
+      title: 'Error',
+      description: `Failed to update billing amount for Port ${portId}: ${error.message || error}`,
+      variant: 'destructive',
+    });
+  }
+};
  
   const renderStars = (rating = 0) => {
     return Array(5).fill(0).map((_, i) => (
@@ -82,9 +100,9 @@ const handleStatusChange = async (newStatus) => {
     ));
   };
 
-  if (status === 'loading') {
-    return <Loading />;
-  }
+  if (status === 'loading' || !currentStation) {
+  return <Loading />;
+}
 
   if (status === 'failed') {
     toast({
@@ -92,13 +110,7 @@ const handleStatusChange = async (newStatus) => {
       description: error || 'Failed to load station details',
       variant: 'destructive',
     });
-    return <div className="p-6">Error loading station details</div>;
-  }
-
-  ///mistake want to correct it
-  if (!currentStation) {
-    return <div className="p-6"><Loading/></div>;
-  }
+  } 
 
   return (
     <div className="p-6">
@@ -107,7 +119,6 @@ const handleStatusChange = async (newStatus) => {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
             {currentStation.serialNo} / {currentStation.stationName}
           </h1>
-
           <div className="relative">
             <button
               className={`flex items-center px-4 py-1.5 border rounded-full transition ${
@@ -126,7 +137,6 @@ const handleStatusChange = async (newStatus) => {
                 <ChevronDown className="ml-2 h-4 w-4" />
               )}
             </button>
-
             {dropdownOpen && (
               <div className="absolute mt-2 w-48 bg-white dark:bg-gray-800 shadow-lg rounded-md z-10 p-3">
                 <p className="font-medium text-sm mb-2 text-gray-700 dark:text-gray-300">
@@ -143,8 +153,7 @@ const handleStatusChange = async (newStatus) => {
                         : 'bg-red-100 text-red-800 border-red-400'
                     }`}
                     onClick={() => handleStatusChange(option)}
-                  >
-                    {option}
+                  > {option}
                   </button>
                 ))}
               </div>
@@ -163,14 +172,12 @@ const handleStatusChange = async (newStatus) => {
           </div>
         </div>
       </div>
-
       <Tabs defaultValue="details" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="details">Basic Details</TabsTrigger>
           <TabsTrigger value="specifications">Specifications</TabsTrigger>
           <TabsTrigger value="ports">Ports</TabsTrigger>
         </TabsList>
-
         <TabsContent value="details">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card className="p-6">
@@ -194,7 +201,6 @@ const handleStatusChange = async (newStatus) => {
                 </div>
               </div>
             </Card>
-
             <Card className="p-6">
               <h2 className="text-xl font-semibold mb-4">Site Information</h2>
               <div className="space-y-4">
@@ -220,7 +226,6 @@ const handleStatusChange = async (newStatus) => {
             </Card>
           </div>
         </TabsContent>
-
         <TabsContent value="specifications">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card className="p-6">
@@ -248,7 +253,6 @@ const handleStatusChange = async (newStatus) => {
                 </div>
               </div>
             </Card>
-
             <Card className="p-6">
               <h2 className="text-xl font-semibold mb-4">Performance & Features</h2>
               <div className="space-y-4">
@@ -277,61 +281,61 @@ const handleStatusChange = async (newStatus) => {
               </div>
             </Card>
           </div>
-        </TabsContent>
+        </TabsContent>        
+            <TabsContent value="ports">
+              <Card className="p-6">
+                <ScrollArea className="h-[400px] w-full rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Port Number</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Nominal Volts</TableHead>
+                        <TableHead>Max Amps</TableHead>
+                        <TableHead>Max Power</TableHead>
+                        <TableHead>Type</TableHead>
+                        {/* <TableHead>Set Port Price</TableHead> */}
+                        <TableHead>Billing Amount</TableHead>
 
-        <TabsContent value="ports">
-          <Card className="p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">
-                Ports ({currentStation.port?.length || 0})
-              </h2>
-            </div>
-            
-            <ScrollArea className="h-[400px] w-full rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Port Number</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Nominal Volts</TableHead>
-                      <TableHead>Max Amps</TableHead>
-                      <TableHead>Max Power</TableHead>
-                      <TableHead>Price</TableHead>
-                      <TableHead>Type</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {currentStation.port?.map((port, index) => (
-                      <TableRow key={port.id || index}>
-                        <TableCell>{port.connectorName || `Port ${index + 1}`}</TableCell>
-                        <TableCell>
-                          <Badge 
-                            variant={
-                              port.statusNotifcation?.[0]?.status === 'Inoperative' 
-                                ? 'destructive' 
-                                : 'default'
-                            } 
-                            className="text-xs"
-                          >
-                            {port.statusNotifcation?.[0]?.status || 'Unknown'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{port.voltage_rating || '-'} V</TableCell>
-                        <TableCell>{port.current_rating || '-'} A</TableCell>
-                        <TableCell>{port.max_power_kW || '-'} kW</TableCell>
-                        <TableCell>
-                          ${port.billingAmount || '0.00'} / {port.billingUnits || 'kWh'}
-                        </TableCell>
-                        <TableCell>
-                          {port.connector_type || '-'}, {port.power_type || '-'}
-                        </TableCell>
+                        <TableHead>Action</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </ScrollArea>
-          </Card>
-        </TabsContent>
+                    </TableHeader>
+                    <TableBody>
+                      {currentStation.port?.map((port, i) => (
+                        <TableRow key={port.id || i}>
+                          <TableCell>{port.connectorName || `Port ${i + 1}`}</TableCell>
+                          <TableCell>
+                            <Badge variant={port.statusNotifcation?.[0]?.status === 'Inoperative' ? 'destructive' : 'default'}>
+                              {port.statusNotifcation?.[0]?.status || 'Unknown'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{port.voltage_rating || '-'} V</TableCell>
+                          <TableCell>{port.current_rating || '-'} A</TableCell>
+                          <TableCell>{port.max_power_kW || '-'} kW</TableCell>                         
+                          {/* <TableCell>{billingAmounts[port.id] ?? '-'}</TableCell> */}
+                          <TableCell>{port.connector_type || '-'}, {port.power_type || '-'}</TableCell>
+                        
+                          <TableCell>
+                            <input
+                              type="number"
+                              value={billingAmounts[port.id] ?? ''}
+                              onChange={(e) => setBillingAmounts((prev) => ({ ...prev, [port.id]: e.target.value }))}
+                              className="border rounded p-1 w-24 text-sm"
+                            />
+                            <span className="ml-1 text-xs text-gray-500">/ {port.billingUnits || 'kWh'}</span>
+                          </TableCell>
+                          <TableCell>
+                            <Button variant="outline" size="sm" onClick={() => handleUpdateBillingAmount(port.id)}>
+                            Save
+                            </Button>
+                          </TableCell>
+                      </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </ScrollArea>
+              </Card>
+            </TabsContent>
       </Tabs>
     </div>
   );

@@ -14,15 +14,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import AxiosServices from "@/services/AxiosServices";
 
 export default function EditCustomerSupport() {
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
   const dispatch = useDispatch();
-const { customer } = location.state || {};
+  const { customer } = location.state || {};
 
   const [loading, setLoading] = useState(false);
   const statusOptions = ["Available", "Unavailable"];
@@ -39,21 +37,6 @@ const { customer } = location.state || {};
   });
 
   const [formErrors, setFormErrors] = useState({});
-
-//   useEffect(() => {
-//     if (customer) {
-//       setFormData({
-//         username: customer.username || "",
-//         email: customer.email || "",
-//         mobileNumber: customer.mobileNumber || "",
-//         location: customer.location || "",
-//         status: customer.status || "",
-//         active: customer.status === "Available",
-//         designation: customer.designation || "Customer Support",
-//         joiningDate: customer.joiningDate || "",
-//       });
-//     }
-//   }, [customer]);
 
 useEffect(() => {
   if (customer) {
@@ -111,7 +94,6 @@ const handleSubmit = async (e) => {
   try {
     setLoading(true);
 
-    // Map frontend fields to backend DTO
     const payload = {
       username: formData.username,
       email: formData.email,

@@ -59,14 +59,11 @@ export default function ReferralCodes() {
     selectedSites: [],
   });
   const [formErrors, setFormErrors] = useState({});
-
-  // Fetch referrals and sites on component mount
   useEffect(() => {
     dispatch(fetchReferrals());
     dispatch(fetchSites({ page: 0, size: 100 }));
   }, [dispatch]);
 
-  // Show error toast if there's an error
   useEffect(() => {
     if (error) {
       toast({
@@ -77,7 +74,6 @@ export default function ReferralCodes() {
     }
   }, [error, toast]);
 
-  // Filter sites based on search term
   const filteredSites = sites.filter(site =>
     site.sitename?.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -171,7 +167,7 @@ export default function ReferralCodes() {
 
   const handleCheckboxChange = (checked) => {
     setFormData(prev => ({ ...prev, applyToAllSites: checked, selectedSites: checked ? [] : prev.selectedSites }));
-    setSearchTerm(''); // Clear search term when toggling applyToAllSites
+    setSearchTerm(''); 
   };
 
   const toggleSiteSelection = (siteId) => {

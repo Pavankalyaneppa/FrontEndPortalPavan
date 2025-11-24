@@ -112,7 +112,6 @@ export const deleteUserProfile = (userId) => async (dispatch) => {
     dispatch(deleteUserProfileStart());
     await AxiosServices.deleteUserProfile(userId);
     dispatch(deleteUserProfileSuccess());
-    // Refresh the profiles list after deletion
     dispatch(fetchProfiles('driver', {
       page: 0,
       size: 10,
@@ -124,5 +123,4 @@ export const deleteUserProfile = (userId) => async (dispatch) => {
     dispatch(deleteUserProfileFailure(error.message));
   }
 };
-
 export default userProfileSlice.reducer;

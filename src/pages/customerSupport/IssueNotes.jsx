@@ -10,7 +10,6 @@ export default function IssueNotes() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const customerId = location.state?.customerId;
   const issue = location.state?.issue;
   const user = useSelector((state) => state.authentication.user);
   const employees = useSelector((state) => state.employee.employees);
@@ -65,7 +64,6 @@ const handleAddNote = async (e) => {
 
     console.log("Note added successfully");
 
-    // Redirect back to IssueDetails with Notes tab active
     navigate(`/customer-support/issue-details/${issue.id}`, {
       state: {
         issue: issue,
@@ -90,7 +88,7 @@ const handleAddNote = async (e) => {
       navigate(`/customer-support/issue-details/${issue.id}`, {
         state: {
           issue: issue,
-          activeTab: "notes", // open Notes tab
+          activeTab: "notes",
           from: "/customer-support/issue-notes",
         },
       });
@@ -105,7 +103,6 @@ const handleAddNote = async (e) => {
         onSubmit={handleAddNote}
         className="space-y-3 pt-4 "
       >
-        {/* Title */}
         <input
           type="text"
           value={noteTitle}
@@ -114,8 +111,6 @@ const handleAddNote = async (e) => {
           className="w-full rounded border px-3 py-2"
           required
         />
-
-        {/* Description */}
         <textarea
           value={noteDescription}
           onChange={(e) => setNoteDescription(e.target.value)}
@@ -124,8 +119,6 @@ const handleAddNote = async (e) => {
           rows={3}
           required
         />
-
-        {/* Recipient */}
         <select
           value={recipientId || ""}
           onChange={(e) => setRecipientId(e.target.value)}
@@ -139,8 +132,6 @@ const handleAddNote = async (e) => {
             </option>
           ))}
         </select>
-
-        {/* Created By Role */}
         <select
           value={createdByRole}
           onChange={(e) => setCreatedByRole(e.target.value)}
@@ -150,8 +141,6 @@ const handleAddNote = async (e) => {
           <option value="ADMIN">ADMIN</option>
           <option value="EMPLOYEE">EMPLOYEE</option>
         </select>
-
-        {/* Submit Button */}
         <Button type="submit" disabled={saving}>
           {saving ? "Saving..." : "Add"}
         </Button>

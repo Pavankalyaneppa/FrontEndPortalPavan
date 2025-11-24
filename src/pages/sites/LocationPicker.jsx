@@ -149,7 +149,6 @@ const LocationPicker = ({ formData, setFormData }) => {
       });
       mapInstanceRef.current = map;
 
-      // Add marker at default location
       markerRef.current = new window.google.maps.Marker({
         position: defaultLocation,
         map,
@@ -251,24 +250,6 @@ const LocationPicker = ({ formData, setFormData }) => {
           {error}
         </p>
       )}
-      
-      {/* <div className="grid grid-cols-2 gap-4">
-        <div>
-          <p className="text-sm font-medium text-gray-700">Latitude</p>
-          <p className="text-sm text-gray-900">{formData.latitude || "Not selected"}</p>
-        </div>
-        <div>
-          <p className="text-sm font-medium text-gray-700">Longitude</p>
-          <p className="text-sm text-gray-900">{formData.longitude || "Not selected"}</p>
-        </div>
-      </div>
-      
-      <div className="mt-2">
-        <p className="text-sm font-medium text-gray-700">Address</p>
-        <p className="text-sm text-gray-900">
-          {formData.address || "Click on the map to select a location"}
-        </p>
-      </div> */}
     </div>
   );
 };

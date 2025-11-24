@@ -1,32 +1,18 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-
 import { fetchStations, fetchStationByFilters, searchStations } from '@/store/reducers/stations/stationsSlice';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { InfoIcon, Trash, ChevronDown, ChevronRight } from 'lucide-react';
+import { InfoIcon, ChevronDown, ChevronRight } from 'lucide-react';
 import DeleteOtp from '@/users/DeleteOtp';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
-  getSortedRowModel,
-  getFilteredRowModel,
-} from '@tanstack/react-table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { flexRender, getCoreRowModel, useReactTable, getSortedRowModel, getFilteredRowModel } from '@tanstack/react-table';
 import Loading from '@/users/Loading';
 import { toast } from '@/components/ui/use-toast';
 import AxiosServices from '@/services/AxiosServices';
 
-     const useClickOutside = (ref, dropdownRef, callback) => {
+const useClickOutside = (ref, dropdownRef, callback) => {
       useEffect(() => {
         const handleClickOutside = (event) => {
           if (
@@ -60,26 +46,16 @@ export default function Stations() {
   const [globalFilter, setGlobalFilter] = useState('');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [activeSubFilter, setActiveSubFilter] = useState(null);
-  const [selectedFilters, setSelectedFilters] = useState({
-    site: null,
-    status: null,
-    currentType: null,
-  });
+  const [selectedFilters, setSelectedFilters] = useState({ site: null, status: null, currentType: null });
   const [siteSearchQuery, setSiteSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(0);
   const pageSize = 10;
-
   const totalPages = Math.max(1, Math.ceil((totalElements || 0) / pageSize));
-  const { user } = useSelector(state => state.authentication); // Assuming you have auth state
+  const { user } = useSelector(state => state.authentication);
     console.log("user",user.orgId);
 useClickOutside(filterRef, dropdownRef, () => {
-  setIsFilterOpen(false); // Close dropdown when clicking outside
+  setIsFilterOpen(false);
 });
-
-  const handleDelete = (id) => {
-    setSelectedStationId(id);
-    setIsDeleteDialogOpen(true);
-  };
 
   const confirmDelete = async () => {
     fetchData();
@@ -87,8 +63,6 @@ useClickOutside(filterRef, dropdownRef, () => {
     setSelectedStationId(null);
   };
 
-
-  // Fetch site names from backend
   useEffect(() => {
     const fetchSites = async () => {
       try {
@@ -148,7 +122,7 @@ useEffect(() => {
     } else {
       fetchData();
     }
-  }, 400); // debounce
+  }, 400);
 
   return () => clearTimeout(delay);
 }, [globalFilter, currentPage]);
@@ -172,13 +146,12 @@ useEffect(() => {
     { accessorKey: 'number_of_ports', header: 'PortQuantity' },
     { accessorKey: 'model', header: 'Charger Type' },
     { accessorKey: 'current_type', header: 'Current Type' },
-    {
-      accessorKey: 'stationStatus',
+    { accessorKey: 'stationStatus',
       header: 'Station Status',
       cell: ({ row }) => {
         const data = row.original;
         const [dropdownOpen, setDropdownOpen] = useState(false);
-        const [status, setStatus] = useState(data.stationStatus || 'Inactive');
+        const [status, setStatus] = useState(data.stationStatus || 'INACTIVE');
 
         const handleStatusChange = async (newStatus) => {
           try {
@@ -206,11 +179,11 @@ useEffect(() => {
           <div className="relative" ref={filterRef}>
             <button
               className={`flex items-center px-4 py-1.5 border rounded-full transition ${
-                status === 'Active'
-                  ? 'bg-green-100 text-green-800 border-green-400'
-                  : status === 'Maintenance'
-                  ? 'bg-yellow-100 text-yellow-800 border-yellow-400'
-                  : 'bg-red-100 text-red-800 border-red-400'
+             (status || '').toUpperCase() === 'ACTIVE'
+              ? 'bg-green-100 text-green-800 border-green-400'
+              : (status || '').toUpperCase() === 'MAINTENANCE'
+              ? 'bg-yellow-100 text-yellow-800 border-yellow-400'
+              : 'bg-red-100 text-red-800 border-red-400'
               }`}
               onClick={() => setDropdownOpen((prev) => !prev)}
             >
@@ -251,9 +224,6 @@ useEffect(() => {
             <Button variant="ghost" size="icon" onClick={() => navigate(`/stations/${data.id}`)}>
               <InfoIcon className="h-4 w-4 me-3" />
             </Button>
-            {/* <Button variant="ghost" size="icon" onClick={() => handleDelete(data.id)}>
-              <Trash size={16} className="h-4 w-4" />
-            </Button> */}
           </>
         );
       },
@@ -308,7 +278,6 @@ useEffect(() => {
     site.siteName.toLowerCase().includes(siteSearchQuery.toLowerCase())
   );
 
-  if (status === 'loading') return <div><Loading /></div>;
   if (status === 'failed') return <div>Error: {error}</div>;
 
   return (
@@ -316,18 +285,16 @@ useEffect(() => {
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-bold">Stations</h1>
         <div className="flex gap-4 items-center">
-          <div className="relative" ref={filterRef}>
-  
-  <button
-    className="flex items-center px-4 py-2 bg-white border rounded-md shadow-sm"
-    onClick={() => setIsFilterOpen(!isFilterOpen)} 
-  >
-    Filter By
-    <ChevronDown className="ml-2 h-4 w-4" />
-  </button>
-
-  {isFilterOpen && (
-    <div ref={dropdownRef} className= "absolute left-0 mt-2 w-56 bg-white rounded-md shadow-lg z-10 border">
+          <div className="relative" ref={filterRef}>  
+          <button
+            className="flex items-center px-4 py-2 bg-white border rounded-md shadow-sm"
+            onClick={() => setIsFilterOpen(!isFilterOpen)} 
+          >
+            Filter By
+            <ChevronDown className="ml-2 h-4 w-4" />
+          </button>
+            {isFilterOpen && (
+              <div ref={dropdownRef} className= "absolute left-0 mt-2 w-56 bg-white rounded-md shadow-lg z-10 border">
                 <div className="p-1">
                   {Object.entries(selectedFilters).map(([key, value]) => (
                     value && (
@@ -344,8 +311,7 @@ useEffect(() => {
                         <button
                           onClick={() => clearFilter(key)}
                           className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-                        >
-                          ×
+                        > ×
                         </button>
                       </div>
                     )
@@ -411,7 +377,7 @@ useEffect(() => {
                     {activeSubFilter === 'status' && (
                       <div className="ml-4 pl-2 border-l-2 border-gray-200 dark:border-gray-700">
                         <div className="p-1">
-                          {['Active', 'Inactive', 'Maintenance'].map((status) => (
+                          {['ACTIVE', 'INACTIVE', 'MAINTENANCE'].map((status) => (
                             <button
                               key={status}
                               className={`w-full text-left px-4 py-2 text-sm rounded-md ${
@@ -501,7 +467,13 @@ useEffect(() => {
             ))}
           </TableHeader>
           <TableBody>
-            {table.getRowModel().rows.length ? (
+            { status === 'loading' ? (
+              <TableRow>
+                <TableCell colSpan={columns.length}>
+                  <Loading />
+                </TableCell>
+              </TableRow>
+          ) : table.getRowModel().rows.length ? (
               table.getRowModel().rows.map((row) => (
                 <TableRow key={row.id}>
                   {row.getVisibleCells().map((cell) => (

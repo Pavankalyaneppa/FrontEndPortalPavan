@@ -1,20 +1,16 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
-import { Card, CardContent } from "@/components/ui/card";
-import BackButton from "@/users/BackButton";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
 import AxiosServices from "@/services/AxiosServices";
 import { useSelector } from "react-redux";
 
-function AddCustomerSupport() {
-  const navigate = useNavigate();
+function AddCustomerSupport({ open, onOpenChange, onCustomerSupportAdded }) {
   const { toast } = useToast();
   const { employees } = useSelector(state => state.employee);
-
   const [loading, setLoading] = useState(false);
   const statusOptions = ["Available", "Unavailable"];
 
@@ -25,7 +21,7 @@ function AddCustomerSupport() {
     location: "",
     status: "",
     active: false,
-    designation: "",
+    designation: "Customer Support",
     joiningDate:"",
   });
 
@@ -41,6 +37,22 @@ function AddCustomerSupport() {
     }
   }, [employees]);
 
+  useEffect(() => {
+  if (open) {
+    setFormData({
+      username: "",
+      email: "",
+      mobileNumber: "",
+      location: "",
+      status: "",
+      active: false,
+      designation: "Customer Support",
+      joiningDate: "",
+    });
+    setFormErrors({});
+  }
+}, [open]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -50,7 +62,7 @@ function AddCustomerSupport() {
     setFormData(prev => ({
     ...prev,
     status: value,
-    active: value === "Available"   // true if Available, false if Unavailable
+    active: value === "Available"   
   }));
  };
 
@@ -91,32 +103,24 @@ function AddCustomerSupport() {
       await AxiosServices.addEmployee(payload);
 
       toast({ title: "Success", description: "Customer support added successfully!" });
-
-      navigate("/customer-support");
+    if (onCustomerSupportAdded) {
+          onCustomerSupportAdded(); 
+        }
+    onOpenChange(false); 
     } catch (error) {
       toast({ title: "Error", description: error || "Failed to add customer support", variant: "destructive" });
     } finally {
       setLoading(false);
     }
   };
-
-  const handleCancel = () => navigate("/customer-support");
-
   return (
-    <div className="container mx-auto p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Add Customer Support</h1>
-<Button
-      variant="outline"
-      onClick={() => navigate("/customer-support")}
-    >
-      Back
-    </Button>      </div>
-
-      <Card className="max-w-4xl mx-auto p-5 bg-white shadow rounded-lg">
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <Dialog open={open} onOpenChange={onOpenChange}>
+  <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+    <DialogHeader>
+      <DialogTitle>Add Customer Support</DialogTitle>
+    </DialogHeader>
+     <form onSubmit={handleSubmit} className="space-y-4"> 
+    <div className="grid grid-cols-2 gap-4">
 
               <div className="space-y-2">
                 <Label htmlFor="username">Full Name</Label>
@@ -154,31 +158,22 @@ function AddCustomerSupport() {
                 </Select>
                 {formErrors.status && <p className="text-xs text-red-500">{formErrors.status}</p>}
               </div>
-              {/* <div className="space-y-2">
-                <Label htmlFor="joiningDate">Joining Date</Label>
-                <Input
-                    id="joiningDate"
-                    name="joiningDate"
-                    type="date"
-                    value={formData.joiningDate}
-                    onChange={handleChange}
-                />
-                {formErrors.joiningDate && <p className="text-xs text-red-500">{formErrors.joiningDate}</p>}
-                </div> */}
               <div className="space-y-2">
                 <Label>Designation</Label>
                 <Input value={formData.designation} readOnly className="cursor-not-allowed" />
               </div>
+              <div className="flex justify-start space-x-4 pt-4">
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={loading}>
+                {loading ? "Saving..." : "Save"}
+              </Button>
             </div>
-            <div className="flex justify-end space-x-4 pt-4">
-              <Button type="button" variant="outline" onClick={handleCancel}>Cancel</Button>
-              <Button type="submit" disabled={loading}>{loading ? "Saving..." : "Save"}</Button>
-            </div>
+            </div>         
           </form>
-        </CardContent>
-      </Card>
-    </div>
+        </DialogContent>
+        </Dialog>
   );
-}
-
+  }
 export default AddCustomerSupport;

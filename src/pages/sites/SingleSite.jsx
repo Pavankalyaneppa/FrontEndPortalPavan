@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { fetchSiteDetails, fetchStations } from '@/store/reducers/sites/sitesSlice';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from "@/components/ui/button";
@@ -10,17 +10,11 @@ import { Label } from "@/components/ui/label";
 import BackButton from '@/users/BackButton';
 import Loading from '@/users/Loading';
 import { toast } from '@/components/ui/use-toast';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import axios from 'axios';
 import AxiosServices from '@/services/AxiosServices';
+
+
 export default function SingleSite() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -30,21 +24,13 @@ export default function SingleSite() {
     siteDetailsStatus,
     siteDetailsError,
     stationList,
-    stationTotalElements,
-    stationCurrentPage,
   } = useSelector((state) => state.sites);
 console.log(currentSite); 
 const [currentPage, setCurrentPage] = useState(1);
 const itemsPerPage = 10;
-
 const totalPages = Math.ceil(stationList.length / itemsPerPage);
-
-// Calculate start and end index
 const startIndex = (currentPage - 1) * itemsPerPage;
 const endIndex = startIndex + itemsPerPage;
-
-// Slice the data to display only current page's items
-const currentOwners = stationList.slice(startIndex, endIndex);
  
 const handlePageChange = (page) => {
   if (page >= 1 && page <= totalPages) {
@@ -52,17 +38,12 @@ const handlePageChange = (page) => {
   }
 };
 const [status, setStatus] = useState('');
-
 const [dropdownOpen, setDropdownOpen] = useState(false);
 
-  const handleStatusChange = async (newStatus) => {
+const handleStatusChange = async (newStatus) => {
   try {
-    setStatus(newStatus);
-    
-    // Call the API service
-   const response= await AxiosServices.updateSiteStatus(id, newStatus);
-
-    // Show success toast
+    setStatus(newStatus);    
+    const response= await AxiosServices.updateSiteStatus(id, newStatus);
     if(response.status==200)
     {
     toast({
@@ -74,18 +55,16 @@ const [dropdownOpen, setDropdownOpen] = useState(false);
     else{
       toast({
       title: 'failed',
-      description: 'Status  not updated successfully',
+      description: 'Status not updated successfully',
       variant: 'default',
     });
     }
-    // Refresh data
     dispatch(fetchStations(id, { 
       page: currentPage - 1, 
       size: itemsPerPage 
     }));
 
   } catch (error) {
-    // Show error toast (error message is propagated from ApiService)
     toast({
       title: 'Error',
       description: error.toString(),
@@ -97,7 +76,6 @@ const [dropdownOpen, setDropdownOpen] = useState(false);
 };
   useEffect(() => {
     if (currentSite) {
-      // Assuming currentSite.siteStatus is 'active' | 'inactive' | 'maintenance'
       setStatus(currentSite?.siteStatus);
     }
   }, [currentSite?.siteStatus]);
@@ -108,9 +86,6 @@ const [dropdownOpen, setDropdownOpen] = useState(false);
     dispatch(fetchStations(id, { page:0, size:10 }));
   }
 }, [dispatch, id]);
-
-
-
 
   if (siteDetailsStatus === 'loading') {
     return <Loading />;
@@ -129,29 +104,23 @@ const [dropdownOpen, setDropdownOpen] = useState(false);
     return <div className="p-6">No site data found</div>;
   }
 
-  // Access nested objects safely
   const location = currentSite.location?.[0] || {};
   const facilities = currentSite;
-  const operations = currentSite;
-
   
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
-     <div className="flex items-center gap-4 mb-6">
- <div className="flex items-center gap-4 mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            {currentSite.siteName}
-          </h1>
-
+      <div className="flex items-center gap-4 mb-6">
+      <div className="flex items-center gap-4 mb-6">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{currentSite.siteName}</h1>
           <div className="relative">
             <button
               className={`flex items-center px-4 py-1.5 border rounded-full transition ${
-                status === 'Active'
+                status === 'ACTIVE'
                   ? 'bg-green-100 text-green-800 border-green-400'
-                  : status === 'InMaintaince'
+                  : status === 'MAINTENANCE'
                   ? 'bg-yellow-100 text-yellow-800 border-yellow-400'
-                  : status === 'InActive'
+                  : status === 'INACTIVE'
                   ? 'bg-red-100 text-red-800 border-red-400'
                   : 'bg-gray-100 text-gray-800 border-gray-400'
               }`}
@@ -164,21 +133,20 @@ const [dropdownOpen, setDropdownOpen] = useState(false);
                 <ChevronDown className="ml-2 h-4 w-4" />
               )}
             </button>
-
             {dropdownOpen && (
               <div className="absolute mt-2 w-48 bg-white dark:bg-gray-800 shadow-lg rounded-md z-10 p-3">
                 <p className="font-medium text-sm mb-2 text-gray-700 dark:text-gray-300">
                   Select Status
                 </p>
-                {[ 'Active', 'InActive','InMaintaince'].map((option) => (
+                {[ 'ACTIVE', 'INACTIVE','MAINTENANCE'].map((option) => (
                   <button
                     key={option}
                     className={`w-full text-left px-4 py-1.5 mb-1 rounded-full border transition ${
-                      option === 'Active'
+                      option === 'ACTIVE'
                         ? 'bg-green-100 text-green-800 border-green-400'
-                        : option === 'InMaintaince'
+                        : option === 'MAINTENANCE'
                         ? 'bg-yellow-100 text-yellow-800 border-yellow-400'
-                        : option === 'InActive'
+                        : option === 'INACTIVE'
                         ? 'bg-red-100 text-red-800 border-red-400'
                         : 'bg-blue-100 text-blue-800 border-blue-400'
                     }`}
@@ -191,8 +159,7 @@ const [dropdownOpen, setDropdownOpen] = useState(false);
             )}
           </div>
         </div>
-
-</div>
+        </div>
         <div className="flex gap-2">
           <BackButton to = "/sites" />
         </div>
@@ -207,11 +174,10 @@ const [dropdownOpen, setDropdownOpen] = useState(false);
 
         <TabsContent value="details">
           <div>
- <div className="flex justify-between items-center mb-6">
+          <div className="flex justify-between items-center mb-6">
               <div>  <h2 className="text-xl font-semibold mt-8 mb-4">Manager Information</h2></div>
              <Button  className="flex gap-2  w-24"  onClick={()=>navigate(`/editsite/${currentSite.siteId }`)}>Edit</Button>
-        </div>
-            
+        </div>            
             <Card className="p-6 mb-6">
               <div className="grid grid-cols-3 gap-4">
                 <div>
@@ -228,7 +194,6 @@ const [dropdownOpen, setDropdownOpen] = useState(false);
                 </div>
               </div>
             </Card>
-
             <h2 className="text-xl font-semibold mb-4">Site Information</h2>
             <Card className="p-6 mb-6">
               <div className="grid grid-cols-3 gap-4 mb-6">
@@ -248,32 +213,12 @@ const [dropdownOpen, setDropdownOpen] = useState(false);
                    {currentSite.openingTime || '-'} - {currentSite.closeTime || '-'}
                   </p>
                 </div>
-              </div>
-          
-
-            {/* <h2 className="text-xl font-semibold mt-8 mb-4">Location Information</h2> */}
-          
+              </div>          
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <p className="font-semibold text-gray-600">Address</p>
                   <p className="font-medium">{location.address || '-'}</p>
                 </div>
-                {/* <div>
-                  <p className="font-semibold text-gray-600">City</p>
-                  <p className="font-medium">{location.city || '-'}</p>
-                </div>
-                <div>
-                  <p className="font-semibold text-gray-600">State</p>
-                  <p className="font-medium">{location.state || '-'}</p>
-                </div> */}
-                {/* <div>
-                  <p className="font-semibold text-gray-600 mt-4">Country</p>
-                  <p className="font-medium">{location.country || '-'}</p>
-                </div>
-                <div>
-                  <p className="font-semibold text-gray-600 mt-4">Zip Code</p>
-                  <p className="font-medium">{location.zipCode || '-'}</p>
-                </div> */}
                 <div>
                   <p className="font-semibold text-gray-600 mt-4">Coordinates</p>
                   <p className="font-medium">
@@ -299,7 +244,6 @@ const [dropdownOpen, setDropdownOpen] = useState(false);
                 </div>
               </div>
             </Card>
-           
           </div>
         </TabsContent>
 
@@ -334,12 +278,10 @@ const [dropdownOpen, setDropdownOpen] = useState(false);
              <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-bold">STATIONS </h1>
         <div>
-          <Button onClick={() => navigate('/add-stations', { state: { from: 'site', siteId: id } })}>
-  Add Station
-</Button>
+          <Button onClick={() => navigate('/add-stations', { state: { from: 'site', siteId: id } })}>Add Station </Button>
         </div>
       </div>
-                       {stationList && stationList.length > 0 ? (
+        {stationList && stationList.length > 0 ? (
               <Table className="border">
                 <TableHeader>
                   <TableRow>
@@ -402,10 +344,7 @@ const [dropdownOpen, setDropdownOpen] = useState(false);
     Next
   </Button>
 </div>
-
-        </TabsContent>
-     
-
+</TabsContent> 
       </Tabs>
     </div>
   );

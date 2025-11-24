@@ -2,11 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useParams, useNavigate } from 'react-router-dom';
 import BackButton from '@/users/BackButton';
-import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
 import { useDispatch, useSelector } from 'react-redux';
 import { 
-  fetchTeams,
   fetchEmployeeById, 
   editTeam, 
   assignTeamTask, 
@@ -19,27 +16,13 @@ import {
   validateLocation,
 } from '@/pages/validations/Validation';
 
-import { X, ChevronDown, Check, Clock } from 'lucide-react';
-
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  Command,
-  CommandInput,
-  CommandItem,
-  CommandEmpty,
-  CommandGroup,
-} from "@/components/ui/command";
+import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -177,10 +160,6 @@ const EditTeamMember = () => {
   
     setFormErrors(errors);
   }, [formData]);
-  
-
-
-
 const handleSubmit = async (e) => {
   e.preventDefault();
   
@@ -248,63 +227,6 @@ const handleSubmit = async (e) => {
     });
   }
 };
-
-
-  const handleAssignTask = async () => {
-    if (!newTask.name.trim() || !newTask.location.trim()) {
-      toast({
-        title: "Error",
-        description: "Please fill in all required fields",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    try {
-      await dispatch(assignTeamTask({ id, taskData: newTask })).unwrap();
-      
-      setNewTask({
-        name: '',
-        location: '',
-        priority: 'Medium',
-        dueDate: '',
-        description: ''
-      });
-      
-      setIsAssigningTask(false);
-      
-      toast({
-        title: "Success",
-        description: "Task assigned successfully!",
-      });
-    } catch (err) {
-      console.error('Failed to assign task:', err);
-      toast({
-        title: "Error",
-        description: err || "Failed to assign task",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleUpdateTaskProgress = async (taskName, progress) => {
-    try {
-      await dispatch(updateTeamTaskProgress({ id, taskName, progress })).unwrap();
-      
-      toast({
-        title: "Success",
-        description: "Task progress updated successfully!",
-      });
-    } catch (err) {
-      console.error('Failed to update task progress:', err);
-      toast({
-        title: "Error",
-        description: err || "Failed to update task progress",
-        variant: "destructive",
-      });
-    }
-  };
-
   if (loading && !currentTeam) {
     return (
       <div className="container mx-auto p-4">
@@ -354,8 +276,6 @@ const handleSubmit = async (e) => {
       )}
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-       
-
         {/* Basic Information Tab */}
         <TabsContent value="basic">
           <form onSubmit={handleSubmit}>

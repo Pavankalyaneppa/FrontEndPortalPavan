@@ -1,6 +1,5 @@
 
 import { baseURL,baseOCPPURL } from '@/config';
-import { data } from 'autoprefixer';
 import axios from 'axios';
 
 export const axiosInstance = axios.create({
@@ -25,11 +24,6 @@ axiosInstance.interceptors.request.use(
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
     }
-    // Add role-based API validation
-  // if (config.url.includes('/admin') && Number(roleId) !== 1) {
-  //   return Promise.reject(new Error('Unauthorized access'));
-  // }
-  
   if (config.url.includes('/franchise') && Number(roleId) !== 4) {
     return Promise.reject(new Error('Unauthorized access'));
   }
@@ -116,16 +110,6 @@ getStationBySiteId:(id)=> {
       throw error.response.data;
     }
   },
-//   searchStations: async ({ search, page, size, searchField }) => {
-//   try {
-//     const response = await axios.get('http://localhost:8800/services/userprofile/unified-search', {
-//       params: { search, page, size, type: 'station', searchField }
-//     });
-//     return response.data.station; 
-//   } catch (error) {
-//     throw error.response?.data || 'Search failed';
-//   }
-// },
 
 searchStations: async ({ siteName, stationStatus, currentType, page = 0, size = 10 }) => {
   try {
@@ -152,14 +136,6 @@ searchStations: async ({ siteName, stationStatus, currentType, page = 0, size = 
       throw error.response.data;
     }
   },
-  // getStations: async (params) => {
-  //   try {
-  //     const response = await axiosInstance.get('/services/station/stationList', { params });
-  //     return response;
-  //   } catch (error) {
-  //     throw error.response.data;
-  //   }
-  // },
 
   getStations: async (params) => {
   try {
@@ -184,14 +160,7 @@ searchStations: async ({ siteName, stationStatus, currentType, page = 0, size = 
       throw error.response.data;
     }
   },
-  // getProfiles: async (type, params) => {
-  //   try {
-  //     const response = await axiosInstance.get(`/services/userprofile/table_data/${type}/`, { params });
-  //     return response;
-  //   } catch (error) {
-  //     throw error.response.data;
-  //   }
-  // },
+
   unifiedSearch: async (params) => {
   try {
     const response = await axiosInstance.get('/services/userprofile/unified-search', {params});
@@ -209,36 +178,6 @@ searchStations: async ({ siteName, stationStatus, currentType, page = 0, size = 
       throw error.response.data;
     }
   },
-  // addProfile: async (data) => {
-  //   try {
-  //     const response = await axiosInstance.post('/services/userprofile/add/', data);
-  //     return response.data;
-  //   } catch (error) {
-  //     throw error.response?.data || { message: 'Failed to add profile' };
-  //   }
-  // },
-
-  // Updated getProfiles to handle both whitelabel and driver profiles with new endpoints
-  // getProfiles: async (type, params) => {
-  //   try {
-  //     let endpoint;
-      
-  //     // Use the appropriate endpoint based on type
-  //     if (type === 'whitelabel') {
-  //       endpoint = '/services/userprofile/whitelabelList';
-  //     } else if (type === 'driver') {
-  //       endpoint = '/services/userprofile/driverList';
-  //     } else {
-  //       // Fallback for any other types
-  //       endpoint = '/services/userprofile/table_data/' + type;
-  //     }
-      
-  //     const response = await axiosInstance.get(endpoint, { params });
-  //     return response;
-  //   } catch (error) {
-  //     throw error.response.data;
-  //   }
-  // },
 
   getOrganizations: async () => {
     try {
@@ -248,15 +187,6 @@ searchStations: async ({ siteName, stationStatus, currentType, page = 0, size = 
       throw error.response?.data || { message: 'Failed to fetch organizations' };
     }
   },
-
-  // updateUserProfile: async (userId, data) => {
-  //   try {
-  //     const response = await axiosInstance.put(`/services/users/${userId}`, data);
-  //     return response.data;
-  //   } catch (error) {
-  //     throw error.response?.data || { message: 'Failed to update user profile' };
-  //   }
-  // },
 
   deleteUserProfile: async (userId) => {
     try {
@@ -291,7 +221,6 @@ searchStations: async ({ siteName, stationStatus, currentType, page = 0, size = 
   getIssues: async () => {
     try {
       const response = await axiosInstance.get(`/services/issues/tickets?orgId=${localStorage.getItem("orgId")}`);
-      // console.log(response.data);
       return response.data;
     } catch (error) {
           throw error.response?.data || new Error('Failed to fetch issues');
@@ -328,15 +257,6 @@ getIssuesByStatus : async (params = {}) => {
   return response;
 },
 
-  // addIssue: async (issueData) => {
-  //   try {
-  //     const response = await axiosInstance.post('/services/issues/createticket', issueData);
-  //     return response;
-  //   } catch (error) {
-  //     throw error.response.data;
-  //   }
-  // },
-
   addIssue: async (issueData) => {
   try {
     const response = await axiosInstance.post('/services/issues/createticket', issueData);
@@ -345,7 +265,6 @@ getIssuesByStatus : async (params = {}) => {
     throw error.response.data;
   }
 },
-
 
   updateIssue: async (issueData,id) => {
     try {
@@ -377,7 +296,6 @@ getIssuesByStatus : async (params = {}) => {
     }
   },
 
-  // Update Note
   updateNote: async (ticketId, noteId, noteDto) => {
     try {
       const response = await axiosInstance.put(
@@ -401,7 +319,6 @@ getIssuesByStatus : async (params = {}) => {
       throw error.response?.data?.message || error.message || "Failed to delete note";
     }
   },
-  //  untill here issue related apis
   
   getSitesList: async (tablename) => {
     try {
@@ -427,7 +344,6 @@ getIssuesByStatus : async (params = {}) => {
   getReportData: async (params) => {
     try {
       const response = await axiosInstance.get('/services/userprofile/getreport', { params });
-      // console.log( "Axios:",response.data);
       return response.data;
     } catch (error) {
       throw error.response?.data?.message || error.message || 'Failed to fetch report data';
@@ -450,6 +366,7 @@ getIssuesByStatus : async (params = {}) => {
       throw error.response.data;
     }
   },
+
   getFranchiseOwners: async () => {
     try {
       const response = await axiosInstance.get('/services/franchiseOwners');
@@ -458,9 +375,28 @@ getIssuesByStatus : async (params = {}) => {
       throw error.response.data;
     }
   },
+
  AddChargers: async (formattedData,id) => {
     try {
       const response = await axiosInstance.get(`/services/manufacturer/update${id}`,formattedData);
+      return response.data;
+    } catch (error) {
+      throw error.response.data;
+    }
+  },
+  
+getWalletDetails: async (userId) => {
+    try {
+      const response = await axiosInstance.get(`/api/mobile/walletDetails/${userId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response.data;
+    }
+  },
+
+  getWalletTransactions: async (accId) => {
+    try {
+      const response = await axiosInstance.get(`/api/mobile/walletTransactions/${accId}`);
       return response.data;
     } catch (error) {
       throw error.response.data;
@@ -478,7 +414,6 @@ getRfidRequestsList: async (params) => {
     }
   },
 
-  // Add to AxiosServices object
 requestRfid: async (rfidData,id) => {
   try {
     const response = await axiosInstance.post(`/services/rfid/request/${id}`, rfidData);
@@ -532,6 +467,7 @@ addVehicle: async (vehicleData) => {
     throw error.response?.data || error.message;
   }
 },
+
 updateVehicle: async (vehicleId, vehicleData) => {
   try {
     const response = await axiosInstance.put(`/api/mobile/updateEV/${vehicleId}`, vehicleData);
@@ -575,24 +511,6 @@ getUserDetails: async (userId) => {
     }
   },
 
-// Add to your AxiosServices object
-// getEVUsers: async (page, size,orgId,searchInput) => {
-//   try {
-//     const response = await axiosInstance.get('/services/userprofile/driverList', {
-//       params: {
-//         page,
-//         size,
-//         orgId,
-//         search:searchInput,
-//       }
-//     });
-//     console.log(orgId);
-//     return response.data;
-//   } catch (error) {
-//     throw error.response?.data?.message || error.message || "Failed to fetch EV users";
-//   }
-// },
-
 getEVUsers: async (page, size,orgId,searchInput) => {
   try {
     const response = await axiosInstance.get('/services/userprofile/driverList', {
@@ -610,21 +528,6 @@ getEVUsers: async (page, size,orgId,searchInput) => {
   }
 },
 
-// searchEVUser: async ({ search, page, size, searchField }) => {
-//   try {
-//     const response = await axiosInstance.get('http://localhost:8800/services/userprofile/driverList', {
-//       params: { search, page, size, searchField }
-//     });
-//     return {
-//       data: response.data.driverList || [] ,
-//       totalElements: response.data.totalElements || 0,
-//       totalPages: response.data.totalPages || 1
-//     };
-//   } catch (error) {
-//     throw error.response?.data || error.message || 'Search failed';
-//   }
-// },
-
 addEVUser: async (userData) => {
   try {
     const response = await axiosInstance.post('/services/userprofile/add', {
@@ -638,15 +541,6 @@ addEVUser: async (userData) => {
   }
 },
 
-// deleteEVUser: async (userId) => {
-//   try {
-//     const response = await axiosInstance.delete(`/services/userprofile/deleteUser/${userId}`);
-//     return response.data;
-//   } catch (error) {
-//     throw error.response?.data?.message || error.message || "Failed to delete EV user";
-//   }
-// },
-
   addWhiteLabel: async (userData) => {
     try {
       const response = await axiosInstance.post('/services/userprofile/add', {
@@ -657,14 +551,6 @@ addEVUser: async (userData) => {
     } catch (response) {
       throw response
   }},
-  // deleteWhiteLabel: async (userId) => {
-  //   try {
-  //     const response = await axiosInstance.delete(`/services/userprofile/deleteUser/${userId}`);
-  //     return response.data;
-  //   } catch (error) {
-  //     throw error.response?.data?.message || error.message || "Failed to delete white label";
-  //   }
-  // },
 
   getWhiteLabelDetails: async (userId, orgId) => {
     try {
@@ -681,7 +567,6 @@ addEVUser: async (userData) => {
     }
   },
 
-  // In your AxiosServices.js file
 getFranchiseOwnersByOrg: async (orgId) => {
   try {
     const response = await axiosInstance.get(`/services/userprofile/OwnerDetailsbyOrg/${orgId}`);
@@ -699,6 +584,7 @@ getWhitelabel: async (params) => {
       throw error.response.data;
     }
   },
+
 getWhiteLabels: async () => {
   try {
     const response = await axiosInstance.get('/services/userprofile/getwhiteLabels');
@@ -707,6 +593,7 @@ getWhiteLabels: async () => {
     throw error.response?.data?.message || error.message || "Failed to fetch white labels";
   }
 },
+
  addFranchise: async (userData) => {
     try {
       const response = await axiosInstance.post('/services/userprofile/add', {
@@ -819,13 +706,7 @@ updateStationStatus :async (stationId, newStatus) => {
 
 getStationStats: async (orgId, config) => {
   try {
-    const response = await axiosInstance.get(`/services/dashboard/stationStats/${orgId}`
-  //     , {
-  //     params : {
-  //       ...config.params
-  //     }
-  //  } 
-  );
+    const response = await axiosInstance.get(`/services/dashboard/stationStats/${orgId}`);
     return response;
   } catch (error) {
     throw error.response.data;
@@ -842,15 +723,6 @@ getAllEmployees : async () => {
     throw error.response?.data?.message || error.message || "Failed to fetch employees";
   }
 },
-
-//  getAllEmployees : async () => {
-//   try {
-//     const response = await axiosInstance.get("/services/employee/getAllEmployees");
-//     return response.data;
-//   } catch (error) {
-//     throw error.response?.data || error.message;
-//   }
-// },
 
 addEmployee: async (employeeData) => {
   try {
@@ -968,6 +840,21 @@ getResolvedIssuesByEmployeeId: async (employeeId) => {
 
 //apis for requesting franchsies
 
+verifyAndImportStations: async (stationData) => {
+  try {
+    console.log('Sending to backend:', stationData);
+    const response = await axiosInstance.post('/services/station/verify-and-import', stationData);
+    return response.data;
+  } catch (error) {
+    console.error('Backend error details:', {
+      status: error.response?.status,
+      data: error.response?.data,
+      message: error.response?.data?.message
+    });
+    throw error.response?.data?.message || error.message || "Failed to verify stations";
+  }
+},
+
 requestFranchise: async (requestData) => {
   try {
     // requestData should match backend's RequestedFranchises model
@@ -1002,11 +889,7 @@ getRequestedFranchisesList: async (params = {}) => {
       "/services/station/requestedFranchisesList",
       { params }
     );
-    
-    console.log('Raw API Response:', response); // Debug log
-    
-    // Return the data property which contains the actual response
-    return response.data;
+            return response.data;
   } catch (error) {
     throw (
       error.response?.data?.message ||
@@ -1016,7 +899,6 @@ getRequestedFranchisesList: async (params = {}) => {
   }
 },
 
-// AxiosServices.jsx
 getStationsRequest: async ({ latitude, longitude, radiusKm, nameFilter, fromAddress, toAddress, search }) => {
   try {
     const params = { latitude, longitude, radiusKm, nameFilter, fromAddress, toAddress, search };
@@ -1031,11 +913,6 @@ getStationsRequest: async ({ latitude, longitude, radiusKm, nameFilter, fromAddr
 
 addIssueNote: async (noteData) => {
   try {
-    // noteData is the same shape as your backend DTO:
-    // {
-    //   employeeId, recipientId, issueId,
-    //   title, description, createdByRole
-    // }
     const response = await axiosInstance.post(
       `/services/notes/add`,
       noteData
@@ -1050,7 +927,6 @@ addIssueNote: async (noteData) => {
 getNotesByIssueId: async (issueId) => {
   try {
     const response = await axiosInstance.get(`/services/notes/issue/${issueId}`);
-    // backend returns an array of Notes
     return Array.isArray(response.data) ? response.data : [];
   } catch (error) {
     throw (
@@ -1216,7 +1092,6 @@ updateTechnician : async (id, technicianData) => {
     throw error.response?.data || error.message;
   }
 },
-
 
 //For The Task Notes....
  getNotesByTaskId : async (taskId) => {
@@ -1392,9 +1267,9 @@ updateTechnician : async (id, technicianData) => {
   }
 },
 
- updateVehicle : async (vehicleId, vehicleData) => {
+ updateFleetVehicle : async (vehicleId, vehicleData) => {
   try {
-    const response = await axiosInstance.put(`/services/fleet/update/${vehicleId}`, vehicleData);
+    const response = await axiosInstance.put(`/services/fleet/update/${String(vehicleId)}`, vehicleData);
     return response.data;
   } catch (error) {
     console.error('Update vehicle error:', error.response?.data || error.message);
@@ -1423,9 +1298,8 @@ getAllTasks: async ({ page = 0, size = 10, search = '' } = {}) => {
     throw error.response?.data || error.message;
   }
 },
-
-
 };
+
 ////////////////////////////////////////////////////////api adding//////////////////////////
 
 AxiosServices.getDashboardStats = async (orgId, config = {}) => {
@@ -1466,24 +1340,6 @@ AxiosServices.getSessionGraph = async (orgId, config) => {
     throw error.response.data;
   }
 };
-
-//i removed this for not gettign dashboard stats and replaced (sukanya) 
-// AxiosServices.getStationStats = async (orgId, config) => {
-//   try {
-//     const response = await axiosInstance.get(`/services/dashboard/stationStats/${orgId}`
-//   //     , {
-//   //     params : {
-//   //       ...config.params
-//   //     }
-//   //  } 
-//   );
-//     return response;
-//   } catch (error) {
-//     throw error.response.data;
-//   }
-// };
-
-// pavan's apis added for fleet and charger installation and tasks
 
 // Fleet APIs integrated  by pavan......
 export const getAllFleets = async (params = {}) => {
@@ -1575,12 +1431,23 @@ export const getVehicleDetails = async (vehicleId) => {
   }
 };
 
-export const updateVehicle = async (vehicleId, vehicleData) => {
+// export const updateVehicle = async (vehicleId, vehicleData) => {
+//   try {
+//     const response = await axiosInstance.put(`/services/fleet/update/${vehicleId}`, vehicleData);
+//     return response.data;
+//   } catch (error) {
+//     console.error('Update vehicle error:', error.response?.data || error.message);
+//     throw error.response?.data || error.message;
+//   }
+// };
+
+// In AxiosServices.js
+export const updatePortPrice = async (portId, billingAmount) => {
   try {
-    const response = await axiosInstance.put(`/services/fleet/update/${vehicleId}`, vehicleData);
+    const response = await axiosInstance.put(`/services/station/${portId}/price?billingamount=${billingAmount}`);
     return response.data;
   } catch (error) {
-    console.error('Update vehicle error:', error.response?.data || error.message);
+    console.error('Update port price error:', error.response?.data || error.message);
     throw error.response?.data || error.message;
   }
 };
@@ -1714,7 +1581,6 @@ export const getEmployeeTasks = async (employeeId) => {
 };
 
 // for updateTaskStatus....
-
 export const updateTaskStatusAPI = async (taskId, status) => {
   try {
     const response = await axiosInstance.put(`/tasks/${taskId}/status`, null, {
@@ -1789,17 +1655,10 @@ export const markNoteAsReadAPI = async (noteId, employeeId) => {
     throw error.response?.data || error.message;
   }
 };
-//.................................................................
 
 AxiosServices.getPortStats = async (orgId,config) => {
   try {
-    const response = await axiosInstance.get(`/services/dashboard/portStats/${orgId}`
-      //     , {
-  //     params : {
-  //       ...config.params
-  //     }
-  //  } 
-    );
+    const response = await axiosInstance.get(`/services/dashboard/portStats/${orgId}`);
      console.log(' ports stats ',response)
     return response;
    
@@ -1808,7 +1667,6 @@ AxiosServices.getPortStats = async (orgId,config) => {
   }
 };
 
-  ///// new api adding before the deploy 
  export const getVehicles = async (id) => {
   try {
     const response = await axiosInstance.get(`/api/mobile/myEV/${id}`);
@@ -1817,7 +1675,6 @@ AxiosServices.getPortStats = async (orgId,config) => {
     throw error.response?.data || error.message;
   }
 };
-
-{/* <ValidationRoute logindata={loginUser}/> */}
 export default AxiosServices;
-//LATEST PORTAL........
+
+// 17-11-2025

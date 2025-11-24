@@ -101,7 +101,6 @@ export function EditManufacturer({ manufacturer, open, onOpenChange, onSuccess }
         }))
       }))
     };
-
     try {
       await dispatch(updateManufacturer(manufacturerData)).unwrap();
       onOpenChange(false);
@@ -135,7 +134,6 @@ export function EditManufacturer({ manufacturer, open, onOpenChange, onSuccess }
               placeholder="Enter manufacturer name"
             />
           </div>
-
           {chargers.map((charger, chargerIndex) => (
             <div key={chargerIndex} className="space-y-4 p-4 border rounded-lg">
               <div className="grid grid-cols-2 gap-4">
@@ -230,29 +228,24 @@ export function EditManufacturer({ manufacturer, open, onOpenChange, onSuccess }
               </div>
             </div>
           ))}
-
           <Button
             type="button"
             variant="outline"
             onClick={handleAddCharger}
             className="w-full"
-          >
-            Add Another Charger
+          > Add Another Charger
           </Button>
-
           <Button
             type="button"
             onClick={handleSubmit}
             className="w-full"
-          >
-            Update
+          > Update
           </Button>
         </div>
       </DialogContent>
     </Dialog>
   );
 }
-
 EditManufacturer.propTypes = {
   manufacturer: PropTypes.shape({
     id: PropTypes.number.isRequired,
@@ -273,7 +266,6 @@ EditManufacturer.propTypes = {
   onOpenChange: PropTypes.func.isRequired,
   onSuccess: PropTypes.func
 };
-
 EditManufacturer.defaultProps = {
   onSuccess: () => {}
 };

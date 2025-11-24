@@ -4,8 +4,9 @@ import NotesSection from './NotesSection';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { ReloadIcon } from '@radix-ui/react-icons';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { X, ChevronDown, Check, Clock, Plus, Edit, Trash2, InfoIcon } from 'lucide-react';
+import { Clock, InfoIcon } from 'lucide-react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import BackButton from '@/users/BackButton';
 import { Badge } from "@/components/ui/badge";
@@ -13,8 +14,6 @@ import { useDispatch, useSelector } from 'react-redux';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -36,10 +35,6 @@ import {
   fetchEmployeeById, 
   assignTeamTask, 
   updateTeamTaskProgress,
-  fetchTaskNotes,
-  addTaskNote,
-  updateTaskNote,
-  deleteTaskNote,
   fetchAllEmployees,
 } from '@/store/reducers/chargerInstallation/ChargerInstallationSlice';
 import { 
@@ -63,92 +58,6 @@ const useClickOutside = (ref, callback) => {
     };
   }, [ref, callback]);
 };
-
-// Utility function to calculate time duration from createdAt
-const calculateTaskDuration = (createdAt) => {
-  if (!createdAt) return 'N/A';
-  
-  try {
-    const createdTime = new Date(createdAt);
-    const now = new Date();
-    const diffMs = now - createdTime;
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffDays = Math.floor(diffHours / 24);
-    const remainingHours = diffHours % 24;
-    const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-    
-    if (diffDays > 0) {
-      return `${diffDays}d ${remainingHours}h`;
-    } else if (diffHours > 0) {
-      return `${diffHours}h ${diffMinutes}m`;
-    } else {
-      return `${diffMinutes}m`;
-    }
-  } catch (error) {
-    console.error('Error calculating task duration:', error);
-    return 'N/A';
-  }
-};
-
-// Component for displaying time badge
-const TimeBadge = ({ task }) => {
-  const [currentTime, setCurrentTime] = useState(new Date());
-  const [duration, setDuration] = useState('N/A');
-  
-  useEffect(() => {
-    // Calculate initial duration
-    setDuration(calculateTaskDuration(task.createdAt));
-    
-    // Update time every minute for real-time duration
-    const interval = setInterval(() => {
-      setCurrentTime(new Date());
-      setDuration(calculateTaskDuration(task.createdAt));
-    }, 60000); // Update every minute
-    
-    return () => clearInterval(interval);
-  }, [task.createdAt]);
-  
-  // Different styles based on duration and status
-  const getBadgeStyle = () => {
-    if (task.status === 'COMPLETED') {
-      return "bg-green-100 text-green-800 border-green-200";
-    }
-    
-    // Parse duration to get hours
-    const hoursMatch = duration.match(/(\d+)d\s*(\d+)h/) || duration.match(/(\d+)h/);
-    let hours = 0;
-    
-    if (hoursMatch) {
-      if (hoursMatch[1] && hoursMatch[2]) {
-        // Format: Xd Yh
-        hours = parseInt(hoursMatch[1]) * 24 + parseInt(hoursMatch[2]);
-      } else if (hoursMatch[1]) {
-        // Format: Xh
-        hours = parseInt(hoursMatch[1]);
-      }
-    }
-    
-    if (hours > 48) { // More than 2 days
-      return "bg-red-100 text-red-800 border-red-200";
-    } else if (hours > 24) { // More than 1 day
-      return "bg-orange-100 text-orange-800 border-orange-200";
-    } else {
-      return "bg-blue-100 text-blue-800 border-blue-200";
-    }
-  };
-  
-  return (
-    <Badge 
-      variant="outline" 
-      className={`flex items-center gap-1 ${getBadgeStyle()}`}
-      title={`Task created at: ${task.createdAt ? new Date(task.createdAt).toLocaleString() : 'N/A'}`}
-    >
-      <Clock className="h-3 w-3" />
-      {duration}
-    </Badge>
-  );
-};
-
 const TeamMemberDetails = () => {
   const { id } = useParams();
   const { state } = useLocation();
@@ -157,11 +66,9 @@ const TeamMemberDetails = () => {
   const currentUser = useSelector(state => state.auth?.currentUser);
   const [selectedTaskId, setSelectedTaskId] = useState(null);
   const [viewingTaskNotes, setViewingTaskNotes] = useState(false);
-
   const [assigningTaskLoading, setAssigningTaskLoading] = useState(false);
-  const { currentTeam, loading, error } = useSelector(state => state.chargerInstallation);
-  
-  // Correct state access for tasksByEmployee
+  const [isAssignTaskDialogOpen, setIsAssignTaskDialogOpen] = useState(false);
+  const { currentTeam, loading, error } = useSelector(state => state.chargerInstallation);  
   const { 
     tasksByEmployee, 
     loading: tasksLoading, 
@@ -217,8 +124,6 @@ const TeamMemberDetails = () => {
       dispatch(fetchEmployeeById(id));
     }
   }, [id, dispatch]);
-
-  // Fetch tasks for the specific employee using fetchTasksByEmployee
   useEffect(() => {
     if (id) {
       dispatch(fetchTasksByEmployee(id));
@@ -337,7 +242,7 @@ const TeamMemberDetails = () => {
         description: "Task assigned successfully",
         variant: "default",
       });
-      
+      setIsAssignTaskDialogOpen(false);
       dispatch(fetchEmployeeById(id));
       // Refresh tasks using fetchTasksByEmployee
       dispatch(fetchTasksByEmployee(id));
@@ -406,15 +311,7 @@ const TeamMemberDetails = () => {
     setSelectedTaskId(taskId);
     setViewingTaskNotes(true);
   };
-
-  const handleCloseTaskNotes = () => {
-    setSelectedTaskId(null);
-    setViewingTaskNotes(false);
-  };
-
-  // Get tasks from tasksByEmployee state
   const getTasksFromState = () => {
-    // Try different possible locations in the state
     if (tasksByEmployee?.items && tasksByEmployee.items.length > 0) {
       return tasksByEmployee.items;
     }
@@ -424,9 +321,7 @@ const TeamMemberDetails = () => {
     if (Array.isArray(tasksByEmployee) && tasksByEmployee.length > 0) {
       return tasksByEmployee;
     }
-    
-    // Fallback to currentTeam tasks if available
-    return currentTeam?.installationTasks || currentTeam?.tasks || currentTeam?.assignedTasks || [];
+      return currentTeam?.installationTasks || currentTeam?.tasks || currentTeam?.assignedTasks || [];
   };
 
   const tasks = getTasksFromState();
@@ -525,7 +420,7 @@ const TeamMemberDetails = () => {
                 <div>
                   <p className="text-sm text-muted-foreground">Status</p>
                   <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                      currentTeam.active ? "bg-green-100 text-green-800" : "bg-gray-200 text-gray-800"
+                      currentTeam.active ? "bg-green-100 text-green-800 border-green-400" : "bg-red-100 text-red-800 border-red-400"
                     }`}>
                       {currentTeam.active ? "Active" : "Inactive"}
                     </span>
@@ -558,7 +453,6 @@ const TeamMemberDetails = () => {
             </CardContent>
           </Card>
         </TabsContent>
-
         <TabsContent value="tasks">
           {viewingTaskNotes ? (
             <div>
@@ -578,23 +472,25 @@ const TeamMemberDetails = () => {
                   <div className="flex items-center gap-3">
                   </div>
                 </div>
-                <Button 
+               <Button 
                   variant="outline" 
-                  onClick={() => setIsAssigningTask(!isAssigningTask)}
+                  onClick={() => setIsAssignTaskDialogOpen(true)}
                 >
-                  {isAssigningTask ? 'Cancel' : 'Assign New Task'}
+                  Assign New Task
                 </Button>
               </div>
               
-              {/* Task Assignment Form */}
-              {isAssigningTask && (
-                <Card className="mb-6">
-                  <CardHeader>
-                    <CardTitle>Assign New Task</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
+                {/* Assign Task Dialog */}
+                <Dialog open={isAssignTaskDialogOpen} onOpenChange={setIsAssignTaskDialogOpen}>
+                  <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>Assign New Task</DialogTitle>
+                    </DialogHeader>
+                    
+                    <form onSubmit={(e) => { e.preventDefault(); handleAssignTask(); }} className="space-y-6">
+                      <div className="grid grid-cols-2 gap-4">
+                        {/* Copy all your form fields from the Card here */}
+                        <div className="space-y-2">
                         <Label htmlFor="taskName">Task Name *</Label>
                         <Input
                           id="taskName"
@@ -656,20 +552,27 @@ const TeamMemberDetails = () => {
                       </div>
                     </div>
                     <div className="flex gap-2 mt-4">
-                      <Button onClick={handleAssignTask} disabled={assigningTaskLoading}>
-                        {assigningTaskLoading ? "Assigning..." : "Assign Task"}
-                      </Button>
                       <Button 
                         variant="outline" 
-                        onClick={() => setIsAssigningTask(false)}
+                        onClick={() => setIsAssignTaskDialogOpen(false)}
                       >
-                        Cancel
+                         Cancel
+                      </Button>
+                      <Button type="submit" disabled={assigningTaskLoading}>
+                        {assigningTaskLoading ? (
+                          <>
+                            <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />
+                            Assigning...
+                          </>
+                        ) : (
+                          "Assign Task"
+                        )}
                       </Button>
                     </div>
-                  </CardContent>
-                </Card>
-              )}  
-              
+                  </form>
+                </DialogContent>
+              </Dialog>
+
               <div className="flex justify-left mb-4">
                 <Select value={taskFilter} onValueChange={setTaskFilter}>
                   <SelectTrigger className="w-[180px]">
@@ -784,7 +687,6 @@ const TeamMemberDetails = () => {
             </>
           )}
         </TabsContent>
-
         <TabsContent value="notes">
           <div className="text-center py-8 text-muted-foreground">
             <InfoIcon className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -803,5 +705,4 @@ const TeamMemberDetails = () => {
     </div>
   );
 };
-
 export default TeamMemberDetails;

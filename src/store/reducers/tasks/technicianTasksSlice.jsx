@@ -21,8 +21,6 @@ export const fetchTechnicianTasks = createAsyncThunk(
   }
 );
 
-//frontend slice implemented  by pavan...........
-
 export const assignNewTask = createAsyncThunk(
   "technicianTasks/assign",
   async (taskData, { rejectWithValue }) => {
@@ -59,22 +57,18 @@ export const fetchTaskCount = createAsyncThunk(
   }
 );
 
-
 export const updateTaskStatus = createAsyncThunk(
   "technicianTasks/updateStatus",
   async ({ taskId, status }, { rejectWithValue }) => {
     try {
       const backendStatus = status === "IN_PROGRESS" ? "INPROGRESS" : status;
-      await AxiosServices.updateTaskStatusAPI(taskId, backendStatus);
-      
-      // Return the updated task data instead of just the success message
+      await AxiosServices.updateTaskStatusAPI(taskId, backendStatus);      
       return { id: taskId, status: backendStatus };
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);
     }
   }
 );
-
 
 export const fetchTaskCountByEmployee = createAsyncThunk(
   "technicianTasks/fetchCountByEmployee",
@@ -99,7 +93,6 @@ export const fetchTasksByEmployee = createAsyncThunk(
   }
 );
 
-//for technician task pagination and search..
 export const fetchTasks = createAsyncThunk(
   "technicianTasks/fetchTasks",
   async ({ page = 0, size = 10, search = '', status = '' }, { getState, rejectWithValue }) => {
@@ -114,9 +107,6 @@ export const fetchTasks = createAsyncThunk(
     }
   }
 );
-
-
-
 
 const technicianTasksSlice = createSlice({
   name: "technicianTasks",
@@ -147,7 +137,6 @@ const technicianTasksSlice = createSlice({
     state.status = "loading";       
     state.error = null;             
   })
-
   .addCase(fetchTasks.fulfilled, (state, action) => {
     state.status = "succeeded";
     state.tasks = action.payload.tasks || [];         
@@ -155,8 +144,6 @@ const technicianTasksSlice = createSlice({
     state.totalPages = action.payload.totalPages ?? 1;
     state.totalItems = action.payload.totalItems ?? 0;
   })
-
-  
   .addCase(fetchTasks.rejected, (state, action) => {
     state.status = "failed";
     state.tasks = [];                     
@@ -166,8 +153,6 @@ const technicianTasksSlice = createSlice({
     state.error = action.payload || "Failed to fetch tasks";
   });
 
-
-
   builder
   .addCase(assignNewTask.pending, (state) => {
     state.loading = true;
@@ -175,14 +160,12 @@ const technicianTasksSlice = createSlice({
   })
   .addCase(assignNewTask.fulfilled, (state, action) => {
     state.loading = false;
-    
   })
   .addCase(assignNewTask.rejected, (state, action) => {
     state.loading = false;
     state.error = action.payload;
   });
 
-       // total count
     builder
       .addCase(fetchTaskCount.pending, (state) => {
         state.loading = true;
@@ -196,7 +179,6 @@ const technicianTasksSlice = createSlice({
         state.error = action.payload;
       });
 
-       // employee count
     builder
       .addCase(fetchTaskCountByEmployee.pending, (state) => {
         state.loading = true;
@@ -262,8 +244,6 @@ builder
   state.loading = false;
   state.error = action.payload;
 });
-
   },
 });
-
 export default technicianTasksSlice.reducer;

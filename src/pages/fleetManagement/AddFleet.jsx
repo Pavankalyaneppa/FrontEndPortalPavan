@@ -2,19 +2,31 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { addFleet, resetAddFleetStatus } from '@/store/reducers/fleet/FleetSlice';
-import { toast } from '@/components/ui/use-toast';
-import BackButton from '@/users/BackButton';
+import { useToast } from '@/components/ui/use-toast';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import Loading from '@/users/Loading';
+import { ReloadIcon } from "@radix-ui/react-icons";
+import { validateEmail,validateName,validateMobileNumber,validateLocation } from '../validations/Validation';
 
-const AddFleet = () => {
-  const navigate = useNavigate();
+const AddFleet = ({
+  open,
+  onOpenChange,
+  onFleetAdded
+}) => {
   const dispatch = useDispatch();
+  const { toast } = useToast();
   const { addFleetStatus, addFleetError } = useSelector((state) => state.fleet);
   const { user } = useSelector((state) => state.authentication);
+  const [ formErrors, setFormErrors ] = useState({});
+  const [touched,setTouched] = useState({
+      fleetName: false,
+      ownerName: false,
+      ownerEmail: false,
+      ownerPhone: false,
+      baseLocation: false
+  });
 
   const [formData, setFormData] = useState({
     fleetName: '', 
@@ -36,7 +48,10 @@ const AddFleet = () => {
         description: 'Fleet added successfully!',
         variant: 'default',
       });
-      navigate('/fleetManagement');
+      if (onFleetAdded) {
+        onFleetAdded();
+      }
+      onOpenChange(false);
       dispatch(resetAddFleetStatus());
     }
 
@@ -54,7 +69,44 @@ const AddFleet = () => {
       });
       dispatch(resetAddFleetStatus());
     }
-  }, [addFleetStatus, addFleetError, navigate, dispatch]);
+  }, [addFleetStatus, addFleetError, dispatch, toast, onFleetAdded, onOpenChange]);
+
+  useEffect(() => {
+  const errors = {};
+  if (validateName(formData.fleetName)) errors.fleetName = validateName(formData.fleetName);
+  if (validateName(formData.ownerName)) errors.ownerName = validateName(formData.ownerName);
+  if (validateEmail(formData.ownerEmail)) errors.ownerEmail = validateEmail(formData.ownerEmail);
+  if (validateMobileNumber(formData.ownerPhone)) errors.ownerPhone = validateMobileNumber(formData.ownerPhone);
+  if (validateLocation(formData.baseLocation)) errors.baseLocation = validateLocation(formData.baseLocation);
+  setFormErrors(errors);
+}, [formData]);
+
+useEffect(() => {
+  const errors = {};
+
+  // Only add to errors if validation returns a string (error message)
+  const fleetNameError = validateName(formData.fleetName);
+  if (fleetNameError) errors.fleetName = fleetNameError;
+
+  const ownerNameError = validateName(formData.ownerName);
+  if (ownerNameError) errors.ownerName = ownerNameError;
+
+  const emailError = validateEmail(formData.ownerEmail);
+  if (emailError) errors.ownerEmail = emailError;
+
+  const mobileError = validateMobileNumber(formData.ownerPhone);
+  if (mobileError) errors.ownerPhone = mobileError;
+
+  const locationError = validateLocation(formData.baseLocation);
+  if (locationError) errors.baseLocation = locationError;
+
+  setFormErrors(errors);
+}, [formData]);
+
+const handleBlur = (e) => {
+  const { name } = e.target;
+  setTouched(prev => ({ ...prev, [name]: true }));
+};
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -65,22 +117,36 @@ const AddFleet = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log('Submitting fleet data:', formData);
-    dispatch(addFleet(formData));
-  };
+ const handleSubmit = (e) => {
+  e.preventDefault();
+  
+  // Mark all fields as touched
+  setTouched({
+    fleetName: true,
+    ownerName: true,
+    ownerEmail: true,
+    ownerPhone: true,
+    baseLocation: true
+  });
+
+  // Check for validation errors
+  if (Object.keys(formErrors).length > 0) {
+    toast({ title: "Validation Error", description: "Please fix validation errors", variant: "destructive" });
+    return;
+  }
+
+  dispatch(addFleet(formData));
+};
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Add New Fleet</h1>
-        <BackButton />
-      </div>
-
-      <div className="max-w-3xl mx-auto rounded-lg border p-6 bg-white shadow">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Add New Fleet</DialogTitle>
+        </DialogHeader>
+        
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="fleetName">Fleet Name *</Label>
               <Input 
@@ -90,7 +156,11 @@ const AddFleet = () => {
                 onChange={handleChange} 
                 required 
                 disabled={addFleetStatus === 'loading'}
+                onBlur={handleBlur}
               />
+              {touched.fleetName && formErrors.fleetName && (
+                <p className="text-sm text-red-500">{formErrors.fleetName}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -102,9 +172,12 @@ const AddFleet = () => {
                 onChange={handleChange} 
                 required 
                 disabled={addFleetStatus === 'loading'}
+                onBlur={handleBlur}
               />
+              {touched.ownerName && formErrors.ownerName && (
+                <p className="text-sm text-red-500"> {formErrors.ownerName}</p>
+              )}
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="ownerEmail">Owner Email *</Label>
               <Input 
@@ -115,7 +188,11 @@ const AddFleet = () => {
                 onChange={handleChange} 
                 required 
                 disabled={addFleetStatus === 'loading'}
+                onBlur={handleBlur}
               />
+              {touched.ownerEmail && formErrors.ownerEmail && (
+                <p className="text-sm text-red-500"> {formErrors.ownerEmail}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -128,7 +205,11 @@ const AddFleet = () => {
                 onChange={handleChange} 
                 required 
                 disabled={addFleetStatus === 'loading'}
+                onBlur={handleBlur}
               />
+              {touched.ownerPhone && formErrors.ownerPhone && (
+                <p className="text-sm text-red-500"> {formErrors.ownerPhone}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -140,7 +221,11 @@ const AddFleet = () => {
                 onChange={handleChange} 
                 required 
                 disabled={addFleetStatus === 'loading'}
+                onBlur={handleBlur}
               />
+              {touched.baseLocation && formErrors.baseLocation && (
+                <p className="text-sm text-red-500"> {formErrors.baseLocation}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -167,7 +252,7 @@ const AddFleet = () => {
             <Button 
               type="button" 
               variant="outline" 
-              onClick={() => navigate('/fleetManagement')}
+              onClick={() => onOpenChange(false)}
               disabled={addFleetStatus === 'loading'}
             >
               Cancel
@@ -176,13 +261,22 @@ const AddFleet = () => {
               type="submit" 
               disabled={addFleetStatus === 'loading'}
             >
-              {addFleetStatus === 'loading' ? <Loading /> : 'Add Fleet'}
+              {addFleetStatus === 'loading' ? (
+                <>
+                  <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />
+                  Adding...
+                </>
+              ) : (
+                'Add Fleet'
+              )}
             </Button>
           </div>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };
 
 export default AddFleet;
+
+//ADD fleet COMPONENT........................................................................................

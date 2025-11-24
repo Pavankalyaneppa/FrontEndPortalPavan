@@ -24,6 +24,7 @@ import technicianTasksReducer from './reducers/tasks/technicianTasksSlice';
 import chargerInstallationReducer from './reducers/chargerInstallation/ChargerInstallationSlice';
 import fleetReducer from './reducers/fleet/FleetSlice';
 import requestsReducer from './reducers/requests/RequestsSlice';
+import evuserReducer from './reducers/evuser/evuserSlice';
 
 const rootReducer = combineReducers({
     authentication: authenticationReducer,
@@ -49,6 +50,7 @@ const rootReducer = combineReducers({
     technicianTasks: technicianTasksReducer,
     fleet: fleetReducer,
     requests: requestsReducer,
+    evuser:evuserReducer,
 
   });
 

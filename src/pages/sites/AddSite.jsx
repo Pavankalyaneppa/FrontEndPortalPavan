@@ -1,30 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from '@/components/ui/use-toast';
-import { ReloadIcon } from "@radix-ui/react-icons";
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { addSite, fetchOwners, resetAddSiteStatus } from '@/store/reducers/sites/sitesSlice';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
-import { ChevronRightIcon } from "@radix-ui/react-icons";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import Loading from '@/users/Loading';
 import LocationPicker from './LocationPicker';
 import { fetchSites } from '@/store/reducers/reports/reportsSlice';
-import {
-  validateSiteName,
-  validateManagerEmail,
-  validateManagerName,
-  validateManagerPhone,
-  validateLatitude,
-  validateLongitude,
-  validateEmail,
-} from '@/pages/validations/Validation';
+import { validateSiteName, validateManagerEmail, validateManagerName, validateManagerPhone, validateLatitude, validateLongitude }from '@/pages/validations/Validation';
 
 export default function AddSite() {
   const dispatch = useDispatch();
@@ -34,17 +23,8 @@ export default function AddSite() {
   const [showMap, setShowMap] = useState(false);
   const location = useLocation();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
   const { from, orgId, orgName, franchiseId } = location.state || {};
   const [formErrors, setFormErrors] = useState({});
-  const [errors, setErrors] = useState({
-    siteName: '',
-    managerName: '',
-    managerEmail: '',
-    managerPhone: '',
-    latitude: '',
-    longitude: ''
-  });
   
   const [formData, setFormData] = useState({
     siteName: '',
@@ -61,7 +41,7 @@ export default function AddSite() {
     restrooms: false,
     openingTime: '09:00',
     closeTime: '18:00',
-    siteStatus: 'Active',
+    siteStatus: 'ACTIVE',
     timezone: 'IST'
   });
 
@@ -97,7 +77,6 @@ export default function AddSite() {
     dispatch(fetchOwners());
   }, [dispatch]);
 
-  //added this clean up
   useEffect(() => {
   return () => {
     dispatch(resetAddSiteStatus());
@@ -105,7 +84,6 @@ export default function AddSite() {
 }, [dispatch]);
   
   useEffect(() => {
-    // If the site was successfully added, navigate back to the sites list
   if (addSiteStatus === 'succeeded') {
       if (from === 'franchise' && franchiseId && orgId && orgName) {
       navigate(`/franchiseOwners/${franchiseId}/${orgId}/${encodeURIComponent(orgName)}`, {
@@ -120,7 +98,6 @@ export default function AddSite() {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
@@ -144,10 +121,8 @@ export default function AddSite() {
  const handleSubmit = async (e) => {
   e.preventDefault();
   console.log(formData);
-  // Validate all required fields
   const errors = {};
   
-  // Required fields
   if (!formData.siteName.trim()) errors.siteName = 'Site name is required';
   if (!formData.managerName.trim()) errors.managerName = 'Manager name is required';
   if (!formData.managerEmail.trim()) errors.managerEmail = 'Manager email is required';
@@ -157,7 +132,6 @@ export default function AddSite() {
   if (!formData.longitude.trim()) errors.longitude = 'Longitude is required';
   if (!formData.ownerOrgId) errors.ownerOrgId = 'Owner organization is required';
 
-  // Field-specific validations
   const siteNameError = validateSiteName(formData.siteName);
   if (siteNameError) errors.siteName = siteNameError;
   
@@ -198,7 +172,6 @@ export default function AddSite() {
   } catch (error)  {
     let errorMessage = "Failed to add site";
     
-    // Check for unique constraint violation (site name already exists)
     if (error.response?.data.includes('ConstraintViolationException') || 
         error.response?.data.includes('could not execute statement')) {
       errorMessage = "Site name already exists. Please choose a different name.";
@@ -221,11 +194,10 @@ const handleCancel = () => {
       navigate(`/franchiseOwners/${franchiseId}/${orgId}/${encodeURIComponent(orgName)}`);
     } else {
       navigate('/sites');
-    }
-  };
+    }
+  };
   return (
     <div className="container mx-auto p-4">
-     
       <Card className="w-full max-w-4xl mx-auto">
         <CardHeader>
           <CardTitle>Add New Site</CardTitle>
@@ -283,7 +255,6 @@ const handleCancel = () => {
                 </div>
               </div>
             </div>
-
             <Separator />
 
             <div className="space-y-4">
@@ -328,7 +299,6 @@ const handleCancel = () => {
                   {formErrors.managerPhone && (  <p className="text-xs text-red-500 mt-1">{formErrors.managerPhone}</p>)}
               </div>
             </div>
-
             <Separator />
 
             <div className="space-y-4">
@@ -382,9 +352,7 @@ const handleCancel = () => {
                 </div>
               </div>
             </div>
-
             <Separator />
-
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Facilities</h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -422,9 +390,7 @@ const handleCancel = () => {
                 </div>
               </div>
             </div>
-
             <Separator />
-
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Operations</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -471,15 +437,15 @@ const handleCancel = () => {
               <div className="flex items-center space-x-2">
                <Checkbox
                     id="siteStatus"
-                    checked={formData.siteStatus === 'Active'}
+                    checked={formData.siteStatus === 'ACTIVE'}
                     onCheckedChange={(checked) => {
-                      handleCheckboxChange('siteStatus', checked ? 'Active' : 'Inactive');
+                      handleCheckboxChange('siteStatus', checked ? 'ACTIVE' : 'INACTIVE');
                     }}
                   />
-                  <Label htmlFor="siteStatus">Site Active</Label>
+                  <Label htmlFor="siteStatus">Site ACTIVE</Label>
               </div>
             </div>
-         <div className="flex justify-end space-x-2 pt-4">
+            <div className="flex justify-end space-x-2 pt-4">
               <Button 
                 type="button" 
                 variant="outline" 

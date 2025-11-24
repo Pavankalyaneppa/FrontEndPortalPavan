@@ -61,7 +61,6 @@ export default function EditReferralCode() {
 
   const [formErrors, setFormErrors] = useState({});
 
-  // Fetch referral details and sites on component mount
   useEffect(() => {
     if (id) {
       dispatch(getReferralDetails(id));
@@ -69,7 +68,6 @@ export default function EditReferralCode() {
     }
   }, [dispatch, id]);
 
-  // Set form data when currentReferral is available
   useEffect(() => {
     if (currentReferral) {
       setFormData({

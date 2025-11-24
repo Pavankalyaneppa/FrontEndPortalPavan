@@ -2,11 +2,10 @@ import AxiosServices from '@/services/AxiosServices';
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 import { baseURL,baseOCPPURL } from '@/config';
-// API URLs
 const API_URL = `${baseURL}/services/manufacturer`;
   console.log(API_URL);
-// Async thunks
-export const fetchManufacturers = createAsyncThunk(
+
+  export const fetchManufacturers = createAsyncThunk(
   'manufacturer/fetchManufacturers',
   async ({ page = 0, pageSize = 10 }, { rejectWithValue }) => {
     try {
@@ -65,45 +64,13 @@ export const deleteManufacturer = createAsyncThunk(
     }
   }
 );
-// export const searchManufacturers = createAsyncThunk(
-//   'manufacturer/searchManufacturers',
-//   async ({ search = '', page = 0, size = 10, searchField = '' }, { rejectWithValue }) => {
-//     try {
-//       const response = await axios.get(`${baseURL}/services/userprofile/unified-search`, {
-//         params: {
-//           search,
-//           page,
-//           size,
-//           type: 'manufacturers',
-//           searchField
-//         }
-//       });
-
-//       const manufacturerData = response.data.manufacturers || {};
-
-//       return {
-//         content: manufacturerData.content || [],
-//         totalElements: manufacturerData.totalElements || 0,
-//         totalPages: manufacturerData.totalPages || 0,
-//         currentPage: manufacturerData.currentPage || 0
-//       };
-//     } catch (error) {
-//       return rejectWithValue(error.response?.data?.message || error.message);
-//     }
-//   }
-// );
-
-// Initial state
 
 export const searchManufacturers = createAsyncThunk(
   'manufacturer/searchManufacturers',
   async ({ search = '', page = 0, size = 10 }, { rejectWithValue }) => {
     try {
-      // Call existing backend list API
       const response = await axios.get(`${API_URL}/getManufracturer`);
       let manufacturers = response.data || [];
-
-      // Local filter
       if (search) {
         manufacturers = manufacturers.filter((m) =>
           m.manufacturerName?.toLowerCase().includes(search.toLowerCase()) ||
@@ -111,8 +78,6 @@ export const searchManufacturers = createAsyncThunk(
           m.country?.toLowerCase().includes(search.toLowerCase())
         );
       }
-
-      // Apply pagination manually
       const start = page * size;
       const paginated = manufacturers.slice(start, start + size);
 
@@ -200,24 +165,6 @@ const manufacturerSlice = createSlice({
         state.error = action.payload || 'Failed to add manufacturer';
         state.success = false;
       })
-      
-      // Update Manufacturer
-      // .addCase(updateManufacturer.pending, (state) => {
-      //   state.loading = true;
-      //   state.error = null;
-      //   state.success = false;
-      // })
-      // .addCase(updateManufacturer.fulfilled, (state) => {
-      //   state.loading = false;
-      //   state.success = true;
-      // })
-      // .addCase(updateManufacturer.rejected, (state, action) => {
-      //   state.loading = false;
-      //   state.error = action.payload || 'Failed to update manufacturer';
-      //   state.success = false;
-      // })
-      
-      // Delete Manufacturer
       .addCase(deleteManufacturer.pending, (state) => {
         state.loading = true;
         state.error = null;

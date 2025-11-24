@@ -2,7 +2,8 @@ import axios from 'axios';
 import React, { useState } from 'react';
 import { FaEnvelope, FaLock, FaCheck, FaArrowRight, FaEye, FaEyeSlash } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
-import { baseURL,baseOCPPURL } from '@/config';
+import { baseURL } from '@/config';
+
 export default function SetPassword() {
   const [email, setEmail] = useState('');
   const [emailExists, setEmailExists] = useState(false);
@@ -16,21 +17,33 @@ export default function SetPassword() {
   const [response,setResponse]=useState();
   const navigate=useNavigate();
 
-const checkEmail = async () => {
+  const checkEmail = async () => {
   setIsLoading(true);
   try {
-console.log("Checking email:", email);
-const res = await axios.get(`${baseURL}/services/employee/check-email?email=${email}`);
-console.log("Backend response:", res.data);
-    console.log("Response:", res.data);
+    console.log("Checking email:", email);
 
-    if (res.data.exists) {
+    const userRes = await axios.get(`${baseURL}/services/userprofile/check-email?email=${email}`);
+    console.log("User profile check:", userRes.data);
+
+    if (userRes.data.exists) {
       setEmailExists(true);
       setError('');
+      setResponse('user');
+      return;
+    }
+
+    const empRes = await axios.get(`${baseURL}/services/employee/check-email?email=${email}`);
+    console.log("Employee check:", empRes.data);
+
+    if (empRes.data.exists) {
+      setEmailExists(true);
+      setError('');
+      setResponse('employee');
     } else {
       setEmailExists(false);
       setError('Email not found. Please try again.');
     }
+
   } catch (error) {
     console.error("Error checking email:", error);
     setEmailExists(false);
@@ -38,12 +51,11 @@ console.log("Backend response:", res.data);
   } finally {
     setIsLoading(false);
   }
-};
+};  
 
   const handlePasswordChange = (e) => {
     const value = e.target.value;
     setPassword(value);
-     // Simple password strength calculation
     let strength = 0;
     if (value.length > 5) strength += 1;
     if (value.length > 8) strength += 1;
@@ -54,7 +66,7 @@ console.log("Backend response:", res.data);
     setPasswordStrength(strength);
   };
 
- const handleSubmit = (e) => {
+const handleSubmit = (e) => {
   e.preventDefault();
 
   if (password !== confirmPassword) {
@@ -70,22 +82,26 @@ console.log("Backend response:", res.data);
   setError('');
   setIsLoading(true);
 
-  axios.post( `${baseURL}/services/employee/save-password`, null, {
+  const endpoint =
+    response === 'employee'
+      ? `${baseURL}/services/employee/save-password`
+      : `${baseURL}/services/userprofile/save-password`;
+
+  axios.post(endpoint, null, {
     params: {
       email: email,
       password: password,
       confirmPassword: confirmPassword
     }
   }).then(response => {
-  setTimeout(() => {
-    console.log(response.data); // for debugging
-    alert(response.data.message || "Password updated successfully!"); // adjust according to backend
-    const data = response.status;
-    setIsLoading(false);
-    if (data === 200) {
-      navigate("/");
-    }
-  }, 1500);
+    setTimeout(() => {
+      console.log(response.data);
+      alert(response.data.message || "Password updated successfully!");
+      setIsLoading(false);
+      if (response.status === 200) {
+        navigate("/");
+      }
+    }, 1500);
   }).catch(error => {
     setTimeout(() => {
       alert("Error submitting password: " + error.message);
@@ -93,7 +109,6 @@ console.log("Backend response:", res.data);
     }, 1500);
   });
 };
-
 
   const getPasswordStrengthColor = () => {
     if (passwordStrength === 0) return 'bg-gray-200';
@@ -149,14 +164,12 @@ console.log("Backend response:", res.data);
                   />
                 </div>
               </div>
-
               <button
                 type="button"
                 onClick={checkEmail}
                 disabled={isLoading}
                 className={`w-full flex items-center justify-center py-3 px-4 rounded-lg font-medium text-white transition ${isLoading ? 'bg-indigo-400' : 'bg-indigo-600 hover:bg-indigo-700'}`}
-              >
-                {isLoading ? (
+              > {isLoading ? (
                   <>
                     <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -179,7 +192,6 @@ console.log("Backend response:", res.data);
                   <span>Email verified: {email}</span>
                 </div>
               </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
                 <div className="relative">
@@ -219,7 +231,6 @@ console.log("Backend response:", res.data);
                   </div>
                 )}
               </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
                 <div className="relative">
@@ -243,7 +254,6 @@ console.log("Backend response:", res.data);
                   </button>
                 </div>
               </div>
-
               <button
                 type="submit"
                 disabled={isLoading}
@@ -263,7 +273,6 @@ console.log("Backend response:", res.data);
               </button>
             </div>
           )}
-
           {error && (
             <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded">
               <div className="flex items-center text-red-700">

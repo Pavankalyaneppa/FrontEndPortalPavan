@@ -494,7 +494,7 @@ const Reports = () => {
 
             <Card className="mb-6">
   <CardHeader>
-    <CardTitle>Energy Consumption</CardTitle>
+  <CardTitle>Energy Consumption</CardTitle>
   </CardHeader>
  <CardContent>
   <div className="h-[400px]">
@@ -644,3 +644,4 @@ const Reports = () => {
 };
 
 export default Reports;
+//reports component....

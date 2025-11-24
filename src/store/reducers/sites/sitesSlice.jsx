@@ -17,9 +17,8 @@ const initialState = {
   ownersStatus: 'idle',
   addSiteStatus: 'idle',
   addSiteError: null,
-  updateSiteStatus: 'idle',         // <-- NEW
+  updateSiteStatus: 'idle',
   updateSiteError: null, 
-  // Keep the station-related state for compatibility
   stationList: [],
   stationTotalElements: 0,
   stationCurrentPage: 0,
@@ -59,7 +58,6 @@ export const sitesSlice = createSlice({
       state.error = action.payload;
     },
     
-    // Site details actions
     getSiteDetailsStart: (state) => {
       state.siteDetailsStatus = 'loading';
     },
@@ -72,7 +70,6 @@ export const sitesSlice = createSlice({
       state.siteDetailsError = action.payload;
     },
     
-    // Owners actions
     getOwnersStart: (state) => {
       state.ownersStatus = 'loading';
     },
@@ -161,8 +158,8 @@ export const {
   addSiteStart,
   addSiteSuccess,
   addSiteFailure,
-  updateSiteStart,            // <-- NEW
-  updateSiteSuccess,          // <-- NEW
+  updateSiteStart,            
+  updateSiteSuccess,          
   updateSiteFailure,
   getStationsSuccess,
   addStationSuccess,
@@ -175,7 +172,6 @@ export const {
   deleteSiteFailure,
 } = sitesSlice.actions;
 
-// Thunk action creators that directly interact with the APIs
 export const fetchSites = (params = {}) => async (dispatch) => {
   try {
     dispatch(getSitesStart());
@@ -195,46 +191,6 @@ export const fetchSiteDetails = (id) => async (dispatch) => {
     dispatch(getSiteDetailsFailure(error.response?.data || 'Failed to fetch site details'));
   }
 };
-
-// export const searchSites = createAsyncThunk(
-//   'sites/searchSites',
-//   async ({ search, page, size, searchField }) => {
-//     const params = {
-//       search,
-//       page,
-//       size,
-//       type: 'sites',
-//     };
-
-//     if (searchField) {
-//       params.searchField = searchField;
-//     }
-
-//     const response = await axios.get(`${API_BASE_URL}/site/siteList`, {
-//       params,
-//     });
-
-//     const rawData = response.data.sites?.data || [];
-
-//     const mappedData = rawData.map(row => ({
-//       siteId: row[0],
-//       email: row[1],
-//       fullName: row[2],
-//       mobile: row[3],
-//       status: row[4],
-//       ownerId: row[5],
-//       sitename: row[6],
-//       owner_orgName: row[7],
-//       white_lable_orgName: row[8]
-//     }));
-
-//     return {
-//       data: mappedData,
-//       currentPage: response.data.sites?.currentPage || 0,
-//       totalElements: response.data.sites?.totalElements || 0
-//     };
-//   }
-// );
 
 export const searchSites = createAsyncThunk(
   'sites/searchSites',
@@ -257,7 +213,6 @@ export const searchSites = createAsyncThunk(
   }
 );
 
-
 export const fetchOwners = () => async (dispatch) => {
   try {
     const orgId = localStorage.getItem("orgId");
@@ -273,18 +228,16 @@ export const addSite = (siteData) => async (dispatch) => {
   try {
     dispatch(addSiteStart());
     const response = await axios.post(`${API_BASE_URL}/site/add`, siteData);
-console.log(response);
+    console.log(response);
     if (response.status === 201) {
       dispatch(addSiteSuccess());
-      // Refresh sites list after successful addition
       dispatch(fetchSites({ page: 0, size: 10 }));
       return response.data;
     }
   } catch (response) {
     dispatch(addSiteFailure(response || 'Failed to add site'));
-    throw response; // Ensure error is thrown for form handling
+    throw response;
   } finally {
-    // Reset status after 2 seconds (safety net)
     setTimeout(() => dispatch(resetAddSiteStatus()), 2000);
   }
 };
@@ -296,7 +249,6 @@ export const updateSite = (id, siteData) => async (dispatch) => {
     console.log(response);
     if (response.status === 200) {
       dispatch(updateSiteSuccess());
-      // Optionally refresh the site list or details
       dispatch(fetchSites({ page: 0, size: 10 }));
       dispatch(fetchSiteDetails(id));
       return {
@@ -310,7 +262,6 @@ export const updateSite = (id, siteData) => async (dispatch) => {
   }
 };
 
-// Keep the original API calls for stations for compatibility
 export const fetchStations = (siteId, params) => async (dispatch) => {
   try {
     const response = await axios.get(`${API_BASE_URL}/site/stationDetailsbysiteid/${siteId}`, { params });
@@ -324,7 +275,6 @@ export const addStation = (stationData) => async (dispatch) => {
   try {
     const response = await axios.post(`${API_BASE_URL}/stations/add`, stationData);
     dispatch(addStationSuccess());
-    // Optionally refetch the stations list
     dispatch(fetchStations(stationData.siteId, { page: 0, size: 100 }));
   } catch (error) {
     dispatch(addStationFailed());
@@ -332,7 +282,5 @@ export const addStation = (stationData) => async (dispatch) => {
   }
 };
 
-// For backwards compatibility with the original code
 export const fetchFranchiseOwners = () => fetchOwners();
-
 export default sitesSlice.reducer;

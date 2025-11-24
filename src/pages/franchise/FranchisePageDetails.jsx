@@ -7,7 +7,6 @@ import { Card } from '@/components/ui/card';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import axios from 'axios';
 import {
     Table,
     TableBody,
@@ -19,38 +18,28 @@ import {
 import {
   validateName,
   validateMobileNumber,
-  // validatePassword,
-  // validateConfirmPassword,
   validateCity,
   validateZipCode,
-  // validateRequiredField,
   validateEmail
 } from '@/pages/validations/Validation';
 import Loading from '@/users/Loading';
 import BackButton from '@/users/BackButton';
-import { useDispatch } from 'react-redux';
 import StatusButton from '@/users/StatusButton';
 import { ReloadIcon } from '@radix-ui/react-icons';
 import AxiosServices from '@/services/AxiosServices';
 const FranchisePageDetails = () => {
   const { id, orgId, orgName } = useParams();
   const navigate = useNavigate();
-  const [currentOwner, setCurrentOwner] = useState({
-    userDetails: null,
-    sites: []
-  });
+  const [currentOwner, setCurrentOwner] = useState({ userDetails: null, sites: [] });
+  const [currentPage, setCurrentPage] = useState(0);
+  const itemsPerPage = 10;
+  const totalPages = Math.ceil( currentOwner.sites.length/ itemsPerPage);
 
-  // Pagination for sites
- const [currentPage, setCurrentPage] = useState(0);
-const itemsPerPage = 10;
-const totalPages = Math.ceil( currentOwner.sites.length/ itemsPerPage);
-
-// Calculate start and end index
-const startIndex = (currentPage) * itemsPerPage;
-const endIndex = startIndex + itemsPerPage;
+  const startIndex = (currentPage) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
 
   const currentSites = currentOwner.sites.slice(startIndex, endIndex);
-const[isSubmitting,setIsSubmitting]=useState(false);
+  const [isSubmitting,setIsSubmitting]=useState(false);
   const [noteText, setNoteText] = useState('');
   const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
@@ -74,9 +63,6 @@ const[isSubmitting,setIsSubmitting]=useState(false);
     enabled: true,
     passwordChange: false
   });
-
-
-
      
 useEffect(() => {
       const errors = {};
@@ -87,7 +73,6 @@ useEffect(() => {
       const emailError = validateEmail(editFormData.email);
       if (emailError) errors.email = emailError;
   
-       
       const userNameError = validateName(editFormData.username);
       if (userNameError) errors.username = userNameError;
     
@@ -108,7 +93,6 @@ useEffect(() => {
   };
 
   const handleSaveNote = () => {
-    // Implement your note saving logic here
     toast({
       title: "Note Saved",
       description: "Your note has been saved successfully",
@@ -156,10 +140,7 @@ useEffect(() => {
     });
     return;
   }
-
   console.log("Submitting update data:", editFormData);
-
-
     try {
       setIsSubmitting(true);
       const payload = {
@@ -195,12 +176,9 @@ useEffect(() => {
     }
   };
 
-
   const handleEditClick = () => {
     if (!currentOwner.userDetails) return;
-    
     const address = currentOwner.userDetails.address?.[0] || {};
-    
     setEditFormData({
       orgName: orgName || "",
       fullname: currentOwner.userDetails.fullname || "",
@@ -217,8 +195,7 @@ useEffect(() => {
       password: "",
       confirmPassword: "",
       passwordChange: false
-    });
-    
+    });    
     setEditMode(true);
   };
 
@@ -254,8 +231,7 @@ useEffect(() => {
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">Edit Franchise Owner</h1>
           <Button variant="outline" onClick={() => setEditMode(false)}>Cancel</Button>
-        </div>
-        
+        </div>        
         <Card className="p-6">
            <form onSubmit={handleUpdateOwner} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -311,49 +287,7 @@ useEffect(() => {
                   required
                 />
                 {formErrors.mobileNumber && <p className="text-sm text-red-500">{formErrors.mobileNumber}</p>}
-              </div>
-              {/* <div className="col-span-2">
-                <div className="flex items-center space-x-2 mb-2">
-                  <Checkbox 
-                    id="passwordChange" 
-                    checked={passwordChangeEnabled}
-                    onCheckedChange={setPasswordChangeEnabled}
-                  />
-                  <Label htmlFor="passwordChange">
-                    Change Password
-                  </Label>
-                </div>
-              </div>
-              
-              {passwordChangeEnabled && (
-                <>
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-password">New Password *</Label>
-                    <Input 
-                      id="edit-password" 
-                      name="password" 
-                      type="password" 
-                      value={editFormData.password} 
-                      onChange={handleEditInputChange} 
-                      required
-                    />
-                    {formErrors.password && <p className="text-sm text-red-500">{formErrors.password}</p>}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-confirmPassword">Confirm Password *</Label>
-                    <Input 
-                      id="edit-confirmPassword" 
-                      name="confirmPassword" 
-                      type="password" 
-                      value={editFormData.confirmPassword} 
-                      onChange={handleEditInputChange} 
-                      required
-                    />
-                    {formErrors.confirmPassword && <p className="text-sm text-red-500">{formErrors.confirmPassword}</p>}
-                  </div>
-                </>
-              )} */}
-              
+              </div>              
               <div className="space-y-2">
                 <Label htmlFor="edit-address">Address *</Label>
                 <Input 
@@ -423,18 +357,18 @@ useEffect(() => {
             </div>
             <div className="flex justify-end gap-4 pt-4">
              <Button 
-                              type="submit" 
-                              disabled={isSubmitting}
-                            >
-                              {isSubmitting ? (
-                                <>
-                                  <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />
-                                  Updating...
-                                </>
-                              ) : (
-                                'Update'
-                              )}
-                            </Button>
+             type="submit" 
+             disabled={isSubmitting}
+             >
+             {isSubmitting ? (
+             <>
+             <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />
+             Updating...
+             </>
+             ) : (
+             'Update'
+            )}
+           </Button>
             </div>
           </form>
         </Card>
@@ -532,41 +466,39 @@ useEffect(() => {
               </Card>
             )}
             <h2 className="text-xl font-semibold mt-8 mb-4">Additional Information</h2>
-                         <Card className="p-6 mb-6">
-                            <div className="grid grid-cols-3 gap-4">
-                               <div>
-                                <p className="font-semibold text-gray-600"> WhiteLabel Organisation Id</p>
-                                <p className="font-medium">{ '-'}</p>
-                              </div>
-                              <div>
-                                <p className="font-semibold text-gray-600">WhiteLabel Organisation Name</p>
-                                <p className="font-medium">{ '-'}</p>
-                              </div>
-                              <div>
-                                <p className="font-semibold text-gray-600">Organisation Id</p>
-                                <p className="font-medium">{orgId || '-'}</p>
-                              </div>
-                              <div>
-                                <p className="font-semibold text-gray-600">Organisation Name</p>
-                                <p className="font-medium">{orgName || '-'}</p>
-                              </div>
-                              <div>
-                                <p className="font-semibold text-gray-600">Gst Number</p>
-                                <p className="font-medium">-</p>
-                              </div>
-                              <div>
-                                <p className="font-semibold text-gray-600 mt-4">Role Name</p>
-                                <p className="font-medium">
-                                  {currentOwner.usersinroles?.length > 0
-                                    ? (currentOwner.usersinroles[0].role_id === 4
-                                        ? 'Franchise Owner'
-                                        : `Role ID: ${currentOwner.usersinroles[0].role_id}`)
-                                    : 'No role assigned'}
-                                </p>
-                              </div>
-                              
-                            </div>
-                          </Card>
+            <Card className="p-6 mb-6">
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <p className="font-semibold text-gray-600"> WhiteLabel Organisation Id</p>
+                  <p className="font-medium">{ '-'}</p>
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-600">WhiteLabel Organisation Name</p>
+                  <p className="font-medium">{ '-'}</p>
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-600">Organisation Id</p>
+                  <p className="font-medium">{orgId || '-'}</p>
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-600">Organisation Name</p>
+                  <p className="font-medium">{orgName || '-'}</p>
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-600">Gst Number</p>
+                  <p className="font-medium">-</p>
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-600 mt-4">Role Name</p>
+                  <p className="font-medium">
+                    {currentOwner.usersinroles?.length > 0 ? (currentOwner.usersinroles[0].role_id === 4
+                    ? 'Franchise Owner'
+                    : `Role ID: ${currentOwner.usersinroles[0].role_id}`)
+                    : 'No role assigned'}
+                  </p>
+                </div>
+                </div>
+              </Card>
           </div>
         </TabsContent>
         <TabsContent value="notes">
@@ -593,7 +525,6 @@ useEffect(() => {
             </div>
           </div>
         </TabsContent>
-
         <TabsContent value="sites">
           <div className="bg-white rounded-lg shadow p-6 mt-4">
             <div className="flex justify-between items-center mb-6">
@@ -603,7 +534,6 @@ useEffect(() => {
                   from: 'franchise', orgId, orgName, franchiseId: id}})}> Add New Site
               </Button>
             </div>
-            
             {currentOwner.sites.length > 0 ? (
               <div>
                 <Table className="border">
@@ -613,7 +543,6 @@ useEffect(() => {
                       <TableHead>Site Name</TableHead>
                       <TableHead>Manager Name</TableHead>
                       <TableHead>Manager Phone</TableHead>
-                      <TableHead>Status</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -623,17 +552,6 @@ useEffect(() => {
                         <TableCell>{site.siteName}</TableCell>
                         <TableCell>{site.managerName || '-'}</TableCell>
                         <TableCell>{site.managerPhone || '-'}</TableCell>
-                        <TableCell>
-                          <span
-                            className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
-                              site.status
-                                ? 'bg-green-200 text-green-800'
-                                : 'bg-red-200 text-red-800'
-                            }`}
-                          >
-                            {site.status ? 'Active' : 'Inactive'}
-                          </span>
-                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -680,7 +598,4 @@ useEffect(() => {
     </div>
   );
 };
-
 export default FranchisePageDetails;
-
-

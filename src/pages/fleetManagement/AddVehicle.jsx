@@ -1,26 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useDispatch, useSelector } from 'react-redux';
 import { addVehicleToFleet, resetVehicleStatus, fetchFleets } from '@/store/reducers/fleet/FleetSlice';
 import { toast } from '@/components/ui/use-toast';
-import BackButton from '@/components/ui/BackButton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import Loading from '@/users/Loading';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ReloadIcon } from "@radix-ui/react-icons";
 
-const AddVehicle = () => {
-  const { state } = useLocation();
+const AddVehicle = ({ open,
+  onOpenChange,
+  onVehicleAdded,
+  fleetId: propFleetId}) => {
   const { fleetId: paramFleetId } = useParams();
-  const navigate = useNavigate();
   const dispatch = useDispatch();
   const { addVehicleStatus, addVehicleError, fleets } = useSelector((state) => state.fleet);
   const { user } = useSelector((state) => state.authentication);
 
-  const initialFleetId = state?.fleetId || paramFleetId || '';
+  const initialFleetId = propFleetId || paramFleetId || '';
 
   const [formData, setFormData] = useState({
     vehicleId: '', 
@@ -35,33 +34,22 @@ const AddVehicle = () => {
   });
 
   const [errors, setErrors] = useState({});
-  const [showFleetSelection, setShowFleetSelection] = useState(!initialFleetId);
-
-  useEffect(() => {
-    if (showFleetSelection && user?.orgId) {
-      dispatch(fetchFleets({ orgId: user.orgId }));
+// Fix useEffect - remove navigate
+useEffect(() => {
+  if (addVehicleStatus === 'succeeded') {
+    toast({
+      title: 'Success',
+      description: 'Vehicle added successfully!',
+      variant: 'default',
+    });
+    if (onVehicleAdded) {
+      onVehicleAdded();
     }
-  }, [showFleetSelection, user?.orgId, dispatch]);
-
-  useEffect(() => {
-    if (addVehicleStatus === 'succeeded') {
-      toast({
-        title: 'Success',
-        description: 'Vehicle added successfully!',
-        variant: 'default',
-      });
-      navigate(`/fleet/${formData.fleetId}`);
-      dispatch(resetVehicleStatus());
-    }
-
-    if (addVehicleStatus === 'failed') {
-      toast({
-        title: 'Error',
-        description: addVehicleError || 'Failed to add vehicle',
-        variant: 'destructive',
-      });
-    }
-  }, [addVehicleStatus, addVehicleError, navigate, dispatch, formData.fleetId]);
+    onOpenChange(false); // Close dialog
+    dispatch(resetVehicleStatus());
+  }
+  // Remove navigate from dependencies
+}, [addVehicleStatus, addVehicleError, dispatch, toast, onVehicleAdded, onOpenChange]);
 
   const validateForm = () => {
     const newErrors = {};
@@ -111,10 +99,6 @@ const AddVehicle = () => {
     }
   };
 
-  const handleFleetSelect = (fleetId) => {
-    setFormData(prev => ({ ...prev, fleetId }));
-    setShowFleetSelection(false);
-  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -140,94 +124,12 @@ const AddVehicle = () => {
     }));
   };
   
-
-  if (showFleetSelection) {
-    return (
-      <div className="container mx-auto p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">Add New Vehicle</h1>
-          <BackButton />
-        </div>
-
-        <Card className="max-w-3xl mx-auto">
-          <CardHeader>
-            <CardTitle>Select a Fleet</CardTitle>
-            <CardDescription>
-              Choose which fleet to add this vehicle to
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {Array.isArray(fleets) && fleets.length > 0 ? (
-                <div className="grid gap-4">
-                  {fleets.map(fleet => (
-                    <Card 
-                      key={fleet.id} 
-                      className="cursor-pointer hover:bg-gray-50"
-                      onClick={() => handleFleetSelect(fleet.id)}
-                    >
-                      <CardContent className="p-4">
-                        <h3 className="font-semibold">{fleet.fleetName}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          ID: {fleet.id} | Location: {fleet.baseLocation}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          Owner: {fleet.ownerName} ({fleet.ownerEmail})
-                        </p>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              ) : (
-                <Alert>
-                  <AlertDescription>
-                    No fleets found. Please create a fleet first.
-                  </AlertDescription>
-                </Alert>
-              )}
-              
-              <div className="flex justify-between pt-4">
-                <Button 
-                  variant="outline" 
-                  onClick={() => navigate('/fleet')}
-                >
-                  Back to Fleets
-                </Button>
-                <Button 
-                  onClick={() => navigate('/fleet/add')}
-                >
-                  Create New Fleet
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   return (
-    <div className="container mx-auto p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Add New Vehicle</h1>
-        <BackButton />
-      </div>
-
-      <Card className="max-w-3xl mx-auto">
-        <CardHeader>
-          <CardTitle>Vehicle Details</CardTitle>
-          <CardDescription>
-            Add a new vehicle to fleet {formData.fleetId}
-            <Button 
-              variant="link" 
-              className="ml-2"
-              onClick={() => setShowFleetSelection(true)}
-            >
-              Change Fleet
-            </Button>
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+  <Dialog open={open} onOpenChange={onOpenChange}>
+    <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+      <DialogHeader>
+        <DialogTitle>Add New Vehicle</DialogTitle>
+      </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
@@ -360,28 +262,33 @@ const AddVehicle = () => {
                 />
               </div>
             </div>
-
-            <div className="flex justify-end space-x-4 pt-4">
+               <div className="flex justify-end space-x-4 pt-4">
               <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => navigate(-1)}
-                disabled={addVehicleStatus === 'loading'}
-              >
-                Cancel
-              </Button>
-              <Button 
-                type="submit" 
-                disabled={addVehicleStatus === 'loading'}
-              >
-                {addVehicleStatus === 'loading' ? <Loading /> : 'Add Vehicle'}
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
-  );
+            type="button" 
+            variant="outline" 
+            onClick={() => onOpenChange(false)}
+            disabled={addVehicleStatus === 'loading'}
+          >
+            Cancel
+          </Button>
+          <Button 
+            type="submit" 
+            disabled={addVehicleStatus === 'loading'}
+          >
+            {addVehicleStatus === 'loading' ? (
+              <>
+                <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />
+                Adding...
+              </>
+            ) : (
+              'Add Vehicle'
+            )}
+          </Button>
+        </div>
+            </form>
+    </DialogContent>
+  </Dialog>
+);
 };
 
 export default AddVehicle;

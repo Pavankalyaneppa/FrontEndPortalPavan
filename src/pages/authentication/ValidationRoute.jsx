@@ -7,12 +7,10 @@ export default function ValidationRoute({ children }) {
   const { isAuthenticated, user } = useSelector(state => state.authentication);
   const roleId = Number(user?.roleId);
 
-  console.log('ValidationRoute - roleId:', roleId); // Debug log
+  console.log('ValidationRoute - roleId:', roleId);
 
-  // Public routes
   const publicRoutes = ['/login', '/register', '/evdashboard', '/evdashboard/*'];
 
-  // Check public routes
   const isPublicRoute = publicRoutes.some(route => {
     if (route.endsWith('*')) {
       return location.pathname.startsWith(route.slice(0, -1));
@@ -28,7 +26,6 @@ export default function ValidationRoute({ children }) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // Define allowed routes for each role
   const rolePermissions = {
     1: ['/', '/sites', '/add-site', '/site/*', '/editsite/*', '/stations', 
         '/add-stations', '/stations/*', '/whitelabels', '/whitelabels/*',
@@ -40,14 +37,16 @@ export default function ValidationRoute({ children }) {
         '/1loading1','/charger-installation-team','/charger-installation-team/add',
         '/charger-installation-team/edit/:id','/charger-installation-team/*',
         '/fleetManagement','/fleet/add','/fleet/revenue','/fleet/*',
-        '/vehicle/add','/vehicle/*','/technician-dashboard','/technician-dashboard/:id','/FranchiseRequests'],
+        '/vehicle/add','/vehicle/*','/technician-dashboard','/technician-dashboard/:id',
+        '/FranchiseRequests','/sites-requests','stations-requests'],
     3: ['/', '/sites', '/add-site', '/site/*', '/editsite/*', '/stations',
         '/add-stations', '/stations/*',
         '/franchiseOwners', '/franchiseOwners/*', '/evusers', '/evusers/*',
         '/profiles/*', '/rfid', '/issues-tracker', '/issues/*', '/reports',
         '/adminProfile', '/ocpp', 
         '/addcharger/*', '/referral-codes', '/referral-codes/*', '/loading',
-        '/1loading1'],
+        '/1loading1',
+       '/FranchiseRequests'],
     4: ['/', '/sites', '/add-site', '/site/*', '/editsite/*', '/stations',
         '/add-stations', '/stations/*','/issues-tracker', '/issues/*', '/reports',
         '/adminProfile', '/loading','/1loading1'],
@@ -55,22 +54,20 @@ export default function ValidationRoute({ children }) {
     const designation = user?.designation?.toLowerCase();
     if (designation?.includes("customer support")) {
 return [
-  '/employee-profile',
+  '/employeeProfile',
     '/customer-support/tasks',
     '/customer-support/tasks/:id',
     '/customer-support/tasks*',
-        '/customer-support/solved' // <-- Add this
-
+        '/customer-support/solved'
   ];    }
     if (designation?.includes("charger installer")) {
-      return ['/technician-dashboard','/technician-profile','completed-tasks','/technician/tasks/*',];
+      return [ '/employeeProfile','/technician-dashboard','/technician-profile','completed-tasks','/technician/tasks/*',];
     }
     return [];
   }
 )() 
   };
 
-  // Check if current route is allowed for user's role
   const isAllowed = rolePermissions[roleId]?.some(route => {
     if (route.endsWith('*')) {
       return location.pathname.startsWith(route.slice(0, -1));
@@ -81,6 +78,5 @@ return [
   if (!isAllowed) {
     return <Navigate to='/*' replace />;
   }
-
   return children;
 }

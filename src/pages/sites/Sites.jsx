@@ -6,31 +6,16 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import DeleteOtp from "@/users/DeleteOtp";
 import axios from 'axios';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import {
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
-  getPaginationRowModel,
-  getSortedRowModel,
-  getFilteredRowModel,
-} from "@tanstack/react-table"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { flexRender, getCoreRowModel, useReactTable, getPaginationRowModel, getSortedRowModel, getFilteredRowModel } from "@tanstack/react-table";
 import Loading from '@/users/Loading';
-import { InfoIcon, Trash } from 'lucide-react';
+import { InfoIcon } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 
 export default function Sites() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { list, status, error, totalElements } = useSelector((state) => state.sites);
-
   const [sorting, setSorting] = useState([])
   const [columnFilters, setColumnFilters] = useState([])
   const [currentPage, setCurrentPage] = useState(0);
@@ -40,7 +25,7 @@ export default function Sites() {
   const [currentsite, setCurrentsite] = useState(null);
   const [searchInput, setSearchInput] = useState('');
   const [isCheckingStatus, setIsCheckingStatus] = useState(false);
-  const { user } = useSelector(state => state.authentication); // Assuming you have auth state
+  const { user } = useSelector(state => state.authentication);
   console.log("user",user.orgId);
   
   useEffect(() => {
@@ -72,56 +57,6 @@ export default function Sites() {
       throw error;
     } finally {
       setIsCheckingStatus(false);
-    }
-  };
-//   useEffect(() => {
-//   const timer = setTimeout(() => {
-//     const prefixes = [
-//       { prefix: 'sitename:', field: 'sitename' },
-//       { prefix: 'ownerorgname:', field: 'owner_orgName' },
-//       { prefix: 'whitelabelorgname:', field: 'white_lable_orgName' }
-//     ];
-    
-//     let newField = '';
-//     let newTerm = searchInput.trim();
-    
-//     for (const { prefix, field } of prefixes) {
-//       if (searchInput.toLowerCase().startsWith(prefix)) {
-//         newField = field;
-//         newTerm = searchInput.slice(prefix.length).trim();
-//         break;
-//       }
-//     }
-    
-//     setSearchField(newField);
-//     setSearchTerm(newTerm);
-//     setCurrentPage(0);
-//   }, 500);
-  
-//   return () => clearTimeout(timer);
-// }, [searchInput]);
-
-  const handleDeleteClick = async (siteId) => {
-    try {
-      const activeStations = await checkStationStatus(siteId);
-      
-      if (activeStations) {
-        toast({
-          title: "Cannot Delete Site",
-          description: `This site has  active station(s). Please deactivate all stations before deleting.`,
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      setCurrentsite(siteId);
-      setIsDeleteDialogOpen(true);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to check station statuses. Please try again.",
-        variant: "destructive",
-      });
     }
   };
 
@@ -193,16 +128,6 @@ export default function Sites() {
           >
             <InfoIcon className="h-4 w-4 me-3" />
           </Button>
-          
-          {/* <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => handleDeleteClick(row.original.siteId)}
-            disabled={isCheckingStatus}
-            title={isCheckingStatus ? "Checking station status..." : ""}
-          >
-            <Trash size={16} className="h-4 w-4" />
-          </Button> */}
         </>
       ),
     },
@@ -223,10 +148,6 @@ export default function Sites() {
     },
   });
 
-  if (status === 'loading') {
-    return <div><Loading/></div>;
-  }
-
   if (status === 'failed') {
     return <div>Error: {error}</div>;
   }
@@ -238,13 +159,16 @@ export default function Sites() {
         <Button onClick={handleAddSite}>Add Site</Button>
       </div>
      <Input
-  placeholder="Search sites "
-  value= {searchInput}
-  onChange={handleSearchChange}
-  className="mb-4"
-/>
-      
+      placeholder="Search sites "
+      value= {searchInput}
+      onChange={handleSearchChange}
+      className="mb-4"
+    />      
       <div className="rounded-md border">
+         {status === 'loading' && (
+        <div className="absolute flex items-center justify-center inset-0 z-10">
+        </div>
+      )}
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -263,7 +187,13 @@ export default function Sites() {
             ))}
           </TableHeader>
           <TableBody>
-            {table.getRowModel().rows?.length ? (
+            {status === 'loading' ? (
+              <TableRow>
+                <TableCell colSpan={columns.length}>
+                  <Loading />
+                </TableCell>
+              </TableRow>
+           ): table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
                 <TableRow
                   key={row.id}
@@ -285,8 +215,7 @@ export default function Sites() {
             )}
           </TableBody>
         </Table>
-      </div>
-      
+      </div>      
       <div className="flex items-center justify-center gap-2 py-4">
         <Button
           variant="outline"
@@ -307,7 +236,6 @@ export default function Sites() {
             {index + 1}
           </Button>
         ))}
-
         <Button
           variant="outline"
           size="sm"
@@ -317,7 +245,6 @@ export default function Sites() {
           Next
         </Button>
       </div>
-
       {isDeleteDialogOpen && currentsite && (
         <DeleteOtp 
           userId={currentsite}

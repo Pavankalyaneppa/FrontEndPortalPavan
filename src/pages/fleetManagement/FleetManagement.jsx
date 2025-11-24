@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { fetchFleets, deleteFleet } from '@/store/reducers/fleet/FleetSlice';
 import { useNavigate, } from 'react-router-dom';
 import { toast } from '@/components/ui/use-toast';
+import AddFleet from './AddFleet'; 
 import {
   Table,
   TableBody,  
@@ -20,7 +21,7 @@ const FleetManagement = () => {
   const dispatch = useDispatch();
   const { fleets, status, error, deleteFleetStatus } = useSelector((state) => state.fleet);
   const { user } = useSelector((state) => state.authentication);
-
+  const [addFleetOpen, setAddFleetOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
   const pageSize = 10;
 
@@ -50,7 +51,19 @@ const FleetManagement = () => {
       }
     }
   };
-
+const handleFleetAdded = () => {
+    // Refresh the fleet list when a new fleet is added
+    dispatch(fetchFleets({ 
+      orgId: user?.orgId,
+      page: currentPage,
+      size: pageSize
+    }));
+    toast({
+      title: 'Success',
+      description: 'Fleet added successfully!',
+      variant: 'default',
+    });
+  };
   const fleetsArray = Array.isArray(fleets) ? fleets : [];
 
   if (status === 'loading') {
@@ -74,7 +87,7 @@ const FleetManagement = () => {
             <TrendingUp className="h-4 w-4 mr-2" />
             View Revenue
           </Button>
-        <Button onClick={() => navigate('/fleet/add')}>Add Fleet</Button>
+        <Button onClick={() => setAddFleetOpen(true)}>Add Fleet</Button>
       </div>
       </div>
 
@@ -134,13 +147,18 @@ const FleetManagement = () => {
             {fleetsArray.length === 0 && (
               <TableRow>
                 <TableCell colSpan="8" className="text-center text-muted-foreground py-6">
-                  No fleets found. Click "Add Fleet" to create one.
+                  No fleets found.
                 </TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
       </div>
+       <AddFleet
+        open={addFleetOpen}
+        onOpenChange={setAddFleetOpen}
+        onFleetAdded={handleFleetAdded}
+      />
     </div>
   );
 };

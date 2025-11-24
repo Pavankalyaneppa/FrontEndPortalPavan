@@ -3,6 +3,8 @@ import { useSelector } from 'react-redux';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { ClipboardList } from "lucide-react";
+
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   DashboardIcon,
@@ -94,43 +96,43 @@ const Sidebar = () => {
   const menuItemsByRole = {
      1: [ // Admin role
       { icon: DashboardIcon, label: 'Dashboard', href: '/' },
+      { icon: ClipboardList, label: "Requests", href: '/FranchiseRequests' },
       { icon: ReaderIcon, label: 'Reports', href: '/reports' },
       { icon: PersonIcon, label: 'WhiteLabel', href: '/whitelabels' },
       { icon: PersonIcon, label: 'Franchise Owners', href: '/franchiseOwners' },
-      { icon: ReaderIcon, label: "Franchise Requests", href: '/FranchiseRequests'},
-      { icon: PersonIcon, label: 'EV Users', href: '/evusers' },
-      { icon: GearIcon, label: 'Manufacturers', href: '/manufacturers' },
-      { icon: TargetIcon, label: 'Sites', href: '/sites' },
+      { icon: TargetIcon, label: 'Sites', href: '/sites'},
       { icon: LightningBoltIcon, label: 'Stations', href: '/stations' },
-      { icon: PlayIcon, label: 'OCPP', href: '/ocpp' },
-      { icon: ExclamationTriangleIcon, label: 'Issues Tracker', href: '/issues-tracker' },
-      { icon: CardStackIcon, label: 'RFID Management', href: '/rfid' },
-      { icon: Share2Icon, label: 'Referral Codes', href: '/referral-codes' },
-      {icon : HeadsetIcon, label: 'Customer Support', href: '/customer-support'},
-      //pavan's 
+      { icon: GearIcon, label: 'Manufacturers', href: '/manufacturers' },
+      { icon: PersonIcon, label: 'EV Users', href: '/evusers' },
+      { icon: CardStackIcon, label: 'RFID Management', href: '/rfid' }, 
+      { icon : HeadsetIcon, label: 'Customer Support', href: '/customer-support'},
       { icon: PersonIcon, label:'Charger Installation Team ', href: '/charger-installation-team'},
       { icon: Truck, label: 'Fleet', href: '/fleetManagement'},
+      { icon: ExclamationTriangleIcon, label: 'Issues Tracker', href: '/issues-tracker' },
+      { icon: Share2Icon, label: 'Referral Codes', href: '/referral-codes' },    
+      { icon: PlayIcon, label: 'OCPP', href: '/ocpp' },
       { icon: CardStackIcon, label: 'Load Management', href: '/loading' },
       { icon: BsHeartPulse, label: "Charger Health", href: '/1loading1' },
     ],
     3: [ // Whitelabel role
       { icon: DashboardIcon, label: 'Dashboard', href: '/' },
+      { icon: ReaderIcon, label: "Requests", href: '/FranchiseRequests'},
       { icon: ReaderIcon, label: 'Reports', href: '/reports' },
       { icon: PersonIcon, label: 'Franchise Owners', href: '/franchiseOwners' },
-      { icon: PersonIcon, label: 'EV Users', href: '/evusers' },
       { icon: TargetIcon, label: 'Sites', href: '/sites' },
-      { icon: LightningBoltIcon, label: 'Stations', href: '/stations' },
-      { icon: PlayIcon, label: 'OCPP', href: '/ocpp' },
-      { icon: ExclamationTriangleIcon, label: 'Issues Tracker', href: '/issues-tracker' },
+      { icon: LightningBoltIcon, label: 'Stations', href: '/stations' },     
+      { icon: PersonIcon, label: 'EV Users', href: '/evusers' },
       { icon: CardStackIcon, label: 'RFID Management', href: '/rfid' },
+      { icon: ExclamationTriangleIcon, label: 'Issues Tracker', href: '/issues-tracker' },
       { icon: Share2Icon, label: 'Referral Codes', href: '/referral-codes' },
+      { icon: PlayIcon, label: 'OCPP', href: '/ocpp' },     
       { icon: CardStackIcon, label: 'Load Management', href: '/loading' },
       { icon: BsHeartPulse, label: "Charger Health", href: '/1loading1' },
     ],
     4: [ // Franchise Owner role
       { icon: DashboardIcon, label: 'Dashboard', href: '/' },
-       { icon: ReaderIcon, label: 'Reports', href: '/reports' },
-        { icon: TargetIcon, label: 'Sites', href: '/sites' },
+      { icon: ReaderIcon, label: 'Reports', href: '/reports' },
+      { icon: TargetIcon, label: 'Sites', href: '/sites' },
       { icon: LightningBoltIcon, label: 'Stations', href: '/stations' },
       { icon: ExclamationTriangleIcon, label: 'Issues Tracker', href: '/issues-tracker' },
       { icon: CardStackIcon, label: 'Load Management', href: '/loading' },
@@ -156,15 +158,14 @@ const Sidebar = () => {
   if(designation.includes("charger installer")){
         return [
           { icon: DashboardIcon, label: 'Dashboard', href: '/technician-dashboard'},
-          { icon: PersonIcon, label: 'Profile', href: '/technician-profile'},
           { icon: PersonIcon, label: 'Completed Tasks', href: '/technician/tasks/completed-tasks'},
         ]
       }
 
-  return []; // fallback
+  return []; 
 })(),
 
-    default: [ // Fallback for unknown roles
+    default: [ 
       { icon: DashboardIcon, label: 'Dashboard', href: '/' }
     ]
   };

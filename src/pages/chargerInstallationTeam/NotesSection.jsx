@@ -17,8 +17,6 @@ import {
   Edit, 
  
 } from 'lucide-react';
-import Loading from '@/users/Loading';
-
 import { toast } from "@/components/ui/use-toast";
 import {
   fetchTaskNotes,
@@ -39,11 +37,6 @@ const NotesSection = ({ taskId, currentUser, employeeId, isTechnicianPortal = fa
     teams,
     allEmployeesLoading = false,
   } = useSelector((state) => state.chargerInstallation);
-
-  
-console.log(teams+"teams");
-console.log(allEmployees+"allEmployees");
-console.log(allEmployeesLoading+"allEmployeesLoading");
   const [isAddingNote, setIsAddingNote] = useState(false);
   const [editingNote, setEditingNote] = useState(null);
   const [newNote, setNewNote] = useState({
@@ -65,7 +58,6 @@ console.log(allEmployeesLoading+"allEmployeesLoading");
     }
   }, [taskId, dispatch]);
 
-  // ✅ Reset form when Add Note toggles
   useEffect(() => {
     if (isAddingNote) {
       setNewNote({
@@ -160,13 +152,6 @@ console.log(allEmployeesLoading+"allEmployeesLoading");
       {isAddingNote && (
         <div className="space-y-4 border p-4 rounded-lg bg-muted/50">
           <h4 className="font-medium text-lg">Add New Note</h4>
-
-          {/* Employee ID (Read-only) */}
-          {/* <div>
-            <Label htmlFor="employeeId">Employee ID</Label>
-            <Input id="employeeId" value={newNote.employeeId} readOnly className="bg-muted" />
-          </div> */}
-
           {/* Recipient Dropdown */}
           <div>
             <Label htmlFor="recipient">Recipient</Label>

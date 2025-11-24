@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom'; 
 import { Button } from '@/components/ui/button';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchVehicleDetails, resetFleetDetails, updateVehicle } from '@/store/reducers/fleet/FleetSlice';
+import { fetchVehicleDetails, resetFleetDetails, updateFleetVehicle } from '@/store/reducers/fleet/FleetSlice';
 import { toast } from '@/components/ui/use-toast';
 import BackButton from '@/components/ui/BackButton';
 import { Card, CardContent } from "@/components/ui/card";
@@ -17,7 +17,9 @@ const VehicleDetails = () => {
   const location = useLocation(); 
   const dispatch = useDispatch();
   const { currentVehicle, status, error } = useSelector((state) => state.fleet);
-  const [activeTab, setActiveTab] = useState('details');
+  const [editMode, setEditMode] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const [editForm, setEditForm] = useState({
     vehicleId: '',
     model: '',
@@ -28,17 +30,16 @@ const VehicleDetails = () => {
     bookings: '',
     status: ''
   });
-  const [isEditing, setIsEditing] = useState(false);
 
-  useEffect(() => {
-    if (id) {
-      dispatch(fetchVehicleDetails(id));
-    }
+useEffect(() => {
+  if (id) {
+    dispatch(fetchVehicleDetails(String(id)));
+  }
 
-    return () => {
-      dispatch(resetFleetDetails());
-    };
-  }, [dispatch, id]);
+  return () => {
+    dispatch(resetFleetDetails());
+  };
+}, [dispatch, id]);
 
   useEffect(() => {
     if (currentVehicle) {
@@ -63,26 +64,42 @@ const VehicleDetails = () => {
     }));
   };
 
-  const handleSave = () => {
-    const numericId = currentVehicle.id || id;
-    dispatch(updateVehicle({ id, ...editForm }))
-      .unwrap()
-      .then(() => {
-        toast({
-          title: "Success",
-          description: "Vehicle details updated successfully",
-        });
-        setIsEditing(false);
-        setActiveTab('details');
-      })
-      .catch((error) => {
-        toast({
-          title: "Error",
-          description: "Failed to update vehicle details",
-          variant: "destructive",
-        });
-      });
+  const handleEditVehicle = () => {
+    setEditMode(true);
   };
+
+const handleSave = async () => {
+  try {
+    setIsSubmitting(true);
+    
+    // Use string vehicleId
+    const vehicleId = String(currentVehicle.vehicleId);
+    
+    await dispatch(updateFleetVehicle({ 
+      vehicleId: vehicleId, 
+      vehicleData: editForm 
+    })).unwrap();
+    
+    toast({
+      title: "Success",
+      description: "Vehicle details updated successfully",
+    });
+    
+    setEditMode(false);
+    
+    // Refresh with string vehicleId
+    dispatch(fetchVehicleDetails(vehicleId));
+    
+  } catch (error) {
+    toast({
+      title: "Error",
+      description: "Failed to update vehicle details",
+      variant: "destructive",
+    });
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   const handleCancel = () => {
     if (currentVehicle) {
@@ -97,7 +114,7 @@ const VehicleDetails = () => {
         status: currentVehicle.status || ''
       });
     }
-    setIsEditing(false);
+    setEditMode(false);
   };
 
   if (status === 'loading') {
@@ -113,98 +130,29 @@ const VehicleDetails = () => {
     );
   }
 
-  const fleet = location.state?.fleet; 
-
   return (
-    <div className="container mx-auto p-4">
+    <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Vehicle Details - {currentVehicle.vehicleId}</h1>
-        <BackButton />
+        <div className="flex gap-2">
+          <Button onClick={handleEditVehicle}>Edit Vehicle</Button>
+          <BackButton />
+        </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 mb-6">
-          <TabsTrigger value="details">Vehicle Details</TabsTrigger>
-          <TabsTrigger value="edit">Edit Details</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="details">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card>
-              <CardContent className="p-6">
-                <h2 className="text-lg font-semibold mb-4">Vehicle Information</h2>
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Vehicle ID</p>
-                    <p className="font-medium">{currentVehicle.vehicleId}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Model</p>
-                    <p className="font-medium">{currentVehicle.model}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Capacity (kW)</p>
-                    <p className="font-medium">{currentVehicle.capacityKw} kW</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Driver</p>
-                    <p className="font-medium">{currentVehicle.driver}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Location</p>
-                    <p className="font-medium">{currentVehicle.location}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Battery Left</p>
-                    <p className="font-medium">{currentVehicle.batteryLeft}%</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Bookings</p>
-                    <p className="font-medium">{currentVehicle.bookings}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Status</p>
-                    <p className="font-medium">{currentVehicle.status}</p>
-                  </div>
-                </div>
-              
-              </CardContent>
-            </Card>
-
-            {fleet && (
-              <Card>
-                <CardContent className="p-6">
-                  <h2 className="text-lg font-semibold mb-4">Fleet Information</h2>
-                  <div className="space-y-4">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Fleet ID</p>
-                      <p className="font-medium">{fleet.id}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Fleet Name</p>
-                      <p className="font-medium">{fleet.fleetName}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Owner Name</p>
-                      <p className="font-medium">{fleet.ownerName}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Base Location</p>
-                      <p className="font-medium">{fleet.baseLocation}</p>
-                    </div>
-                  
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+      {editMode ? (
+        // EDIT MODE - Two Column Layout
+        <div className="p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-2xl font-bold">Edit Vehicle</h1>
+            <Button variant="outline" onClick={handleCancel}>
+              Cancel
+            </Button>
           </div>
-        </TabsContent>
-
-        <TabsContent value="edit">
-          <Card>
-            <CardContent className="p-6">
-              <h2 className="text-lg font-semibold mb-4">Edit Vehicle Information</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          
+          <Card className="p-6">
+            <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="vehicleId">Vehicle ID</Label>
                   <Input
@@ -212,7 +160,6 @@ const VehicleDetails = () => {
                     name="vehicleId"
                     value={editForm.vehicleId}
                     onChange={handleInputChange}
-                    disabled={!isEditing}
                   />
                 </div>
                 <div className="space-y-2">
@@ -222,7 +169,6 @@ const VehicleDetails = () => {
                     name="model"
                     value={editForm.model}
                     onChange={handleInputChange}
-                    disabled={!isEditing}
                   />
                 </div>
                 <div className="space-y-2">
@@ -233,7 +179,6 @@ const VehicleDetails = () => {
                     type="number"
                     value={editForm.capacityKw}
                     onChange={handleInputChange}
-                    disabled={!isEditing}
                   />
                 </div>
                 <div className="space-y-2">
@@ -243,7 +188,6 @@ const VehicleDetails = () => {
                     name="driver"
                     value={editForm.driver}
                     onChange={handleInputChange}
-                    disabled={!isEditing}
                   />
                 </div>
                 <div className="space-y-2">
@@ -253,7 +197,6 @@ const VehicleDetails = () => {
                     name="location"
                     value={editForm.location}
                     onChange={handleInputChange}
-                    disabled={!isEditing}
                   />
                 </div>
                 <div className="space-y-2">
@@ -266,7 +209,6 @@ const VehicleDetails = () => {
                     max="100"
                     value={editForm.batteryLeft}
                     onChange={handleInputChange}
-                    disabled={!isEditing}
                   />
                 </div>
                 <div className="space-y-2">
@@ -276,7 +218,6 @@ const VehicleDetails = () => {
                     name="bookings"
                     value={editForm.bookings}
                     onChange={handleInputChange}
-                    disabled={!isEditing}
                   />
                 </div>
                 <div className="space-y-2">
@@ -286,42 +227,97 @@ const VehicleDetails = () => {
                     name="status"
                     value={editForm.status}
                     onChange={handleInputChange}
-                    disabled={!isEditing}
                   />
                 </div>
               </div>
               
-              <div className="flex gap-2">
-                {!isEditing ? (
-                  <>
-                    <Button onClick={() => setIsEditing(true)}>
-                      Edit
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      onClick={() => setActiveTab('details')}
-                    >
-                      Back to Details
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <Button onClick={handleSave}>
-                      Save Changes
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      onClick={handleCancel}
-                    >
-                      Cancel
-                    </Button>
-                  </>
-                )}
+              <div className="flex justify-end gap-4 pt-4">
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? "Saving..." : "Save Changes"}
+                </Button>
               </div>
-            </CardContent>
+            </form>
           </Card>
-        </TabsContent>
-      </Tabs>
+        </div>
+      ) : (
+        // VIEW MODE - Two Column Layout with Cards
+        <Tabs defaultValue="details" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="details">Vehicle Information</TabsTrigger>
+            <TabsTrigger value="additional">Additional Information</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="details">
+            <div>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-semibold">Vehicle Information</h2>
+              </div>
+              
+              <Card className="p-6 mb-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="font-semibold text-gray-600">Vehicle ID</p>
+                    <p className="font-medium">{currentVehicle.vehicleId || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-600">Model</p>
+                    <p className="font-medium">{currentVehicle.model || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-600 mt-4">Capacity (kW)</p>
+                    <p className="font-medium">{currentVehicle.capacityKw || '-'} kW</p>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-600 mt-4">Driver</p>
+                    <p className="font-medium">{currentVehicle.driver || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-600 mt-4">Location</p>
+                    <p className="font-medium">{currentVehicle.location || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-600 mt-4">Battery Left</p>
+                    <p className="font-medium">{currentVehicle.batteryLeft || '-'}%</p>
+                  </div>
+                </div>
+              </Card>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="additional">
+            <div>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-semibold">Additional Information</h2>
+              </div>
+              
+              <Card className="p-6 mb-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="font-semibold text-gray-600">Bookings</p>
+                    <p className="font-medium">{currentVehicle.bookings || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-600">Status</p>
+                    <p className="font-medium">
+                      {currentVehicle.status ? (
+                        <span className={`${
+                          currentVehicle.status.toLowerCase() === 'active' 
+                            ? 'text-green-600' 
+                            : 'text-red-600'
+                        }`}>
+                          {currentVehicle.status}
+                        </span>
+                      ) : (
+                        '-'
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            </div>
+          </TabsContent>
+        </Tabs>
+      )}
     </div>
   );
 };

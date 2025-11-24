@@ -8,38 +8,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ReloadIcon } from '@radix-ui/react-icons';
-import {
-  validateName,
-  validateMobileNumber,
-  validateCity,
-  validateZipCode,
-  validateEmail,
-  validateUsername,
-} from '@/pages/validations/Validation';
+import { validateName, validateMobileNumber, validateCity, validateZipCode, validateEmail, validateUsername } from '@/pages/validations/Validation';
 import axios from 'axios';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle,
-  DialogFooter
-} from "@/components/ui/dialog";
-
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import BackButton from '@/users/BackButton';
 import Loading from '@/users/Loading';
 import StatusButton from '@/users/StatusButton';
@@ -52,8 +24,7 @@ const WhitelabelPageDetails = () => {
   console.log(currentUser);
   const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
-  const [whiteLabels, setWhiteLabels] = useState([]);
-  const[isSubmitting,setIsSubmitting]=useState(false);
+  const [isSubmitting,setIsSubmitting]=useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [passwordChangeEnabled, setPasswordChangeEnabled] = useState(false);
   const [formErrors, setFormErrors] = useState({});
@@ -77,12 +48,11 @@ const WhitelabelPageDetails = () => {
   });
   const [data, setData] = useState([]);
   const [franchiseOwners, setFranchiseOwners] = useState([]); 
-
   const [currentPage, setCurrentPage] = useState(0);
-const itemsPerPage = 10;
+  const itemsPerPage = 10;
+  const totalPages = Math.ceil(franchiseOwners.length / itemsPerPage);
 
-const totalPages = Math.ceil(franchiseOwners.length / itemsPerPage);
-const handleInputChange = (e) => {
+  const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({
       ...formData,
@@ -93,15 +63,9 @@ const handleInputChange = (e) => {
 const startIndex = (currentPage - 1) * itemsPerPage;
 const endIndex = startIndex + itemsPerPage;
 
-// Slice the data to display only current page's items
-const currentOwners = franchiseOwners.slice(startIndex, endIndex);
   // Fetch user details
   const fetchUserDetails = async (userId) => {
     try {
-      // const response = await axios.get(`http://localhost:8800/services/userprofile/userDetails/${userId}`);
-      // console.log(response.data);
-      // return response.data;
-      
       const response=await AxiosServices.getUserDetails(userId);
       return response;
     } catch (error) {
@@ -115,14 +79,6 @@ const currentOwners = franchiseOwners.slice(startIndex, endIndex);
     }
   };
 
-
-   const handleWhiteLabelChange = (value) => {
-      setFormData(prev => ({
-        ...prev,
-        orgId: value
-      }));
-    };
-
     const [formData, setFormData] = useState({
         orgName: orgName || "",
         fullname: "",
@@ -130,8 +86,6 @@ const currentOwners = franchiseOwners.slice(startIndex, endIndex);
         email: "",
         mobileNumber: "",
         rolename: "FranchiseOwner",
-        // password: "null",
-        // confirmPassword: "null",
         address: "",
         city: "Hyderabad",
         country: "India",
@@ -150,7 +104,6 @@ const currentOwners = franchiseOwners.slice(startIndex, endIndex);
         const usernameError = validateUsername(editFormData.username);
         if (usernameError) errors.username = usernameError;
       
-        // Add other validations similarly
         const emailError = validateEmail(editFormData.email);
         if (emailError) errors.email = emailError;
       
@@ -166,7 +119,6 @@ const currentOwners = franchiseOwners.slice(startIndex, endIndex);
         setEditFormErrors(errors);
       }, [editFormData, editMode]);
       
-      
  useEffect(() => {
         const errors = {};      
         const fullNameError = validateName(formData.fullname);
@@ -175,7 +127,6 @@ const currentOwners = franchiseOwners.slice(startIndex, endIndex);
         const usernameError = validateUsername(formData.username);
         if (usernameError) errors.username = usernameError;
       
-        // Add other validations similarly
         const emailError = validateEmail(formData.email);
         if (emailError) errors.email = emailError;
       
@@ -215,12 +166,6 @@ const currentOwners = franchiseOwners.slice(startIndex, endIndex);
       );
       setData(filteredUsers);
     } catch (error) {
-      // console.error('Error fetching white label users:', error);
-      // toast({
-      //   title: 'Error',
-      //   description: 'Failed to fetch white label users. Please try again.',
-      //   variant: 'destructive',
-      // });
       setData([]);
     }
   };
@@ -249,17 +194,11 @@ const fetchFranchiseOwners = async (orgId) => {
       setFranchiseOwners([]);
     }
   } catch (error) {
-    // console.error('Error fetching franchise owners:', error);
-    // toast({
-    //   title: 'Error',
-    //   description: error.message || 'Failed to fetch franchise owners. Please try again.',
-    //   variant: 'destructive',
-    // });
     setFranchiseOwners([]);
   }
 };
-  // Load user details and franchise owners on mount
-  useEffect(() => {
+
+useEffect(() => {
     const loadDetails = async () => {
       setLoading(true);
       const details = await fetchUserDetails(id);
@@ -267,7 +206,7 @@ const fetchFranchiseOwners = async (orgId) => {
         setCurrentUser(details);
       }
       await fetchWhiteLabels();
-      await fetchFranchiseOwners(orgId); // Fetch franchise owners
+      await fetchFranchiseOwners(orgId);
       setLoading(false);
     };
     loadDetails();
@@ -277,7 +216,6 @@ const fetchFranchiseOwners = async (orgId) => {
   e.preventDefault();
   const errors = {};
 
-  // Validate required fields
   const requiredFields = {
     orgName: 'Organization Name',
     fullname: 'Full Name',
@@ -314,22 +252,19 @@ const fetchFranchiseOwners = async (orgId) => {
   const cityError = validateCity(formData.city);
   if (cityError) errors.city = cityError;
 
-  // Update form errors state
   setFormErrors(errors);
 
-  // If there are any errors, show toast and prevent submission
   if (Object.keys(errors).length > 0) {
     toast({
       title: "Validation Error",
       description:  Object.values(errors).filter(Boolean).join(", "),
       variant: "destructive",
     });
-    return; // Exit the function if there are errors
+    return;
   }
 
   try {
     setIsSubmitting(true);
-    // Construct payload exactly as in Postman
     const payload = {
       address: formData.address,
       city: formData.city,
@@ -361,7 +296,6 @@ const fetchFranchiseOwners = async (orgId) => {
       resetForm();
     }
   } catch (error) {
-    // console.error('Submission Error:', error);
     toast({
       title: "Error",
       description: typeof error === 'string' ? error : 
@@ -373,8 +307,7 @@ const fetchFranchiseOwners = async (orgId) => {
     setIsSubmitting(false);
   }
 };
-  
-    // Reset form
+
     const resetForm = () => {
       setFormData({
         orgName: "",
@@ -383,8 +316,6 @@ const fetchFranchiseOwners = async (orgId) => {
         email: "",
         mobileNumber: "",
         rolename: "FranchiseOwner",
-        // password: "welcome123",
-        // confirmPassword: "welcome123",
         address: "",
         city: "Hyderabad",
         country: "India",
@@ -393,8 +324,8 @@ const fetchFranchiseOwners = async (orgId) => {
         orgId: ""
       });
     };
-  // Handle input changes in edit form
-  const handleEditInputChange = (e) => {
+
+    const handleEditInputChange = (e) => {
     const { name, value } = e.target;
     setEditFormData((prev) => ({ ...prev, [name]: value }));
 
@@ -424,7 +355,6 @@ const fetchFranchiseOwners = async (orgId) => {
   }
   };
 
-  // Enable edit mode
   const handleEditUser = () => {
     if (!currentUser) {
       toast({
@@ -446,15 +376,12 @@ const fetchFranchiseOwners = async (orgId) => {
       state: currentUser.address?.[0]?.state || '',
       zipCode: currentUser.address?.[0]?.zipCode || '',
       enabled: currentUser.enabled || false,
-      orgName: '', // Adjust based on actual data
+      orgName: '',
       rolename: 'WhiteLabel',
-      // password: '',
-      // confirmPassword: '',
     });
     setEditMode(true);
   };
 
-  // Update user
   const handleUpdateUser = async (e) => {
     e.preventDefault();
 
@@ -474,11 +401,6 @@ const fetchFranchiseOwners = async (orgId) => {
         passwordChange: passwordChangeEnabled,
       };
 
-      // const response = await axios.put(
-      //   `http://localhost:8800/services/userprofile/updateUser/${id}`,
-      //   payload
-      // );
-
       const response=await AxiosServices.updateUser(id,payload)
       if (response.status === 200) {
         toast({
@@ -494,8 +416,6 @@ const fetchFranchiseOwners = async (orgId) => {
           email: '',
           mobileNumber: '',
           rolename: 'WhiteLabel',
-          // password: 'null',
-          // confirmPassword: 'null',
           address: '',
           city: '',
           country: '',
@@ -651,19 +571,16 @@ const fetchFranchiseOwners = async (orgId) => {
               </div>
             </div>
             <div className="flex justify-end gap-4 pt-4">
-              <Button 
-                              type="submit" 
-                              disabled={isSubmitting}
-                            >
-                              {isSubmitting ? (
-                                <>
-                                  <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />
-                                  Updating...
-                                </>
-                              ) : (
-                                'Update'
-                              )}
-                            </Button>
+              <Button type="submit" disabled={isSubmitting} >
+                {isSubmitting ? (
+                  <>
+                  <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />
+                  Updating...
+                  </>
+                  ) : (
+                  'Update'
+                  )}
+              </Button>
             </div>
           </form>
         </Card>
@@ -678,7 +595,7 @@ const fetchFranchiseOwners = async (orgId) => {
                 <div><h1 className="text-2xl font-bold">{orgName}</h1></div>
                 <StatusButton status={currentUser.enabled?"Active":"In Active"}/>
                 </div>
-                     <div className="flex gap-2">
+                <div className="flex gap-2">
          <BackButton />
         </div>
       </div>
@@ -694,7 +611,6 @@ const fetchFranchiseOwners = async (orgId) => {
               <div> <h2 className="text-xl font-semibold mb-4">Personal Information</h2></div>
              <Button onClick={handleEditUser} className="flex gap-2  w-40" >Edit</Button>
         </div>
-            
             <Card className="p-6 mb-6">
               <div className="grid grid-cols-3 gap-4 mb-6">
                 <div>
@@ -723,14 +639,6 @@ const fetchFranchiseOwners = async (orgId) => {
                     )}
                   </p>
                 </div>
-                {/* <div>
-                  <p className="font-semibold text-gray-600 mt-4">Role</p>
-                  <p className="font-medium">
-                    {currentUser.usersinroles?.length > 0
-                      ? `Role ID: ${currentUser.usersinroles[0].role_id}`
-                      : 'No role assigned'}
-                  </p>
-                </div> */}
               </div>
             </Card>
             <h2 className="text-xl font-semibold mt-8 mb-4">Address Information</h2>
@@ -787,7 +695,6 @@ const fetchFranchiseOwners = async (orgId) => {
                         : 'No role assigned'}
                     </p>
                   </div>
-                  
                 </div>
               </Card>
           </div>
@@ -813,7 +720,7 @@ const fetchFranchiseOwners = async (orgId) => {
                   franchiseOwners.map((owner,index) => (
                     <TableRow onClick={()=>navigate(`/franchiseOwners/${owner.userId}/${owner.orgId}/${owner.orgName}`)} key={index} >
                       <TableCell>{index+1|| '-'}</TableCell>
-                      <TableCell>{owner.fullname || '-'}</TableCell>
+                      <TableCell>{owner.fullName || '-'}</TableCell>
                       <TableCell>{owner.mobileNumber || '-'}</TableCell>
                       <TableCell>{owner.email || '-'}</TableCell>
                     </TableRow>
@@ -836,7 +743,6 @@ const fetchFranchiseOwners = async (orgId) => {
                    >
                      Previous
                    </Button>
-           
                    {[...Array(totalPages)].map((_, index) => (
                      <Button
                        key={index}
@@ -857,8 +763,8 @@ const fetchFranchiseOwners = async (orgId) => {
                      Next
                    </Button>
                  </div>
-        </TabsContent>
-      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+         </TabsContent>
+         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Add New Franchise Owner</DialogTitle>
@@ -870,7 +776,7 @@ const fetchFranchiseOwners = async (orgId) => {
                     <Input
                 id="orgName"
                 name="orgName"
-                value={orgName} // Display orgName from useParams
+                value={orgName}
                 disabled
               />                 
                   </div>
@@ -922,7 +828,6 @@ const fetchFranchiseOwners = async (orgId) => {
                       value={formData.username} 
                       onChange={handleInputChange} 
                     />
-                     {/* {formErrors.username && <p className="text-xs text-red-500 mt-1">{formErrors.username}</p>} */}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="address">Address *</Label>
@@ -994,7 +899,6 @@ const fetchFranchiseOwners = async (orgId) => {
           </Dialog>
          <TabsContent value="Notes">
           <div className="bg-white rounded-lg shadow p-6 mt-4">
-            
             Sorry..! notes are empty
           </div>
         </TabsContent>
@@ -1002,7 +906,4 @@ const fetchFranchiseOwners = async (orgId) => {
     </div>
   );
 };
-
-
 export default WhitelabelPageDetails;
-

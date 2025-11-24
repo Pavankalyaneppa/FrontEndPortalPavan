@@ -1,61 +1,24 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import axios from 'axios';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "@/components/ui/table";
+import React, { useState, useEffect, useCallback } from 'react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle,
-  DialogFooter
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter} from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
-import { InfoIcon, Trash } from 'lucide-react';
+import { InfoIcon} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ReloadIcon } from '@radix-ui/react-icons';
-import DeleteOtp from '@/users/DeleteOtp';
-import {
-  validateName,
-  validateMobileNumber,
-  validateCity,
-  validateZipCode,
-  validateEmail,
-  validateUsername,
-} from '@/pages/validations/Validation';
-import {
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
-  getPaginationRowModel,
-  getSortedRowModel,
-  getFilteredRowModel,
-} from "@tanstack/react-table";
+import { validateName, validateMobileNumber, validateCity, validateZipCode, validateEmail, validateUsername} from '@/pages/validations/Validation';
+import { flexRender, getCoreRowModel, useReactTable, getPaginationRowModel, getSortedRowModel, getFilteredRowModel} from "@tanstack/react-table";
 import Loading from '@/users/Loading';
 import AxiosServices from '@/services/AxiosServices';
 import { useSelector } from 'react-redux';
 
 const EVUsers = () => {
   const [data, setData] = useState([]);
-  const [searchInput, setSearchInput] = useState(''); // User's raw input
+  const [searchInput, setSearchInput] = useState(''); 
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [sorting, setSorting] = useState([]);
   const [columnFilters, setColumnFilters] = useState([]);
@@ -78,7 +41,7 @@ const EVUsers = () => {
     email: "",
     mobileNumber: "",
     rolename: "Driver",
-    password: "defaultPassword", // Consider making this required or implementing proper password flow
+    password: "defaultPassword",
     confirmPassword: "defaultPassword",
     address: "",
     city: "",
@@ -144,8 +107,8 @@ const EVUsers = () => {
       }
     }
     
-    setCurrentPage(0); // Reset to first page when search changes
-  }, 500); // 500ms debounce delay
+    setCurrentPage(0); 
+  }, 500); 
   
   return () => clearTimeout(timer);
 }, [searchInput]);
@@ -184,22 +147,6 @@ const EVUsers = () => {
     return Object.keys(errors).length === 0;
   }, [formData]);
 
-  const isFormValid = useMemo(() => {
-    return (
-      formData.orgId &&
-      !validateName(formData.fullname) &&
-      !validateUsername(formData.username) &&
-      !validateEmail(formData.email) &&
-      !validateMobileNumber(formData.mobileNumber) &&
-      formData.address &&
-      !validateCity(formData.city) &&
-      formData.state &&
-      formData.country &&
-      !validateZipCode(formData.zipCode)
-    );
-  }, [formData]);
-
-  // Handle form input changes
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -208,12 +155,9 @@ const EVUsers = () => {
     }));
   };
 
-  // Handle form submission
   const handleAddEVUser = async (e) => {
     e.preventDefault();
-    
-    // Validate form
-    const isValid = validateForm();
+        const isValid = validateForm();
     
     if (!isValid) {
       toast({
@@ -227,7 +171,6 @@ const EVUsers = () => {
     try {
       setIsSubmitting(true);
       
-      // Prepare submission data
       const submissionData = {
         ...formData,
         orgId: user.orgId === 1 ? formData.orgId : user.orgId
@@ -252,10 +195,8 @@ const EVUsers = () => {
         });
       }
     } catch (error) {
-    console.log(error);
     let errorMessage = "Failed to add site";
     
-    // Check for unique constraint violation (site name already exists)
     if (error.response?.data.includes('ConstraintViolationException') || 
         error.response?.data.includes('could not execute statement')||error.response?.data.includes('Transaction rolled back because it has been marked as rollback-only') ) {
       errorMessage = "Mobile Number already exists. Please choose a different Number.";
@@ -272,77 +213,10 @@ const EVUsers = () => {
     }
   };
 
-  // Fetch EV users
-//  const fetchEVUsers = useCallback(async () => {
-//   try {
-//     setLoading(true);
-//     let response;
-
-//     if (searchTerm.trim()) {
-//       // Search API call
-//       response = await AxiosServices.searchEVUser({
-//         search: searchTerm,
-//         page: currentPage,
-//         size: pageSize,
-//         searchField,
-//       });
-
-//       // Process search results
-//      const enrichedData = (response.data ?? []).map(user => ({
-//         id: user.id ?? '',
-//         fullname: user.fullname ?? '',
-//         email: user.email ?? '',
-//         mobileNumber: user.mobileNumber ?? '',
-//         username: user.username ?? '',
-//         onView: () => handleViewDetails(user),
-//         onDelete: () => {
-//           setCurrentUser({ id: user.id });
-//           setIsDeleteDialogOpen(true);
-//         },
-//       }));
-
-//       setData(enrichedData);
-//       setTotalPages(Math.ceil((response.totalElements || 0) / pageSize));
-//       setTotalElements(response.totalElements || 0);
-//     } else {
-//       // Regular fetch API call
-//       response = await AxiosServices.getEVUsers(currentPage, pageSize);
-
-//       // Process regular results
-//       const enrichedData = response.driversList.map(user => ({
-//         id: user.id ?? '',
-//         fullname: user.fullname ?? '',
-//         email: user.email ?? '',
-//         mobileNumber: user.mobileNumber ?? '',
-//         username: user.username ?? '',
-//         onView: () => handleViewDetails(user),
-//         onDelete: () => {
-//           setCurrentUser({ id: user.id });
-//           setIsDeleteDialogOpen(true);
-//         },
-//       }));
-
-//       setData(enrichedData);
-//       setTotalPages(response.totalPages || 1);
-//       setTotalElements(response.totalItems || 0);
-//     }
-//   } catch (error) {
-//     console.error('Error fetching EV users:', error);
-//     toast({
-//       title: "Error",
-//       description: error.message || "Failed to fetch EV users",
-//       variant: "destructive",
-//     });
-//   } finally {
-//     setLoading(false);
-//   }
-// }, [currentPage, searchTerm, searchField, toast]);
-
 const fetchEVUsers = useCallback(async () => {
   try {
     setLoading(true);
 
-    // Determine orgId for the API
     const orgIdForRequest = user?.orgId === 1 ? formData.orgId || '' : user?.orgId;
 
     const response = await AxiosServices.getEVUsers(
@@ -351,8 +225,6 @@ const fetchEVUsers = useCallback(async () => {
       orgIdForRequest,
       searchInput
     );
-
-    // console.log("API response:", response);
 
     setData((response.driversList || []).map(user => ({
       ...user,
@@ -363,7 +235,6 @@ const fetchEVUsers = useCallback(async () => {
     setTotalElements(response.totalItems || 0);
 
   } catch (error) {
-    console.error('Error fetching EV users:', error);
     toast({
       title: "Error",
       description: error.message || "Failed to fetch EV users",
@@ -393,8 +264,8 @@ const fetchEVUsers = useCallback(async () => {
     });
     setFormErrors({});
   };
-// Move this outside of useEffect and make it a useCallback
-const fetchWhiteLabels = useCallback(async () => {
+
+  const fetchWhiteLabels = useCallback(async () => {
   try {
     const response = await AxiosServices.getWhiteLabels();
     setWhiteLabels(response.data);
@@ -408,13 +279,11 @@ const fetchWhiteLabels = useCallback(async () => {
   }
 }, [toast]);
 
-// Then update your useEffect that uses it:
 useEffect(() => {
   if (user.orgId == 1) {
     fetchWhiteLabels();
   }
 }, [user.orgId, fetchWhiteLabels]);
-  // View EV user details
   const handleViewDetails = (user) => {
     if (!user?.id) {
       toast({
@@ -427,7 +296,6 @@ useEffect(() => {
     navigate(`/evusers/${user.id}`);
   };
 
-  // Handle page change
   const handlePageChange = (page) => {
     if (page >= 0 && page < totalPages) {
       setCurrentPage(page);
@@ -454,61 +322,10 @@ useEffect(() => {
     },
   });
 
-  // Handle delete EV user
-  const handleDeleteEVUser = async () => {
-    try {
-      await AxiosServices.deleteEVUser(currentUser.id);
-      toast({
-        title: "Success",
-        description: "EV user deleted successfully!",
-      });
-      fetchEVUsers();
-    } catch (error) {
-      console.error('Error deleting EV user:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to delete EV user",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Initialize table
-  // const table = useReactTable({
-  //   data,
-  //   columns,
-  //   getCoreRowModel: getCoreRowModel(),
-  //   getPaginationRowModel: getPaginationRowModel(),
-  //   getSortedRowModel: getSortedRowModel(),
-  //   getFilteredRowModel: getFilteredRowModel(),
-  //   onSortingChange: setSorting,
-  //   onColumnFiltersChange: setColumnFilters,
-  //   manualPagination: true,
-  //   pageCount: totalPages,
-  //   state: {
-  //     sorting,
-  //     columnFilters,
-  //     globalFilter,
-  //     pagination: {
-  //       pageIndex: currentPage,
-  //       pageSize: pageSize,
-  //     },
-  //   },
-  // });
-
-  // Fetch data on mount and when dependencies change
-//   useEffect(() => {
-//   fetchEVUsers();
-// }, [fetchEVUsers, currentPage, searchTerm, searchField]);
-
 useEffect(() => {
   fetchEVUsers();
 }, [fetchEVUsers, currentPage, searchInput]);
 
-  // Fetch white labels on mount if admin
-  
-
-  // Validate form when data changes
   useEffect(() => {
     if (isAddDialogOpen) {
       validateForm();
@@ -522,16 +339,16 @@ useEffect(() => {
         <Button onClick={() => setIsAddDialogOpen(true)}>Add New EV User</Button>
       </div>
 
-     <Input
-  placeholder="Search users by name, email, mobile or username..."
-  value={searchInput}
-  onChange={(e) => {
-    setSearchInput(e.target.value);
-    setCurrentPage(0); // Reset to first page on new search
-  }}
-  className="mb-4"
-/>
-      
+         <Input
+            placeholder="Search users by name, email, mobile or username..."
+            value={searchInput}
+            onChange={(e) => {
+              setSearchInput(e.target.value);
+              setCurrentPage(0); 
+            }}
+            className="mb-4"
+          />
+                
       {/* EV Users Table */}
       <div className="rounded-md border">
         <Table>
@@ -658,15 +475,15 @@ useEffect(() => {
               value={user.orgId}
               readOnly
             />
-            {formData.orgId !== user.orgId && setFormData((prev) => ({
-              ...prev,
-              orgId: user.orgId,
-            }))}
-          </>
-        )}
-        {formErrors.orgId && <p className="text-sm text-red-500">{formErrors.orgId}</p>}
-      </div>
-    )}
+             {formData.orgId !== user.orgId && setFormData((prev) => ({
+                ...prev,
+                orgId: user.orgId,
+              }))}
+              </>
+              )}
+              {formErrors.orgId && <p className="text-sm text-red-500">{formErrors.orgId}</p>}
+              </div>
+            )}
               <div className="space-y-2">
                 <Label htmlFor="fullname">Full Name *</Label>
                 <Input 
@@ -687,9 +504,6 @@ useEffect(() => {
                   value={formData.username} 
                   onChange={handleInputChange} 
                 />
-                {/* {formErrors.username && (
-                  <p className="text-xs text-red-500 mt-1">{formErrors.username}</p>
-                )} */}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email *</Label>
@@ -783,7 +597,6 @@ useEffect(() => {
               </Button>
               <Button 
                 type="submit" 
-                // disabled={isSubmitting || !isFormValid}
               >
                 {isSubmitting ? (
                   <>
@@ -798,21 +611,7 @@ useEffect(() => {
           </form>
         </DialogContent>
       </Dialog>
-
-      {/* Delete EV User Dialog */}
-      {isDeleteDialogOpen && currentUser && (
-        <DeleteOtp 
-          userId={currentUser.id}
-          onClose={() => setIsDeleteDialogOpen(false)}
-          onDeleted={() => {
-            handleDeleteEVUser();
-            setIsDeleteDialogOpen(false);
-          }}
-          role={"user"}
-        />
-      )}
     </div>
   );
 };
-
 export default EVUsers;

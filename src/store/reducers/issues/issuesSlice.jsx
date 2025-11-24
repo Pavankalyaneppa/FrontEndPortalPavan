@@ -10,7 +10,6 @@ const initialState = {
   currentPage: 0,
   openIssuesCount: 0,
   openIssuesCountStatus: 'idle',
-
    issueNotes: [],
   notesStatus: 'idle',
   notesError: null,
@@ -96,16 +95,6 @@ export const fetchIssues = (params = {}) => async (dispatch) => {
     dispatch(getIssuesFailure(error.message));
   }
 };
-
-// export const addIssue = (issueData) => async (dispatch) => {
-//   try {
-//     await AxiosServices.addIssue(issueData);
-//     dispatch(fetchIssues());
-//   } catch (error) {
-//     console.error('Error adding issue:', error);
-//     throw error; // Re-throw to handle in component
-//   }
-// };
 
 export const addIssue = (issueData) => async (dispatch) => {
   try {
@@ -215,8 +204,4 @@ export const updateIssueNote = (noteId, noteData) => async (dispatch) => {
     throw error;
   }
 };
-
 export default issuesSlice.reducer;
-
-
-//added thunks for adding and getting notes for issues(30-092025)

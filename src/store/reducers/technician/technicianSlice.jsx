@@ -77,7 +77,6 @@ export const fetchTechnicianStats = createAsyncThunk(
     }
   }
 );
-//for notes..
 
 export const fetchTaskNotes = createAsyncThunk(
   'technicianTasks/fetchTaskNotes',
@@ -132,7 +131,6 @@ export const deleteTaskNote = createAsyncThunk(
   }
 );
 
-
 const initialState = {
   technician: null,
   jobs: {
@@ -168,7 +166,6 @@ const technicianSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // Fetch technician
       .addCase(fetchTechnician.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -200,7 +197,6 @@ const technicianSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      // Update technician
       .addCase(updateTechnicianProfile.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -209,7 +205,6 @@ const technicianSlice = createSlice({
       .addCase(updateTechnicianProfile.fulfilled, (state, action) => {
         state.loading = false;
         state.success = true;
-        // Update the technician data with the new values
         if (state.technician) {
           state.technician = { ...state.technician, ...action.payload };
         }
@@ -219,7 +214,6 @@ const technicianSlice = createSlice({
         state.error = action.payload;
         state.success = false;
       })
-      // Fetch jobs
       .addCase(fetchTechnicianJobs.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -232,7 +226,6 @@ const technicianSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      // Fetch stats
       .addCase(fetchTechnicianStats.pending, (state) => {
         state.loading = true;
       })
@@ -244,7 +237,6 @@ const technicianSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       });
-      //for notes..
       builder
        .addCase(fetchTaskNotes.pending, (state) => {
       state.notesLoading = true;
@@ -252,7 +244,6 @@ const technicianSlice = createSlice({
     })
     .addCase(fetchTaskNotes.fulfilled, (state, action) => {
       state.notesLoading = false;
-      // Store notes by task ID
       if (action.meta.arg) {
         state.taskNotes[action.meta.arg] = action.payload;
       }
@@ -261,7 +252,6 @@ const technicianSlice = createSlice({
       state.notesLoading = false;
       state.notesError = action.payload;
     })
-    // Add note
     .addCase(addTaskNote.fulfilled, (state, action) => {
       const taskId = action.meta.arg.taskId;
       if (!state.taskNotes[taskId]) {
@@ -269,9 +259,7 @@ const technicianSlice = createSlice({
       }
       state.taskNotes[taskId].push(action.payload);
     })
-    // Update note
     .addCase(updateTaskNote.fulfilled, (state, action) => {
-      // Find and update the note in the appropriate task
       for (const taskId in state.taskNotes) {
         const index = state.taskNotes[taskId].findIndex(note => note.id === action.payload.id);
         if (index !== -1) {
@@ -280,10 +268,8 @@ const technicianSlice = createSlice({
         }
       }
     })
-    // Delete note
     .addCase(deleteTaskNote.fulfilled, (state, action) => {
       const { noteId } = action.payload;
-      // Remove the note from all tasks
       for (const taskId in state.taskNotes) {
         state.taskNotes[taskId] = state.taskNotes[taskId].filter(note => note.id !== noteId);
       }

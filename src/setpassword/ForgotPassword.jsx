@@ -1,12 +1,13 @@
 import axios from 'axios';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert } from "@/components/ui/alert";
 import { ReloadIcon } from "@radix-ui/react-icons";
-import { baseURL,baseOCPPURL } from '@/config';
+import { baseURL } from '@/config';
+
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
@@ -22,7 +23,7 @@ export default function ForgotPassword() {
 
     try {
       const response = await axios.get(
-        `${baseURL}services/userprofile/check-email`,
+        `${baseURL}/services/userprofile/check-email`,
         { params: { email } }
       );
 
@@ -38,8 +39,6 @@ export default function ForgotPassword() {
       setLoading(false);
     }
   };
-
-
 
    if (message) {
     return (
@@ -77,7 +76,6 @@ export default function ForgotPassword() {
     );
   }
 
-
   return (
     <div className="flex h-screen items-center justify-center p-4 bg-gray-50">
       <Card className="w-full max-w-md">
@@ -90,20 +88,17 @@ export default function ForgotPassword() {
           <p className="text-center text-gray-600 mb-6">
             Enter your email to receive a password reset link
           </p>
-
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
               <Alert variant="destructive">
                 <p>{error}</p>
               </Alert>
-            )}
-           
+            )}           
             {message && (
               <Alert>
                 <p>{message}</p>
               </Alert>
             )}
-
             <div className="space-y-2">
               <label>Email</label>
               <Input
@@ -114,7 +109,6 @@ export default function ForgotPassword() {
                 required
               />
             </div>
-
             <Button
               type="submit"
               disabled={loading}
@@ -130,7 +124,6 @@ export default function ForgotPassword() {
               )}
             </Button>
           </form>
-
           <div className="mt-4 text-center text-sm">
             Remember your password?{' '}
             <Button

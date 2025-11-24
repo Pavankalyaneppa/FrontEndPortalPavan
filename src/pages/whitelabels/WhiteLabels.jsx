@@ -1,51 +1,23 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import PropTypes from 'prop-types';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle,
-  DialogFooter
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
-import { InfoIcon, Trash } from 'lucide-react';
+import { InfoIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ReloadIcon } from '@radix-ui/react-icons';
 import DeleteOtp from '@/users/DeleteOtp';
-import {
-  validateName,
-  validateMobileNumber,
-  validateCity,
-  validateZipCode,
-  validateEmail,
-  // validateUsername,
-} from '@/pages/validations/Validation';
-import {
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
-  getPaginationRowModel,
-  getSortedRowModel,
-  getFilteredRowModel,
-} from "@tanstack/react-table";
+import { validateName, validateMobileNumber, validateCity, validateZipCode, validateEmail } from '@/pages/validations/Validation';
+import { flexRender, getCoreRowModel, useReactTable, getPaginationRowModel, getSortedRowModel, getFilteredRowModel } from "@tanstack/react-table";
 import Loading from '@/users/Loading';
 import { fetchWhiteLabellist ,fetchSearchWhiteLabellist} from '@/store/reducers/whitelabel/whitelabelslice';
 import { useDispatch, useSelector } from 'react-redux';
-import AxiosServices from '@/services/AxiosServices'; // Added missing import
+import AxiosServices from '@/services/AxiosServices';
 
 const WhiteLabels = () => {
-  const { list, status, error, totalElements, totalPages } = useSelector((state) => state.whitelabel);
+  const { list, totalPages } = useSelector((state) => state.whitelabel);
   const [currentPage, setCurrentPage] = useState(0);
   const [data, setData] = useState([]);
   const [globalFilter, setGlobalFilter] = useState('');
@@ -57,12 +29,12 @@ const WhiteLabels = () => {
   const [columnFilters, setColumnFilters] = useState([]);
   const [pageSize, setPageSize] = useState(10);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formErrors, setFormErrors] = useState({});
  
   const dispatch = useDispatch();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [formErrors, setFormErrors] = useState({});
-const searchTimeoutRef = useRef(null);
+  const searchTimeoutRef = useRef(null);
   const columns = [
     {
       accessorKey: "orgId",
@@ -88,7 +60,6 @@ const searchTimeoutRef = useRef(null);
       id: "actions",
       header: "Actions",
       cell: ({ row }) => (
-        // <div className="flex justify-end gap-2">
         <div>
           <Button 
             variant="ghost" 
@@ -100,22 +71,11 @@ const searchTimeoutRef = useRef(null);
           >
             <InfoIcon className="h-4 w-4 " />
           </Button>
-          {/* <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={(e) => {
-              e.stopPropagation();
-              row.original.onDelete();
-            }}
-          >
-            <Trash className="h-4 w-4" />
-          </Button> */}
         </div>
       ),
     },
   ];
 
-  // Form state
   const [formData, setFormData] = useState({
     orgName: "",
     fullname: "",
@@ -138,10 +98,6 @@ useEffect(() => {
   const fullNameError = validateName(formData.fullname);
   if (fullNameError) errors.fullname = fullNameError;
 
-  // const usernameError = validateUsername(formData.username);
-  // if (usernameError) errors.username = usernameError;
-
-  // Add other validations similarly
   const emailError = validateEmail(formData.email);
   if (emailError) errors.email = emailError;
 
@@ -178,6 +134,7 @@ useEffect(() => {
       },
     },
   });
+
 const fetchWhiteLabels = useCallback(async (searchValue = '') => {
   try {
     setLoading(true);
@@ -217,7 +174,7 @@ useEffect(() => {
 }, [globalFilter, fetchWhiteLabels]);
 
  useEffect(() => {
-  fetchWhiteLabels(globalFilter); // Pass latest filter
+  fetchWhiteLabels(globalFilter);
 }, [currentPage, pageSize, globalFilter, fetchWhiteLabels]);
 
  useEffect(() => {
@@ -237,9 +194,8 @@ useEffect(() => {
 const handleSearchChange = (e) => {
   const value = e.target.value;
   setGlobalFilter(value);
-  setCurrentPage(0); // Reset to first page
+  setCurrentPage(0);
 };
-  // Fetch white label details
   const fetchWhiteLabelDetails = async (userId, orgId) => {
     try {
       const details = await AxiosServices.getWhiteLabelDetails(userId, orgId);
@@ -261,7 +217,6 @@ const handleSearchChange = (e) => {
     }
   };
 
-  // Handle form input changes
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({
@@ -277,9 +232,6 @@ const handleAddWhiteLabel = async (e) => {
   const errors = {};
   const fullNameError = validateName(formData.fullname);
   if (fullNameError) errors.fullname = fullNameError;
-
-  // const usernameError = validateUsername(formData.username);
-  // if (usernameError) errors.username = usernameError;
 
   const emailError = validateEmail(formData.email);
   if (emailError) errors.email = emailError;
@@ -303,7 +255,6 @@ const handleAddWhiteLabel = async (e) => {
     });
     return; 
   }
-
   try {
     setIsSubmitting(true);
     const response = await AxiosServices.addWhiteLabel(formData);
@@ -321,7 +272,6 @@ const handleAddWhiteLabel = async (e) => {
     console.log(error);
     let errorMessage = "Failed to add site";
     
-    // Check for unique constraint violation (site name already exists)
     if (error.response?.data.includes('ConstraintViolationException') || 
         error.response?.data.includes('could not execute statement')) {
       errorMessage = "Mobile Number already exists. Please choose a different Number.";
@@ -355,7 +305,6 @@ const handleAddWhiteLabel = async (e) => {
     });
   }
 
-  // View white label details
   const handleViewDetails = async (whitelabel) => {
     const details = await fetchWhiteLabelDetails(whitelabel.userId, whitelabel.orgId);
     if (details) {
@@ -377,7 +326,6 @@ const handleAddWhiteLabel = async (e) => {
             onChange={handleSearchChange}
             className="mb-4"
           />
-      {/* White Labels Table */}
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -512,33 +460,7 @@ const handleAddWhiteLabel = async (e) => {
                   value={formData.username} 
                   onChange={handleInputChange} 
                 />
-                {/* {formErrors.username && (  <p className="text-xs text-red-500 mt-1">{formErrors.username}</p>)} */}
               </div>
-
-              {/* <div className="space-y-2">
-                <Label htmlFor="password">Password *</Label>
-                <Input 
-                  id="password" 
-                  name="password" 
-                  type="password" 
-                  value={formData.password} 
-                  onChange={handleInputChange} 
-                  required
-                />
-                {formErrors.password && <p className="text-sm text-red-500">{formErrors.password}</p>}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm Password *</Label>
-                <Input 
-                  id="confirmPassword" 
-                  name="confirmPassword" 
-                  type="password" 
-                  value={formData.confirmPassword} 
-                  onChange={handleInputChange} 
-                  required
-                />
-                {formErrors.confirmPassword && <p className="text-sm text-red-500">{formErrors.confirmPassword}</p>}
-              </div> */}
               <div className="space-y-2">
                 <Label htmlFor="address">Address</Label>
                 <Input 
@@ -606,7 +528,6 @@ const handleAddWhiteLabel = async (e) => {
           </form>
         </DialogContent>
       </Dialog>
-      {/* Delete White Label Dialog */}
       {isDeleteDialogOpen && currentWhiteLabel && (
         <DeleteOtp 
           userId={currentWhiteLabel.id}

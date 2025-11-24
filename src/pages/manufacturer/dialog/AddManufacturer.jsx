@@ -1,13 +1,11 @@
 import { useState } from 'react';
 import { useEffect } from 'react';
-import PropTypes from 'prop-types';
 import { useToast } from "@/components/ui/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useDispatch } from 'react-redux';
-import { PlusCircle, Trash2 } from 'lucide-react';
 import { addManufacturer } from '@/store/reducers/manufacturer/manufacturerSlice';
 import { ReloadIcon } from '@radix-ui/react-icons';
 import {
@@ -56,9 +54,7 @@ useEffect(() => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    // Check if there are any validation errors
+    e.preventDefault();    
     const hasErrors = Object.values(formErrors).some(error => error !== "");
     if (hasErrors) {
       toast({
@@ -68,26 +64,19 @@ useEffect(() => {
       });
       return;
     }
-
     try {
       setIsSubmitting(true);
-      // Dispatch the action and wait for the result
-      const result = await dispatch(addManufacturer(manufacturerData)).unwrap();
-      
+      const result = await dispatch(addManufacturer(manufacturerData)).unwrap();      
       toast({
         title: "Success",
         description: "Manufacturer added successfully!",
-      });
-      
-      // Reset form and close dialog
+      });      
       setManufacturerData({
         manufacturerName: '',
         country: '',
         contactInfo: '',
       });
-      setOpen(false);
-      
-      // Call success callback if provided
+      setOpen(false);      
       if (onSuccess) onSuccess();
     } catch (error) {
       console.error('Failed to add manufacturer:', error);
@@ -120,7 +109,6 @@ useEffect(() => {
                 onChange={handleChange}
                 placeholder="Enter manufacturer name"
                 className={errors.manufacturerName ? 'border-red-500' : ''}
-
               />
             {formErrors.manufacturerName && (  <p className="text-xs text-red-500 mt-1">{formErrors.manufacturerName}</p>)}
             </div>
@@ -148,7 +136,6 @@ useEffect(() => {
               />
             {formErrors.contactInfo && (  <p className="text-xs text-red-500 mt-1">{formErrors.contactInfo}</p>)}
             </div>
-
             <div>
             <Label htmlFor="mobileNumber">Mobile Number</Label>
             <Input
@@ -162,11 +149,9 @@ useEffect(() => {
             />
               {formErrors.mobileNumber && (  <p className="text-xs text-red-500 mt-1">{formErrors.mobileNumber}</p>)}
           </div>
-
           </div>
-
           <div className="flex justify-end">
-  <Button
+            <Button
               onClick={handleSubmit} 
               disabled={isSubmitting}
             >
@@ -179,18 +164,9 @@ useEffect(() => {
                 'Submit'
               )}
             </Button>
-</div>
-
+            </div>
         </div>
       </DialogContent>
     </Dialog>
   );
 }
-
-// AddManufacturer.propTypes = {
-//   onSuccess: PropTypes.func
-// };
-
-// AddManufacturer.defaultProps = {
-//   onSuccess: () => {}
-// };

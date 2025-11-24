@@ -1,29 +1,19 @@
 import { Button } from '@/components/ui/button';
 import AxiosServices from '@/services/AxiosServices';
 import BackButton from '@/users/BackButton';
-import Loading from '@/users/Loading';
-import axios from 'axios';
 import React, { useState, useEffect } from 'react';
 import { toast } from '@/components/ui/use-toast';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { fetchSiteDetails } from '@/store/reducers/sites/sitesSlice';
-import {
-  validateStationName,
-  validateOcppId,
-  validateSerialNumber,
-  validateFirmwareVersion,
-  validateVoltageRange
-} from '@/pages/validations/Validation';
+import { validateStationName, validateOcppId, validateFirmwareVersion, validateVoltageRange } from '@/pages/validations/Validation';
 import { useDispatch, useSelector } from 'react-redux';
 
 const AddStationPage = () => {
-  // State for manufacturers data
   const [manufacturers, setManufacturers] = useState([]);
   const [sites, setSites] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
- const [isSubmitting, setIsSubmitting] = useState(false);
-  // State for form selections
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedManufacturer, setSelectedManufacturer] = useState(null);
   const [selectedsite, setSelectedsite] = useState(null);
   const [selectedStation, setSelectedStation] = useState(null);
@@ -36,7 +26,6 @@ const AddStationPage = () => {
 
   const from =location.state?.from;
   const siteId = location.state?.siteId;
-
   const currentSite = useSelector(state => state.sites.currentSite);
 
   useEffect(() => {
@@ -44,7 +33,7 @@ const AddStationPage = () => {
     dispatch(fetchSiteDetails(siteId)).then(() => {
       setFormData(prev => ({
         ...prev,
-        siteId: siteId // Ensure this matches your API response structure
+        siteId: siteId
       }));
     });
   }
@@ -117,19 +106,14 @@ useEffect(() => {
   const ocppIdError = validateOcppId(formData.OCPPId);
   if (ocppIdError) errors.OCPPId = ocppIdError;
 
-  // const serialNoError = validateSerialNumber(formData.serialNoError);
-  // if (serialNoError) errors.serialNo = serialNoError;
-
   const firmware_versionError = validateFirmwareVersion(formData.firmware_version);
   if (firmware_versionError) errors.firmware_version = firmware_versionError;
 
   const voltage_rangeError = validateVoltageRange(formData.voltage_range);
   if (voltage_rangeError) errors.voltage_range = voltage_rangeError;
 
-
   setFormErrors(errors);
 }, [formData]);
-
 
  const [touched, setTouched] = useState({
     stationName: false,
@@ -138,8 +122,6 @@ useEffect(() => {
     firmware_version: false,
     voltage_range: false
   });
-
-
 
 const validateStationForm = (formData) => {
   const errors = {};
@@ -158,23 +140,18 @@ const validateStationForm = (formData) => {
     const ocppIdError = validateOcppId(formData.OCPPId);
     if (ocppIdError) errors.OCPPId = ocppIdError;
   }
-
   if (!formData.serialNo.trim()) {
     errors.serialNo = 'Serial number is required';
   }
-
   if (!formData.siteId) {
     errors.siteId = 'Site selection is required';
   }
-
   if (!formData.manufacturerId) {
     errors.manufacturerId = 'Manufacturer selection is required';
   }
-
   if (!formData.chargerdetailsId) {
     errors.chargerdetailsId = 'Charger type selection is required';
   }
-
   if (formData.firmware_version && formData.firmware_version.trim()) {
     const firmware_versionError = validateFirmwareVersion(formData.firmware_version);
     if (firmware_versionError) errors.firmware_version = firmware_versionError;
@@ -191,16 +168,13 @@ const validateStationForm = (formData) => {
   };
 };
 
-
-  // Fetch manufacturers data
  useEffect(() => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      setIsLoadingSites(true);//added for loader
+      setIsLoadingSites(true);
       setIsLoadingManufacturers(true);
       
-      // Fetch manufacturers and sites in parallel (optimized)
       const [manufacturerData, siteData] = await Promise.all([
         AxiosServices.getManufacturers(),
         AxiosServices.getSites()
@@ -220,13 +194,11 @@ const validateStationForm = (formData) => {
 
   fetchData();
 }, []);
-   // Handle form submission
+
 const handleSubmit = async (e) => {
   e.preventDefault();
   setIsSubmitting(true);
-  
-  // Mark all fields as touched to show errors
-  setTouched({
+    setTouched({
     stationName: true,
     OCPPId: true,
     serialNo: true,
@@ -237,11 +209,9 @@ const handleSubmit = async (e) => {
     chargerdetailsId: true
   });
 
-  // Validate form before submission
   const { isValid, errors } = validateStationForm(formData);
   setFormErrors(errors);
 
-  // If form is not valid, stop submission
   if (!isValid) {
     setIsSubmitting(false);
     toast({
@@ -254,12 +224,8 @@ const handleSubmit = async (e) => {
 
   try {
     console.log('Submitting station data:', formData);
-    
-    // Make the API call
     const response = await AxiosServices.addStation(formData);
-    console.log('API Response:', response);
-    
-    // Show success toast
+    console.log('API Response:', response);    
     toast({
       title: 'Success',
       description: response.data?.message || 'Station added successfully',
@@ -286,30 +252,17 @@ const handleSubmit = async (e) => {
       lastHeartBeat: new Date().toISOString().split('T')[0],
       siteId: '',
       chargerdetailsId: '',
-      // Reset all connector fields...
     });
 
-    // Reset selections
     setSelectedManufacturer(null);
     setSelectedsite(null);
     setSelectedStation(null);
 
-    // Navigate after successful submission if needed
  if (from === 'site' && siteId) {
   navigate(`/site/${siteId}`);
 } else {
   navigate('/stations');
 }
-  // } catch (err) {
-  //   console.error('API Error:', err);
-    
-  //   let errorMessage = 'Failed to add station';
-  //   if (response) {
-  //     errorMessage = response.data;
-  //   } else if (err.message) {
-  //     errorMessage = err.message;
-  //   }
-
   } catch (err) {
   console.error('API Error:', err);
 
@@ -329,8 +282,7 @@ const handleSubmit = async (e) => {
   }
 }
 
-  // Handle manufacturer selection
-  const handleManufacturerChange = (e) => {
+const handleManufacturerChange = (e) => {
     const manufacturerId = parseInt(e.target.value);
     const manufacturer = manufacturers.find(m => m.id === manufacturerId);
     setSelectedManufacturer(manufacturer);
@@ -340,7 +292,6 @@ const handleSubmit = async (e) => {
       ...formData,
       manufacturerId: manufacturerId,
       chargerdetailsId: '',
-      // Reset all port related fields
       number_of_ports: 0,
       current_type: '',
       connectorId1: '',
@@ -349,7 +300,6 @@ const handleSubmit = async (e) => {
       current_type1: '',
       current_type2: '',
       current_type3: '',
-      // Other fields reset
     });
   };
  const handlesiteChange = (e) => {
@@ -363,13 +313,11 @@ const handleSubmit = async (e) => {
     });
   };
 
-  // Handle station selection
   const handleStationChange = (e) => {
     const stationId = parseInt(e.target.value);
     const station = selectedManufacturer.chargingStation.find(s => s.id === stationId);
     setSelectedStation(station);
     
-    // Set number of ports based on the selected station
     const numPorts = station.chargingPort.length;
     const currentType = station.currentType || (station.chargingPort.some(port => 
 
@@ -377,7 +325,6 @@ const handleSubmit = async (e) => {
     ['CCS1', 'CCS2', 'CHAdeMO'].includes(port.connectorType)
     ) ? 'DC' : '');
     
-    // Prepare updates for form data
     const updatedFormData = {
       ...formData,
       chargerdetailsId: stationId,
@@ -387,7 +334,6 @@ const handleSubmit = async (e) => {
       current_type:currentType,
     };
     
-    // Auto-fill connector details based on the ports in the selected station
     station.chargingPort.forEach((port, index) => {
       const portNum = index + 1;
       if (portNum <= 3) { // We only support up to 3 ports as per requirements
@@ -414,7 +360,6 @@ const handleSubmit = async (e) => {
     setFormData(updatedFormData);
   };
 
-  // Handle form input changes
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData({
@@ -423,7 +368,6 @@ const handleSubmit = async (e) => {
     });
   };
 
- 
   return (
     <div className="p-6 max-w-6xl mx-auto bg-white rounded-lg shadow-md">
        <div className="flex justify-between items-center mb-6">
@@ -461,8 +405,7 @@ const handleSubmit = async (e) => {
         ))}
     </select>
   )}
-</div>
-        {/* Manufacturer Selection */}
+  </div>
         <div className="mb-4">
           <label className="block text-gray-700 text-sm font-bold mb-2">
             Manufacturer
@@ -720,20 +663,20 @@ const handleSubmit = async (e) => {
               
               <div>
                   <label className="block text-gray-700 text-sm font-bold mb-2">
-    Site ID
-  </label>
-  <input
-    type="text"
-    value={from === 'site' && currentSite ? currentSite.siteId : formData.siteId}
-    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100"
-    readOnly
-  />
-  <input 
-    type="hidden" 
-    name="siteId" 
-    value={from === 'site' && currentSite ? currentSite.siteId : formData.siteId} 
-  />
-</div>
+                    Site ID
+                  </label>
+                  <input
+                    type="text"
+                    value={from === 'site' && currentSite ? currentSite.siteId : formData.siteId}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100"
+                    readOnly
+                  />
+                  <input 
+                    type="hidden" 
+                    name="siteId" 
+                    value={from === 'site' && currentSite ? currentSite.siteId : formData.siteId} 
+                  />
+                </div>
             </div>
             
             {/* Port Details - Only show for the number of ports in the selected station */}
@@ -741,7 +684,6 @@ const handleSubmit = async (e) => {
               <div className="mt-6">
                 <h2 className="text-xl font-bold mb-4 text-gray-800">Port Details</h2>
                 
-                {/* Port 1 */}
                 <div className="bg-gray-50 p-4 rounded-lg mb-4">
                   <h3 className="text-lg font-semibold mb-3">Port 1</h3>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -860,7 +802,6 @@ const handleSubmit = async (e) => {
                   </div>
                 </div>
                 
-                {/* Port 2 - Only show if station has at least 2 ports */}
                 {formData.number_of_ports >= 2 && (
                   <div className="bg-gray-50 p-4 rounded-lg mb-4">
                     <h3 className="text-lg font-semibold mb-3">Port 2</h3>
@@ -1098,34 +1039,22 @@ const handleSubmit = async (e) => {
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
+                     </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            )}
-            
-            {/* Submit Button
-            <div className="flex justify-end mt-6">
-              <button
-                type="submit"
-                className="px-6 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-              >
-                Add Station
-              </button>
-            </div> */}
-
-           
-          <div className="flex justify-end space-x-2 pt-4">
+                    )}
+                   </div>
+                    )}
+                   <div className="flex justify-end space-x-2 pt-4">
                       <Button
                         type="button" 
                         variant="outline" 
                         onClick= {() => {
-  if (from === 'site' && siteId) {
-    navigate(`/site/${siteId}`);
-  } else {
-    navigate('/stations');
-  }
-}}>
+                          if (from === 'site' && siteId) {
+                            navigate(`/site/${siteId}`);
+                          } else {
+                            navigate('/stations');
+                          }
+                        }}>
                         Cancel
                       </Button>
                      <Button
@@ -1137,7 +1066,7 @@ const handleSubmit = async (e) => {
           >
             {isSubmitting ? 'Adding...' : 'Add Station'}
           </Button>
-                    </div>
+        </div>
           </>
         )}
       </form>
@@ -1145,4 +1074,4 @@ const handleSubmit = async (e) => {
   );
 };
 
-export default AddStationPage;
+export default AddStationPage;
