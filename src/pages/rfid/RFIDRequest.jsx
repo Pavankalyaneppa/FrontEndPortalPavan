@@ -147,7 +147,6 @@ console.log('searchedRfid',searchedRfid);
       });
     }
   };
-  if (loading && !list.length) return <div><Loading/></div>;
   if (error) return <div>Error: {error}</div>;
 
   return (
@@ -189,7 +188,13 @@ console.log('searchedRfid',searchedRfid);
                 </TableRow>
               </TableHeader>
               <TableBody>
-               {list && list.length > 0 ? (
+               {loading ? ( 
+                <TableRow>
+                  <TableCell colSpan={10} className="text-center py-4"> 
+                    <Loading />
+                  </TableCell>
+                </TableRow> 
+                ):list && list.length > 0 ? (
                 list.map((request) => (
                   <TableRow key={request.id} className="hover:bg-slate-50">
                     <TableCell>{request.firstName}</TableCell>

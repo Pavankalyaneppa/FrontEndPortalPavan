@@ -89,7 +89,7 @@ const NotesSection = ({ taskId, currentUser, employeeId, isTechnicianPortal = fa
     const noteData = {
       ...newNote,
       description: newNote.description.trim(),
-      employeeId: employeeId || currentUser?.id,
+      employeeId: employeeId || recipientId,
       taskId: taskId,
       ...(newNote.recipientId !== "none" && { recipientId: parseInt(newNote.recipientId) }),
     };
@@ -163,7 +163,6 @@ const NotesSection = ({ taskId, currentUser, employeeId, isTechnicianPortal = fa
                 <SelectValue placeholder="Select recipient (optional)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="1">Admin</SelectItem>
                 {allEmployeesLoading ? (
                   <SelectItem value="loading" disabled>Loading employees...</SelectItem>
                 ) : (
@@ -176,6 +175,13 @@ const NotesSection = ({ taskId, currentUser, employeeId, isTechnicianPortal = fa
               </SelectContent>
             </Select>
           </div>
+          <div className="flex flex-col">
+            <label className="text-sm font-medium text-gray-700 mb-1">Employee ID</label>
+            <input type="text"
+            value = {employeeId}
+            readOnly
+            className="w-full rounded-md border border-gray-300 px-3 py-2 bg-gray-100 cursor-not-allowed" />
+            </div>
 
           {/* Created By Role Dropdown */}
           <div>

@@ -43,7 +43,7 @@ export default function ResetPassword() {
 
     try {
       const response = await axios.post(
-        `${baseURL}services/userprofile/save-password`,
+        `${baseURL}/services/userprofile/save-password`,
         null,
         {
           params: {

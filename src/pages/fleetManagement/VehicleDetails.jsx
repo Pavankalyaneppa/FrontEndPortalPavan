@@ -36,10 +36,8 @@ useEffect(() => {
     dispatch(fetchVehicleDetails(String(id)));
   }
 
-  return () => {
-    dispatch(resetFleetDetails());
-  };
 }, [dispatch, id]);
+
 
   useEffect(() => {
     if (currentVehicle) {
@@ -72,7 +70,6 @@ const handleSave = async () => {
   try {
     setIsSubmitting(true);
     
-    // Use string vehicleId
     const vehicleId = String(currentVehicle.vehicleId);
     
     await dispatch(updateFleetVehicle({ 

@@ -65,11 +65,12 @@ const EvUserPageDetails = () => {
   const [isAddVehicleDialogOpen,setIsAddVehicleDialogOpen]=useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [vechileId,setVechileId]= useState(null);
-  const [editFormErrors, setEditFormErrors] = useState({});
   console.log(currentUser);
   const { user } = useSelector(state => state.authentication);
   console.log("user",user.orgId);
-  const [formErrors, setFormErrors] = useState({});
+  const [editFormErrors, setEditFormErrors] = useState({});
+  const [vehicleFormErrors, setVehicleFormErrors] = useState({});
+  const [rfidFormErrors, setRfidFormErrors] = useState({})
   const {walletDetails, walletStatus, walletHistory, walletError} = useSelector((state) => state.evuser);
 
  const [currentPage, setCurrentPage] = useState(1);
@@ -78,6 +79,8 @@ const EvUserPageDetails = () => {
  const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
  const currentRecords = walletHistory.slice(indexOfFirstRecord, indexOfLastRecord);
  const totalPages = Math.ceil(walletHistory.length / recordsPerPage);
+ const [activeTab, setActiveTab] = useState("details"); 
+ const [loadedTabs, setLoadedTabs] = useState(new Set(["details"])); 
 
 const getPageNumbers = () => {
   const maxVisible = 5; 
@@ -94,7 +97,6 @@ const getPageNumbers = () => {
   for (let i = start; i <= end; i++) pages.push(i);
   return pages;
 };
-
 
   const [editFormData, setEditFormData] = useState({
     fullname: "",
@@ -115,17 +117,19 @@ const getPageNumbers = () => {
     vehicleType:"", 
   });
 
-useEffect (() => {
-  if(id) {
-    dispatch(fetchWalletDetails(id));
-  }
-}, [id]);
+  useEffect(() => {
+    if (activeTab === "wallet" && id && !loadedTabs.has("wallet")) {
+      dispatch(fetchWalletDetails(id));
+      setLoadedTabs(prev => new Set([...prev, "wallet"]));
+    }
+  }, [activeTab, id, dispatch, loadedTabs]);
 
 useEffect(() => {
-  if (walletDetails?.id) {
-    dispatch(fetchWalletTransaction(walletDetails.id));
-  }
-}, [walletDetails, dispatch]);
+    if (activeTab === "transactions" && walletDetails?.id && !loadedTabs.has("transactions")) {
+      dispatch(fetchWalletTransaction(walletDetails.id));
+      setLoadedTabs(prev => new Set([...prev, "transactions"]));
+    }
+  }, [activeTab, walletDetails, dispatch, loadedTabs]);
 
   useEffect(() => {
   const errors = {};
@@ -166,7 +170,7 @@ useEffect(() => {
   const registrationNoError = validateRegistrationNo(editFormData.registrationNo);
   if (registrationNoError) errors.registrationNo = registrationNoError;
 
-  setFormErrors(errors);
+  setEditFormErrors(errors);
 }, [editFormData]);
 
  const [vehicleFormData, setVehicleFormData] = useState({
@@ -200,19 +204,8 @@ useEffect(() => {
   const registrationNoError = validateRegistrationNo(vehicleFormData.registrationNo);
   if (registrationNoError) errors.registrationNo = registrationNoError;
 
-  setFormErrors(errors);
+  setVehicleFormErrors(errors);
 }, [vehicleFormData]);
-
-  const [vehicleFormErrors, setVehicleFormErrors] = useState({
-    connectorType: "",
-    description: "",
-    vin: "",
-    registrationNo: "",
-    model: "",
-   Year: "",
-    make: "", 
-    type: ""
-  });
 
  const [addressParts, setAddressParts] = useState({
   street: "",
@@ -333,20 +326,28 @@ const handleDelete = async (id) => {
   }
 };
 
- const fetchVehicles = async () => {
-  try {
-    setLoadingVehicles(true);
-    const response = await getVehicles(id);
-    console.log("Vehicle Data from Backend:", response);
-
-    setVehicleList(response?.data || []);
-  } catch (error) {
-    console.error("Error fetching vehicles:", error);
-   
-  } finally {
-    setLoadingVehicles(false);
-  }
-};
+ const fetchVehicles = async (id) => {
+    if (!id || loadedTabs.has("vehicles")) return;
+    
+    try {
+      setLoadingVehicles(true);
+      const response = await getVehicles(id);
+      console.log("Vehicle Data from Backend:", response);
+      setVehicleList(response?.data || []);
+      setLoadedTabs(prev => new Set([...prev, "vehicles"])); 
+    } catch (error) {
+      console.error("Error fetching vehicles:", error);
+      if (activeTab === "vehicles") {
+        toast({
+          title: "Error",
+          description: "Failed to load vehicles",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setLoadingVehicles(false);
+    }
+  };
 
   useEffect(() => {
     if (id) {
@@ -370,13 +371,7 @@ const handleDelete = async (id) => {
   };
 
 const handleInfoClick = (vehicle) => {
-  console.log("🔄 Editing vehicle:", vehicle);
-  console.log("🆔 Vehicle ID from row:", vehicle.id);
-  console.log("📋 Vehicle data:", vehicle);
-  
-  // Make sure we have the vehicle ID
   if (!vehicle.id) {
-    console.error("❌ No vehicle ID found in vehicle object!");
     toast({
       title: "Error",
       description: "Cannot edit vehicle: No ID found",
@@ -396,55 +391,78 @@ const handleInfoClick = (vehicle) => {
     vehicleType: vehicle.vehicleType || ""
   });
   
-  setVechileId(vehicle.id); // This is crucial!
-  console.log("✅ Vehicle ID set in state:", vehicle.id);
+  setVechileId(vehicle.id); 
   setIsEditVehicleDialogOpen(true);
 };
 
   const fetchRfidRequests = async (userId) => {
-  try {
-    const response = await AxiosServices.getRfidRequests(userId);
-    if (response && response.data) {
-      setRfidRequests(response.data);
-    } else {
+    if (!userId || loadedTabs.has("rfid")) return;
+    
+    try {
+      const response = await AxiosServices.getRfidRequests(userId);
+      if (response && response.data) {
+        setRfidRequests(response.data);
+        setLoadedTabs(prev => new Set([...prev, "rfid"]));
+      } else {
+        setRfidRequests([]);
+      }
+    } catch (error) {
+      console.error('Error fetching RFID requests:', error);
+      if (activeTab === "rfid") {
+        toast({
+          title: "Error",
+          description: error.response?.data?.message || "Failed to fetch RFID requests",
+          variant: "destructive",
+        });
+      }
       setRfidRequests([]);
     }
-  } catch (error) {
-    console.error('Error fetching RFID requests:', error);
-    toast({
-      title: "Error",
-      description: error.response?.data?.message || "Failed to fetch RFID requests",
-      variant: "destructive",
-    });
-    setRfidRequests([]);
-  }
-};
-
+  };
+  const handleTabChange = (value) => {
+    setActiveTab(value);
+    
+    // Load data when tab is activated
+    switch (value) {
+      case "vehicles":
+        fetchVehicles(id);
+        break;
+      case "rfid":
+        fetchRfidRequests(id);
+        break;
+      case "wallet":
+        // Wallet is handled by useEffect above
+        break;
+      case "transactions":
+        // Transactions is handled by useEffect above  
+        break;
+      default:
+        break;
+    }
+  };
+// Only load user details on mount
   useEffect(() => {
     const loadDetails = async () => {      
       try {
         setLoading(true);
         const details = await fetchUserDetails(id);
-                  if (details) {
-              setCurrentUser(details);
+        if (details) {
+          setCurrentUser(details);
+          setNewRfid((prev) => ({
+            ...prev,
+            firstName: details.fullname || '',
+            email: details.email || '',
+            mobile: details.mobileNumber || '',
+            userId: id,
+          }));
 
-              setNewRfid((prev) => ({
-                ...prev,
-                firstName: details.fullname || '',
-                email: details.email || '',
-                mobile: details.mobileNumber || '',
-                userId: id,
-              }));
-
-              setAddressParts({
-                street: details.address?.[0]?.address || '',
-                city: details.address?.[0]?.city || '',
-                state: details.address?.[0]?.state || '',
-                country: details.address?.[0]?.country || '',
-                zipCode: details.address?.[0]?.zipCode || '',
-              });
-            }
-          fetchRfidRequests(id);
+          setAddressParts({
+            street: details.address?.[0]?.address || '',
+            city: details.address?.[0]?.city || '',
+            state: details.address?.[0]?.state || '',
+            country: details.address?.[0]?.country || '',
+            zipCode: details.address?.[0]?.zipCode || '',
+          });
+        }
         setLoading(false);
       } catch (error) {
         console.error("Failed to load user details", error);
@@ -457,34 +475,18 @@ const handleInfoClick = (vehicle) => {
       }
     };
 
-    loadDetails();
+    if (id) {
+      loadDetails();
+    }
   }, [id]);
 
- const handleEditInputChange = (e) => {
-    const { name, value } = e.target;
-   {
-      setEditFormData(prev => ({
-        ...prev,
-        [name]: value
-      }));
-  if (name in editFormData.vehicle) {
-      setEditFormData(prev => ({
-        ...prev,
-        vehicle: {
-          ...prev.vehicle,
-          [name]: value
-        }
-      }));
-      setEditFormErrors(prev => ({
-        ...prev,
-        vehicle: {
-          ...prev.vehicle,
-          [name]: validateRequiredField(value, name)
-        }
-      }));
-    } 
-  }
-  };
+const handleEditInputChange = (e) => {
+  const { name, value } = e.target;
+  setEditFormData(prev => ({
+    ...prev,
+    [name]: value
+  }));
+};
 
   useEffect(() => {
   const fullAddress = `${addressParts.street}, ${addressParts.city}, ${addressParts.state}, ${addressParts.country} - ${addressParts.zipCode}`;
@@ -579,7 +581,7 @@ const handleAddVehicle = async (e) => {
         description: "Vehicle added successfully!",
       });
       setIsAddVehicleDialogOpen(false);
-      fetchVehicles();
+      fetchVehicles(id);
       
       // Reset form
       setVehicleFormData({
@@ -678,7 +680,7 @@ const handleUpdateVehicle = async (e) => {
       });
       
       setIsEditVehicleDialogOpen(false);
-      fetchVehicles(); // Refresh the list
+      fetchVehicles(id); // Refresh the list
       
       // Reset form
       setVehicleFormData({
@@ -752,34 +754,33 @@ const handleUpdateUser = async (e) => {
 
   setEditFormErrors(newErrors);
 
+  console.log(newErrors)
   // Check if any errors exist
   const hasErrors = Object.values(newErrors).some(error => error !== "");
   
-  if (hasErrors) {
-    toast({
-      title: "Validation Error",
-      description: "Please fix the errors in the form",
-      variant: "destructive",
-    });
-    return;
-  }
+  // if (hasErrors) {
+  //   toast({
+  //     title: "Validation Error",
+  //     description: "Please fix the errors in the form",
+  //     variant: "destructive",
+  //   });
+  //   return;
+  // }
 
   try {
     setIsSubmitting(true);
     
-    const updateData = {
+       const updateData = {
       fullname: editFormData.fullname,
       mobileNumber: editFormData.mobileNumber,
-      address: [
-        editFormData.address,
-        editFormData.city,
-        editFormData.state,
-        editFormData.country,
-        editFormData.zipCode
-      ].filter(Boolean).join(', ')
+      address: editFormData.address, // Individual address field
+      city: editFormData.city,       // Individual city field
+      country: editFormData.country, // Individual country field
+      state: editFormData.state,     // Individual state field
+      zipCode: editFormData.zipCode, // Individual zipCode field
+      passwordchange: false // Set to true if password is being changed
     };
-
-    const response = await AxiosServices.updateUserProfile(id, updateData);
+    const response = await AxiosServices.updateUser(id, updateData);
     console.log("Update response:", response);
 
     toast({
@@ -845,7 +846,7 @@ const handleUpdateUser = async (e) => {
                     value={editFormData.fullname} 
                     onChange={handleEditInputChange}
                   />
-                {formErrors.fullname && (  <p className="text-xs text-red-500 mt-1">{formErrors.fullname}</p>)}
+                {editFormErrors.fullname && (  <p className="text-xs text-red-500 mt-1">{editFormErrors.fullname}</p>)}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="edit-username">Username</Label>
@@ -875,8 +876,8 @@ const handleUpdateUser = async (e) => {
                     name="mobileNumber" 
                     value={editFormData.mobileNumber} 
                     onChange={handleEditInputChange}
+                    disabled
                   />
-                {formErrors.mobileNumber && (  <p className="text-xs text-red-500 mt-1">{formErrors.mobileNumber}</p>)}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="edit-address">Address</Label>
@@ -895,7 +896,7 @@ const handleUpdateUser = async (e) => {
                     value={editFormData.city} 
                     onChange={handleEditInputChange} 
                   />
-                {formErrors.city && (  <p className="text-xs text-red-500 mt-1">{formErrors.city}</p>)}
+                {editFormErrors.city && (  <p className="text-xs text-red-500 mt-1">{editFormErrors.city}</p>)}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="edit-state">State</Label>
@@ -923,7 +924,7 @@ const handleUpdateUser = async (e) => {
                     value={editFormData.zipCode} 
                     onChange={handleEditInputChange}
                   />
-                {formErrors.zipCode && (  <p className="text-xs text-red-500 mt-1">{formErrors.zipCode}</p>)}
+                {editFormErrors.zipCode && (  <p className="text-xs text-red-500 mt-1">{editFormErrors.zipCode}</p>)}
                 </div>
               </div>
             <div className="flex justify-end gap-4 pt-4">
@@ -957,7 +958,7 @@ const handleUpdateUser = async (e) => {
       </div>
 
 {/* //details of single ev user */}
-      <Tabs defaultValue="details" className="w-full">
+      <Tabs defaultValue="details" value={activeTab} onValueChange={handleTabChange} className="w-full">
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="details">User Details</TabsTrigger>
            <TabsTrigger value="vehicles">Vehicles</TabsTrigger>
@@ -1029,14 +1030,18 @@ const handleUpdateUser = async (e) => {
             )}
           </div>
         </TabsContent>
-<TabsContent value="vehicles">
-          <div className="bg-white rounded-lg shadow p-6 mt-4">
-             <div className="flex items-center justify-between mb-4">
-    <h2 className="text-xl font-semibold">Vehicle Details</h2>
-    <Button onClick={()=>setIsAddVehicleDialogOpen(true)}>Add Vehicle</Button>
-</div>
-            
-            {loadingVehicles ? (
+
+            <TabsContent value="vehicles">
+                      <div className="bg-white rounded-lg shadow p-6 mt-4">
+                        <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold">Vehicle Details</h2>
+                <Button onClick={()=>setIsAddVehicleDialogOpen(true)}>Add Vehicle</Button>
+            </div>       
+            {!loadedTabs.has("vehicles") ? (
+              <div className="text-center py-4">
+                <p>Click the Vehicles tab to load vehicle data</p>
+              </div>
+            ) : loadingVehicles ? (
               <p>Loading vehicles...</p>
             ) : vehicleList.length > 0 ? (
               <Table className="border">
@@ -1233,13 +1238,15 @@ const handleUpdateUser = async (e) => {
        <TabsContent value="wallet">
           <div className="bg-white rounded-lg shadow p-6 mt-4">
             <h2 className="text-xl font-semibold mb-4">Wallet Details</h2>
-            {walletStatus === "loading" && (
+                        {!loadedTabs.has("wallet") ? (
+              <div className="text-center py-4">
+                <p>Click the Wallet tab to load wallet data</p>
+              </div>
+            ) : walletStatus === "loading" ? (
               <p className="text-blue-500">Loading wallet details...</p>
-            )}
-            {walletStatus === "failed" && (
+            ) : walletStatus === "failed" ? (
               <p className="text-red-500">{walletError}</p>
-            )}
-            {walletStatus === "succeeded" && walletDetails && (
+            ) : walletStatus === "succeeded" && walletDetails ? (
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-gray-600 font-medium">Balance:</p>
@@ -1254,17 +1261,21 @@ const handleUpdateUser = async (e) => {
                   </p>
                 </div>
               </div>
-            )}
+            ) : null}
           </div>
         </TabsContent>
      <TabsContent value="transactions">
         <div className="bg-white rounded-xl mt-4">
         <h2 className="text-2xl font-semibold mb-6">Transaction History</h2>
-        {currentRecords?.length === 0 ? (
-          <div className="text-center py-10 text-gray-500">
-            <p className="text-lg">No wallet transactions found.</p>
-          </div>
-        ) : (
+       {!loadedTabs.has("transactions") ? (
+              <div className="text-center py-4">
+                <p>Click the Transactions tab to load transaction data</p>
+              </div>
+            ) : currentRecords?.length === 0 ? (
+              <div className="text-center py-10 text-gray-500">
+                <p className="text-lg">No wallet transactions found.</p>
+              </div>
+            ) : (
           <div className="overflow-x-auto">
           <table className="min-w-full bg-white border border-gray-200 rounded-lg">
       <thead className="bg-gray-100">
@@ -1373,7 +1384,7 @@ const handleUpdateUser = async (e) => {
             onChange={handleVehicleInputChange}
             required
           />
-                {formErrors.connectorType && (  <p className="text-xs text-red-500 mt-1">{formErrors.connectorType}</p>)}
+                {vehicleFormErrors.connectorType && (  <p className="text-xs text-red-500 mt-1">{vehicleFormErrors.connectorType}</p>)}
         </div>        
         <div className="space-y-2">
           <Label htmlFor="model">Model *</Label>
@@ -1384,7 +1395,7 @@ const handleUpdateUser = async (e) => {
             onChange={handleVehicleInputChange}
             required
           />
-                {formErrors.model && (  <p className="text-xs text-red-500 mt-1">{formErrors.model}</p>)}
+                {vehicleFormErrors.model && (  <p className="text-xs text-red-500 mt-1">{vehicleFormErrors.model}</p>)}
         </div>        
         <div className="space-y-2">
           <Label htmlFor="vin">VIN *</Label>
@@ -1395,7 +1406,7 @@ const handleUpdateUser = async (e) => {
             onChange={handleVehicleInputChange}
             required
           />
-                {formErrors.vin && (  <p className="text-xs text-red-500 mt-1">{formErrors.vin}</p>)}
+                {vehicleFormErrors.vin && (  <p className="text-xs text-red-500 mt-1">{vehicleFormErrors.vin}</p>)}
         </div>
         <div className="space-y-2">
           <Label htmlFor="registrationNo">Registration No *</Label>
@@ -1406,7 +1417,7 @@ const handleUpdateUser = async (e) => {
             onChange={handleVehicleInputChange}
             required
           />
-                {formErrors.registrationNo && (  <p className="text-xs text-red-500 mt-1">{formErrors.registrationNo}</p>)}
+                {vehicleFormErrors.registrationNo && (  <p className="text-xs text-red-500 mt-1">{vehicleFormErrors.registrationNo}</p>)}
         </div>
         
         <div className="space-y-2">
@@ -1429,7 +1440,7 @@ const handleUpdateUser = async (e) => {
             onChange={handleVehicleInputChange}
             required
           />
-                {formErrors.make && (  <p className="text-xs text-red-500 mt-1">{formErrors.make}</p>)}
+                {vehicleFormErrors.make && (  <p className="text-xs text-red-500 mt-1">{vehicleFormErrors.make}</p>)}
         </div>
         <div className="space-y-2">
           <Label htmlFor="vehicleType">Vehicle Type *</Label>
@@ -1440,7 +1451,7 @@ const handleUpdateUser = async (e) => {
             onChange={handleVehicleInputChange}
             required
           />
-                {formErrors.vehicleType && (  <p className="text-xs text-red-500 mt-1">{formErrors.vehicleType}</p>)}
+                {vehicleFormErrors.vehicleType && (  <p className="text-xs text-red-500 mt-1">{vehicleFormErrors.vehicleType}</p>)}
         </div>        
         <div className="space-y-2 col-span-2">
           <Label htmlFor="description">Description</Label>
@@ -1451,8 +1462,7 @@ const handleUpdateUser = async (e) => {
             onChange={handleVehicleInputChange}
           />
         </div>
-      </div>
-      
+      </div>      
       <DialogFooter>
         <Button 
           type="button" 
@@ -1490,7 +1500,7 @@ const handleUpdateUser = async (e) => {
             onChange={handleVehicleInputChange}
             required
           />
-                {formErrors.connectorType && (  <p className="text-xs text-red-500 mt-1">{formErrors.connectorType}</p>)}
+                {vehicleFormErrors.connectorType && (  <p className="text-xs text-red-500 mt-1">{vehicleFormErrors.connectorType}</p>)}
         </div>        
         <div className="space-y-2">
           <Label htmlFor="edit-model">Model *</Label>
@@ -1501,7 +1511,7 @@ const handleUpdateUser = async (e) => {
             onChange={handleVehicleInputChange}
             required
           />
-                {formErrors.model && (  <p className="text-xs text-red-500 mt-1">{formErrors.model}</p>)}
+                {vehicleFormErrors.model && (  <p className="text-xs text-red-500 mt-1">{vehicleFormErrors.model}</p>)}
         </div>
         <div className="space-y-2">
           <Label htmlFor="edit-vin">VIN *</Label>
@@ -1512,7 +1522,7 @@ const handleUpdateUser = async (e) => {
             onChange={handleVehicleInputChange}
             required
           />
-                {formErrors.vin && (<p className="text-xs text-red-500 mt-1">{formErrors.vin}</p>)}
+                {vehicleFormErrors.vin && (<p className="text-xs text-red-500 mt-1">{vehicleFormErrors.vin}</p>)}
         </div>        
         <div className="space-y-2">
           <Label htmlFor="edit-registrationNo">Registration No *</Label>
@@ -1523,7 +1533,7 @@ const handleUpdateUser = async (e) => {
             onChange={handleVehicleInputChange}
             required
           />
-                {formErrors.registrationNo && (  <p className="text-xs text-red-500 mt-1">{formErrors.registrationNo}</p>)}
+                {vehicleFormErrors.registrationNo && (  <p className="text-xs text-red-500 mt-1">{vehicleFormErrors.registrationNo}</p>)}
         </div>        
         <div className="space-y-2">
           <Label htmlFor="edit-year">Year *</Label>
@@ -1545,7 +1555,7 @@ const handleUpdateUser = async (e) => {
             onChange={handleVehicleInputChange}
             required
           />
-                {formErrors.make && (  <p className="text-xs text-red-500 mt-1">{formErrors.make}</p>)}
+                {vehicleFormErrors.make && (  <p className="text-xs text-red-500 mt-1">{vehicleFormErrors.make}</p>)}
         </div>        
         <div className="space-y-2">
           <Label htmlFor="edit-vehicleType">Vehicle Type *</Label>
@@ -1556,7 +1566,7 @@ const handleUpdateUser = async (e) => {
             onChange={handleVehicleInputChange}
             required
           />
-                {formErrors.vehicleType && (  <p className="text-xs text-red-500 mt-1">{formErrors.vehicleType}</p>)}
+                {vehicleFormErrors.vehicleType && (  <p className="text-xs text-red-500 mt-1">{vehicleFormErrors.vehicleType}</p>)}
         </div>        
         <div className="space-y-2 col-span-2">
           <Label htmlFor="edit-description">Description</Label>
@@ -1738,7 +1748,7 @@ const handleUpdateUser = async (e) => {
                 placeholder="Postal/Zip code"
                 required
               />
-              {formErrors.zipCode && (  <p className="text-xs text-red-500 mt-1">{formErrors.zipCode}</p>)}
+              {setRfidFormErrors.zipCode && (  <p className="text-xs text-red-500 mt-1">{setRfidFormErrors.zipCode}</p>)}
             </div>
           </div>
         </div>
@@ -1815,4 +1825,3 @@ const handleUpdateUser = async (e) => {
 };
 
 export default EvUserPageDetails;
-// After Adding Wallet Transactions..

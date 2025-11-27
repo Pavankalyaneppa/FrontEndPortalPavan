@@ -4,9 +4,9 @@ const Description = "Where ever Current"
 
 // const baseURL = 'http://178.16.139.5:8800';
 // const baseOCPPURL = 'http://178.16.139.5:8085';
-const baseURL = 'http://localhost:8800';
-const baseOCPPURL = 'http://localhost:8085';
-// const baseURL = 'https://backend.chargeevya.com';
+//const baseURL = 'http://localhost:8800';
+const baseOCPPURL = 'https://ocpp.chargeevya.com';
+ const baseURL = 'https://backend.chargeevya.com';
 
 const OrganizationID=1;
 

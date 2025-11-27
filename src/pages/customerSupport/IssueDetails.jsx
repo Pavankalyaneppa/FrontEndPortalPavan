@@ -7,6 +7,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchEmployeesByDesignation } from "@/store/reducers/employee/employeeSlice";
 import { updateIssueStatus, updateIssuePriority, addIssueNote, fetchIssueNotes, updateIssueNote } from "@/store/reducers/issues/issuesSlice";
+import { SelectTrigger, SelectValue } from "@radix-ui/react-select";
 
 export default function IssueDetails() {
   const location = useLocation();
@@ -21,6 +22,7 @@ export default function IssueDetails() {
   const [statusDropdown, setStatusDropdown] = useState(false);
   const [priority, setPriority] = useState(issue?.priority || "N/A");
   const [priorityDropdown, setPriorityDropdown] = useState(false);
+  const [employeeId] = useState(issue?.employeeId || location.state?.customer?.id || "");
 
   const user = useSelector((state) => state.authentication.user);
   const employees = useSelector((state) => state.employee.employees);
@@ -94,7 +96,7 @@ const handleAddNote = async (e) => {
   setSaving(true);
   try {
     const payload = {
-      employeeId: user.id,
+      employeeId: recipientId,
       recipientId: Number(recipientId),
       taskId: taskId ? Number(taskId) : null,
       issueId: issueId ? Number(issueId) : null,
@@ -160,7 +162,6 @@ const handleSaveEdit = async (noteId) => {
         <ArrowLeftIcon className="h-4 w-4" /> Back
         </Button>
       </div>
-
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="info" className="text-black font-medium">Issue Info</TabsTrigger>
@@ -279,146 +280,159 @@ const handleSaveEdit = async (noteId) => {
             </CardContent>
           </Card>
         </TabsContent>
-<TabsContent value="notes" className="mt-4 space-y-4">
-  {!isAddingNote && (
-    <Button
-      className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-md"
-      onClick={() => setIsAddingNote(true)}
-    >
-      Add Note
-    </Button>
-  )}
-  {isAddingNote && (
-    <Card className="shadow-md border border-gray-100 rounded-lg">
-      <CardHeader>
-        <CardTitle className="text-lg font-semibold">Add Note</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleAddNote} className="space-y-4">
-          {/* Title */}
-          <div className="flex flex-col">
-            <label className="text-sm font-medium text-gray-700 mb-1">Title</label>
-            <input
-              type="text"
-              value={noteTitle}
-              onChange={(e) => setNoteTitle(e.target.value)}
-              placeholder="Enter note title"
-              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-700"
-              required
-            />
-          </div>
-          <div className="flex flex-col">
-            <label className="text-sm font-medium text-gray-700 mb-1">Description</label>
-            <textarea
-              value={noteDescription}
-              onChange={(e) => setNoteDescription(e.target.value)}
-              placeholder="Enter note description"
-              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-700"
-              rows={4}
-              required
-            />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="flex flex-col">
-              <label className="text-sm font-medium text-gray-700 mb-1">Recipient</label>
-              <select
-                value={recipientId || ""}
-                onChange={(e) => setRecipientId(e.target.value)}
-                className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-700"
-                required
-              >
-                <option value="">Select recipient</option>
-                {employees.map((emp) => (
-                  <option key={emp.id} value={emp.id}>
-                    {emp.username}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex flex-col">
-              <label className="text-sm font-medium text-gray-700 mb-1">Created By Role</label>
-              <select
-                value={createdByRole}
-                onChange={(e) => setCreatedByRole(e.target.value)}
-                className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-700"
-                required
-              >
-                <option value="ADMIN">ADMIN</option>
-                <option value="EMPLOYEE">EMPLOYEE</option>
-              </select>
-            </div>
-          </div>
-          <div className="flex justify-end space-x-2 pt-2">
+        <TabsContent value="notes" className="mt-4 space-y-4">
+          {!isAddingNote && (
             <Button
-              variant="outline"
-              onClick={() => setIsAddingNote(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={saving}
               className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-md"
-            > {saving ? "Saving..." : "Submit"}
+              onClick={() => setIsAddingNote(true)}
+            >
+              Add Note
             </Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
-  )}
-  {!isAddingNote && (
-    <Card className="shadow-md border border-gray-100 rounded-lg">
-      <CardHeader>
-        <CardTitle className="text-lg font-semibold">Notes List</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-       {issueNotes.length === 0 ? (
-  <p className="text-gray-500">No notes available.</p>
-) : (
-  issueNotes.map((note) => (
-    <div
-      key={note.id}
-      className="border border-gray-200 rounded-lg p-4 bg-gray-50 hover:bg-gray-100 transition relative"
-    >
-      {editingNoteId === note.id ? (
-        <div className="space-y-2">
-          <input
-            type="text"
-            value={editTitle}
-            onChange={(e) => setEditTitle(e.target.value)}
-            className="w-full rounded-md border border-gray-300 px-2 py-1"
-          />
-          <textarea
-            value={editDescription}
-            onChange={(e) => setEditDescription(e.target.value)}
-            className="w-full rounded-md border border-gray-300 px-2 py-1"
-            rows={3}
-          />
-          <div className="flex gap-2 mt-2">
-            <Button size="sm" onClick={() => handleSaveEdit(note.id)} disabled={editSaving}>
-              {editSaving ? "Saving..." : "Save"}
+          )}
+          {isAddingNote && (
+          <Card className="shadow-md border border-gray-100 rounded-lg">
+            <CardHeader>
+              <CardTitle className="text-lg font-semibold">Add Note</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleAddNote} className="space-y-4">
+                {/* Title */}
+                <div className="flex flex-col">
+                  <label className="text-sm font-medium text-gray-700 mb-1">Title</label>
+                  <input
+                    type="text"
+                    value={noteTitle}
+                    onChange={(e) => setNoteTitle(e.target.value)}
+                    placeholder="Enter note title"
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-700"
+                    required
+                  />
+                </div>
+                <div className="flex flex-col">
+                  <label className="text-sm font-medium text-gray-700 mb-1">Description</label>
+                  <textarea
+                    value={noteDescription}
+                    onChange={(e) => setNoteDescription(e.target.value)}
+                    placeholder="Enter note description"
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-700"
+                    rows={4}
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex flex-col">
+                    <label className="text-sm font-medium text-gray-700 mb-1">Recipient</label>
+                    <select
+                      value={recipientId || ""}
+                      onChange={(e) => setRecipientId(e.target.value)}
+                      className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-700"
+                      required
+                    >
+                      <SelectTrigger id = "recipient">
+                        <SelectValue placeholder="Select recipient (optional)" />
+                      </SelectTrigger>
+                      {employees.map((emp) => (
+                        <option key={emp.id} value={emp.id}>
+                          {emp.username}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex flex-col">
+  <label className="text-sm font-medium text-gray-700 mb-1">Employee ID</label>
+  <input
+    type="text"
+    value={employeeId}
+    readOnly
+    className="w-full rounded-md border border-gray-300 px-3 py-2 bg-gray-100 cursor-not-allowed"
+  />
+</div>
+
+  
+                  <div className="flex flex-col">
+                    <label className="text-sm font-medium text-gray-700 mb-1">Created By Role</label>
+                    <select
+                      value={createdByRole}
+                      onChange={(e) => setCreatedByRole(e.target.value)}
+                      className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-700"
+                      required
+                      >
+                        <option value="ADMIN">ADMIN</option>
+                        <option value="EMPLOYEE">EMPLOYEE</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="flex justify-end space-x-2 pt-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsAddingNote(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      disabled={saving}
+                      className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-md"
+                    > {saving ? "Saving..." : "Submit"}
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+            )}
+            {!isAddingNote && (
+              <Card className="shadow-md border border-gray-100 rounded-lg">
+                <CardHeader>
+                  <CardTitle className="text-lg font-semibold">Notes List</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                {issueNotes.length === 0 ? (
+            <p className="text-gray-500">No notes available.</p>
+          ) : (
+            issueNotes.map((note) => (
+              <div
+                key={note.id}
+                className="border border-gray-200 rounded-lg p-4 bg-gray-50 hover:bg-gray-100 transition relative"
+              >
+              {editingNoteId === note.id ? (
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    className="w-full rounded-md border border-gray-300 px-2 py-1"
+                  />
+                  <textarea
+                    value={editDescription}
+                    onChange={(e) => setEditDescription(e.target.value)}
+                    className="w-full rounded-md border border-gray-300 px-2 py-1"
+                    rows={3}
+                  />
+                  <div className="flex gap-2 mt-2">
+                    <Button size="sm" onClick={() => handleSaveEdit(note.id)} disabled={editSaving}>
+                      {editSaving ? "Saving..." : "Save"}
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => setEditingNoteId(null)}>
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <>
+            <Button
+              size="sm"
+              variant="outline"
+              className="absolute top-2 right-2"
+              onClick={() => handleEditClick(note)}
+            >
+              Edit
             </Button>
-            <Button size="sm" variant="outline" onClick={() => setEditingNoteId(null)}>
-              Cancel
-            </Button>
-          </div>
-        </div>
-      ) : (
-        <>
-          <Button
-            size="sm"
-            variant="outline"
-            className="absolute top-2 right-2"
-            onClick={() => handleEditClick(note)}
-          >
-            Edit
-          </Button>
-          <div>
-            <h3 className="font-medium text-gray-900">Title: {note.title}</h3>
-                      <p className="text-gray-700 mb-2">Description: {note.description}</p>
-                      <p className="text-xs text-gray-500">
-            By {note.createdByRole || "Unknown"}
-          </p>
+            <div>
+              <h3 className="font-medium text-gray-900">Title: {note.title}</h3>
+                        <p className="text-gray-700 mb-2">Description: {note.description}</p>
+                        <p className="text-xs text-gray-500">
+              By {note.createdByRole || "Unknown"}
+            </p>
             <span className="text-xs text-gray-500">
               {new Date(
                 note.createdDate[0],

@@ -42,13 +42,14 @@ const AxiosServices = {
       throw error.response.data;
     }
   },
+
   loginUser: async (userData) => {
     try {
       const response = await axiosInstance.post('/login/authenticate', userData)
       console.log(response.data);
         return response;
     } catch (error) {
-      throw error.response.data;
+      throw error;
     }
   },
  
@@ -1677,4 +1678,4 @@ AxiosServices.getPortStats = async (orgId,config) => {
 };
 export default AxiosServices;
 
-// 17-11-2025
+// 27-11-2025

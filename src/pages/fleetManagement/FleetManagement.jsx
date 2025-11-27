@@ -6,6 +6,7 @@ import { fetchFleets, deleteFleet } from '@/store/reducers/fleet/FleetSlice';
 import { useNavigate, } from 'react-router-dom';
 import { toast } from '@/components/ui/use-toast';
 import AddFleet from './AddFleet'; 
+import { Input } from '@/components/ui/input';
 import {
   Table,
   TableBody,  
@@ -19,40 +20,80 @@ import Loading from '@/users/Loading';
 const FleetManagement = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { fleets, status, error, deleteFleetStatus } = useSelector((state) => state.fleet);
+  const { fleets, status, loading, error, deleteFleetStatus } = useSelector((state) => state.fleet);
+  const { totalPages } = useSelector((state) => state.fleet);
   const { user } = useSelector((state) => state.authentication);
   const [addFleetOpen, setAddFleetOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
   const pageSize = 10;
+  const [search, setSearch] = useState ("");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [fleetToDelete, setFleetToDelete] = useState(null);
 
-  useEffect(() => {
-    dispatch(fetchFleets({ 
-      orgId: user?.orgId,
-      page: currentPage,
-      size: pageSize
-    }));
-  }, [dispatch, user?.orgId, currentPage, pageSize]);
-
-  const handleDelete = async (fleetId) => {
-    if (window.confirm('Are you sure you want to delete this fleet?')) {
-      try {
-        await dispatch(deleteFleet(fleetId)).unwrap();
-        toast({
-          title: 'Success',
-          description: 'Fleet deleted successfully',
-          variant: 'default',
-        });
-      } catch (error) {
-        toast({
-          title: 'Error',
-          description: error || 'Failed to delete fleet',
-          variant: 'destructive',
-        });
-      }
+ useEffect(() => {
+  console.log('Dispatching fetchFleets with:', {
+    orgId: user?.orgId,
+    page: currentPage,
+    size: pageSize,
+    search
+  });
+  
+  dispatch(fetchFleets({ 
+    orgId: user?.orgId,
+    page: currentPage,
+    size: pageSize,
+    search
+  })).then((result) => {
+    console.log('Fetch fleets result:', result);
+    if (result.payload) {
+      console.log('Fleets data structure:', result.payload);
+      console.log('Fleets array:', result.payload.fleets || result.payload.content);
     }
-  };
+  });
+}, [dispatch, user?.orgId, currentPage, pageSize, search]);
+
+  const handleDeleteClick = (fleet) => {
+  setFleetToDelete(fleet);
+  setDeleteDialogOpen(true);
+};
+
+// Handle delete confirmation
+const handleDeleteConfirm = async () => {
+  if (fleetToDelete && fleetToDelete.id) {
+    try {
+      await dispatch(deleteFleet(fleetToDelete.id)).unwrap();
+      
+      toast({
+        title: 'Success',
+        description: 'Fleet deleted successfully',
+        variant: 'default',
+      });
+      
+      // Refresh the fleets list
+      dispatch(fetchFleets({ 
+        orgId: user?.orgId,
+        page: currentPage,
+        size: pageSize,
+        search
+      }));
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: error || 'Failed to delete fleet',
+        variant: 'destructive',
+      });
+    }
+  }
+  setDeleteDialogOpen(false);
+  setFleetToDelete(null);
+};
+
+// Handle delete cancellation
+const handleDeleteCancel = () => {
+  setDeleteDialogOpen(false);
+  setFleetToDelete(null);
+};
 const handleFleetAdded = () => {
-    // Refresh the fleet list when a new fleet is added
     dispatch(fetchFleets({ 
       orgId: user?.orgId,
       page: currentPage,
@@ -66,9 +107,6 @@ const handleFleetAdded = () => {
   };
   const fleetsArray = Array.isArray(fleets) ? fleets : [];
 
-  if (status === 'loading') {
-    return <Loading />;
-  }
 
   if (status === 'failed') {
     return (
@@ -79,23 +117,37 @@ const handleFleetAdded = () => {
   }
 
   return (
-    <div className="container mx-auto p-4">
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold">Fleet Management</h1>
-         <div className="flex gap-2"> {/* Add this wrapper div */}
-          <Button onClick={() => navigate('/fleet/revenue')}>
-            <TrendingUp className="h-4 w-4 mr-2" />
-            View Revenue
-          </Button>
-        <Button onClick={() => setAddFleetOpen(true)}>Add Fleet</Button>
-      </div>
-      </div>
+  <div className="container mx-auto p-4">
+  <div className="flex justify-between items-center mb-2">
+    <h1 className="text-2xl font-bold">Fleet Management</h1>
+
+    <div className="flex gap-3">
+      <Button onClick={() => navigate('/fleet/revenue')}>
+        <TrendingUp className="h-4 w-4 mr-2" />
+        View Revenue
+      </Button>
+
+      <Button onClick={() => setAddFleetOpen(true)}>
+        Add Fleet
+      </Button>
+    </div>
+  </div>
+  <div className="w-full mb-4">
+    <Input
+      placeholder="Search by Name, Mobile, Email, Location..."
+      value={search}
+      onChange={(e) => {
+        setSearch(e.target.value);
+        setCurrentPage(0);
+      }}
+      className="w-full"
+    />
+  </div>
 
       <div className="rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
-              {/* <TableHead>Fleet ID</TableHead> */}
               <TableHead>Fleet Name</TableHead>
               <TableHead>Location</TableHead>
               <TableHead>Owner Name</TableHead>
@@ -106,9 +158,14 @@ const handleFleetAdded = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {fleetsArray.map(fleet => (
+            { status === "loading" ? (
+              <TableRow>
+                <TableCell  colSpan={8} className="text-center py-4">
+                  <Loading / >
+                </TableCell>
+              </TableRow> ) :
+              fleetsArray.map(fleet => (
               <TableRow key={fleet.id}>
-                {/* <TableCell>{fleet.id || 'N/A'}</TableCell> */}
                 <TableCell>{fleet.fleetName || 'N/A'}</TableCell>
                 <TableCell>{fleet.baseLocation || 'N/A'}</TableCell>
                 <TableCell>{fleet.ownerName || 'N/A'}</TableCell>
@@ -135,7 +192,7 @@ const handleFleetAdded = () => {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => handleDelete(fleet.id)}
+                      onClick={() => handleDeleteClick(fleet)}
                       disabled={deleteFleetStatus === 'loading'}
                     >
                       <Trash2 className="h-4 w-4 text-black-500" />
@@ -159,7 +216,55 @@ const handleFleetAdded = () => {
         onOpenChange={setAddFleetOpen}
         onFleetAdded={handleFleetAdded}
       />
+    <div className="flex items-center justify-center gap-2 py-4">
+  <Button
+  variant="outline"
+  size="sm"
+  onClick={() => setCurrentPage(prev => prev - 1)}
+  disabled={currentPage === 0}
+>
+  Previous
+</Button>
+
+<div className="px-3 py-1 bg-green-600 text-white rounded">
+   {currentPage + 1}
+</div>
+
+<Button
+  variant="outline"
+  size="sm"
+  onClick={() => setCurrentPage(prev => prev + 1)}
+  disabled={currentPage + 1 >= totalPages}
+>
+  Next
+</Button>
+
+</div>
+{deleteDialogOpen && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="bg-white p-6 rounded-lg max-w-md">
+      <h3 className="text-lg font-semibold mb-2">Delete Fleet?</h3>
+      <p className="text-muted-foreground mb-4">
+        Are you sure you want to delete {fleetToDelete?.fleetName}?
+        This action cannot be undone.
+      </p>
+      <div className="flex justify-end space-x-3">
+        <Button variant="outline" onClick={handleDeleteCancel}>
+          Cancel
+        </Button>
+        <Button 
+          variant="destructive" 
+          onClick={handleDeleteConfirm}
+          disabled={deleteFleetStatus === 'loading'}
+        >
+          {deleteFleetStatus === 'loading' ? 'Deleting...' : 'Delete'}
+        </Button>
+      </div>
     </div>
+  </div>
+)}
+ </div>
+    
   );
 };
 

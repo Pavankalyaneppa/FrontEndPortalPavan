@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
+import { ArrowLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import {
   PersonIcon,
   EnvelopeClosedIcon,
@@ -28,6 +30,7 @@ const UserAdminProfile = () => {
     updateStatus, } = useSelector((state) => state.userAdminProfile);
 
   //added
+  const navigate = useNavigate();
   const [tabValue, setTabValue] = useState("information");
 
 
@@ -77,27 +80,6 @@ const UserAdminProfile = () => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
-//added
-//   const handleSaveInfo = async () => {
-//     try {
-//       await dispatch(updateUserProfile(userId, {
-//         ...formData,
-//         username: userDetails.username
-//       })).unwrap();
-//       setIsEditingInfo(false);
-//     } catch (error) {
-//       console.error('Update failed:', error);
-//     }
-//   };
-// //added
-//    const handleSaveAddress = async () => {
-//     try {
-//       await dispatch(updateUserProfile(userId, { ...formData })).unwrap();
-//       setIsEditingAddress(false);
-//     } catch (error) {
-//       console.error('Update failed:', error);
-//     }
-//   };
 
 const handleSaveInfo = async () => {
   try {
@@ -133,7 +115,19 @@ const handleSaveAddress = async () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-6xl">
+    
+    <div className="container mx-auto px-4 py-4 max-w-6xl">
+      <div className="flex justify-end mb-4">
+  <Button
+    variant="outline"
+    className="flex items-center gap-2"
+    onClick={() => navigate('/')}
+  >
+    <ArrowLeft className="h-4 w-4" />
+    Back
+  </Button>
+</div>
+
       <div className="flex flex-col md:flex-row gap-8">
         {/* Left Sidebar - Profile Summary */}
         <div className="w-full md:w-1/3 lg:w-1/4">
@@ -190,17 +184,7 @@ const handleSaveAddress = async () => {
                 <HomeIcon className="mr-2 h-4 w-4" />
                 Address
               </TabsTrigger>
-              {/* <TabsTrigger value="security" className="flex items-center gap-2">
-            <span className="hidden sm:inline">Security</span>
-          </TabsTrigger> */}
-
-          {/* <TabsTrigger value="billing" className="flex items-center gap-2">
-            <CreditCardIcon className="h-4 w-4" />
-            <span className="hidden sm:inline">Billing</span>
-          </TabsTrigger> */}
             </TabsList>
-
-
             <TabsContent value="information">
   <Card className="mt-4">
     <CardHeader className="border-b">
@@ -392,57 +376,6 @@ const handleSaveAddress = async () => {
     </CardContent>
   </Card>
 </TabsContent>
-
-           
-             {/* Security Tab */}
-        {/* <TabsContent value="security">
-              <Card className="mt-4">
-                <CardHeader className="border-b">
-                  <CardTitle>Security Settings</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-6">
-                  <div className="space-y-4 max-w-lg">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-muted-foreground">Current Password</label>
-                      <Input
-                        type="password"
-                        name="currentPassword"
-                        value={passwordData.currentPassword}
-                        onChange={handlePasswordChange}
-                        placeholder="Enter current password"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-muted-foreground">New Password</label>
-                      <Input
-                        type="password"
-                        name="newPassword"
-                        value={passwordData.newPassword}
-                        onChange={handlePasswordChange}
-                        placeholder="Enter new password"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-muted-foreground">Confirm Password</label>
-                      <Input
-                        type="password"
-                        name="confirmPassword"
-                        value={passwordData.confirmPassword}
-                        onChange={handlePasswordChange}
-                        placeholder="Confirm new password"
-                      />
-                    </div>
-                    <Button
-                      onClick={handlePasswordUpdate}
-                      disabled={passwordUpdateStatus === 'loading'}
-                    >
-                      {passwordUpdateStatus === 'loading' ? 'Updating...' : 'Change Password'}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent> */}
-       
           </Tabs>
         </div>
       </div>

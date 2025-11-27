@@ -24,16 +24,22 @@ const initialState = {
 };
 
 export const fetchFleets = createAsyncThunk(
-  'fleet/fetchFleets',
-  async (params = {}, { rejectWithValue }) => {
+  "fleets/fetchFleets",
+  async ({ orgId, page, size, search }, { rejectWithValue }) => {
     try {
-      const response = await AxiosServices.getAllFleets(params); 
+      const response = await AxiosServices.getAllFleets({ 
+        orgId, 
+        page, 
+        size, 
+        search: search || "" 
+      });
       return response;
     } catch (error) {
       return rejectWithValue(error.message || 'Failed to fetch fleets');
     }
   }
 );
+
 
 export const fetchFleetDetails = createAsyncThunk(
   'fleet/fetchFleetDetails',
@@ -190,10 +196,17 @@ const fleetSlice = createSlice({
         state.status = 'loading';
         state.error = null;
       })
-      .addCase(fetchFleets.fulfilled, (state, action) => {
-        state.status = 'succeeded';
-        state.fleets = Array.isArray(action.payload) ? action.payload : action.payload.content || [];
-      })
+        .addCase(fetchFleets.fulfilled, (state, action) => {
+          state.status = 'succeeded';
+
+          const payload = action.payload;
+
+          // Backend returns pagination object
+          state.fleets = payload.content || [];
+          state.totalPages = payload.totalPages || 1;
+          state.totalItems = payload.totalItems || 0;
+        })
+
       .addCase(fetchFleets.rejected, (state, action) => {
         state.status = 'failed';
         state.error = action.payload;
