@@ -46,7 +46,7 @@ export function AddCharger({ onSuccess }) {
       dispatch(fetchManufacturerById(id));
     }
   }, [dispatch, id]);
-useEffect(() => {
+  useEffect(() => {
   if (selectedManufacturer) {
     setManufacturerData({
       manufacturerName: selectedManufacturer.manufacturerName || '',
@@ -316,7 +316,7 @@ const handleSubmit = async () => {
         {manufacturerData.chargers.map((charger, chargerIndex) => (
           <div key={chargerIndex} className="space-y-4 p-4 border rounded-lg">
             <div className="flex justify-between items-center">
-              <h4 className="font-medium">Charger {chargerIndex + 1}</h4>
+              <h4 className="font-medium">New Charger</h4>
               {manufacturerData.chargers.length > 1 && (
                 <Button
                   type="button"

@@ -1334,7 +1334,6 @@ const OCPP = () => {
             )}
           </CardContent>
         </Card>
-
         <ResponseDialog
           open={showResponse}
           onClose={handleCloseResponse}

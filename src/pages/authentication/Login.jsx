@@ -52,8 +52,9 @@ useEffect(() => {
       default:
         redirectPath = "/login";
     }
-    navigate(redirectPath, { replace: true });
-  }
+setTimeout(() => {
+  navigate(redirectPath, { replace: true });
+}, 100);  }
 }, [isAuthenticated, navigate, user]);
 
   useEffect(() => {
@@ -64,6 +65,7 @@ useEffect(() => {
       return () => clearTimeout(timer);
     }
   }, [loginNotification, dispatch]);
+
 
   const validateForm = () => {
     let newErrors = {};

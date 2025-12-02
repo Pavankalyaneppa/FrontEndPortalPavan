@@ -122,7 +122,7 @@ function Registration() {
     };
 
     return (
-        <div className="flex h-screen">
+        <div className="flex min-h-screen">
            <div
           className="hidden lg:flex lg:w-3/5 flex-col justify-between p-12 fixed left-0 h-full bg-green-100"
           style={{
@@ -164,7 +164,7 @@ function Registration() {
           </div>
           <div className="z-10 flex space-x-2"></div>
         </div>
-            <div className="w-full lg:w-2/5 p-8 ml-auto">
+            <div className="w-full lg:w-2/5 p-8 ml-auto overflow-y-auto max-h-screen">
                 <CardBorderLess className="w-full max-w-md mx-auto">
                     <CardHeader>
                         <CardTitle className="text-2xl font-bold">Register account</CardTitle>

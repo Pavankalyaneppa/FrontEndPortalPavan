@@ -283,7 +283,7 @@ const handleUpdateBillingAmount = async (portId) => {
           </div>
         </TabsContent>        
             <TabsContent value="ports">
-              <Card className="p-6">
+              {/* <Card className="p-6"> */}
                 <ScrollArea className="h-[400px] w-full rounded-md border">
                   <Table>
                     <TableHeader>
@@ -314,7 +314,6 @@ const handleUpdateBillingAmount = async (portId) => {
                           <TableCell>{port.max_power_kW || '-'} kW</TableCell>                         
                           {/* <TableCell>{billingAmounts[port.id] ?? '-'}</TableCell> */}
                           <TableCell>{port.connector_type || '-'}, {port.power_type || '-'}</TableCell>
-                        
                           <TableCell>
                             <input
                               type="number"
@@ -334,7 +333,7 @@ const handleUpdateBillingAmount = async (portId) => {
                     </TableBody>
                   </Table>
                 </ScrollArea>
-              </Card>
+              {/* </Card> */}
             </TabsContent>
       </Tabs>
     </div>
