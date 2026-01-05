@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { Button } from "@/components/ui/button";
@@ -7,13 +7,13 @@ import { Label } from "@/components/ui/label";
 import { Input} from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { InfoIcon } from 'lucide-react';
-import { ArrowLeftIcon } from "lucide-react";
+import { ArrowLeftIcon, ChevronDown } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { addIssue } from "@/store/reducers/issues/issuesSlice";
-import { fetchIssuesByEmployeeId} from "@/store/reducers/employee/employeeSlice";
+import { fetchIssuesByEmployeeId, editEmployee} from "@/store/reducers/employee/employeeSlice";
 
 export function CustomerSupportDetails() {
   const navigate = useNavigate();
@@ -41,7 +41,48 @@ export function CustomerSupportDetails() {
 
   const customer = location.state?.customer;
   const [statusFilter, setStatusFilter] = useState("open");
-  const { employees, loading, employeeIssues } = useSelector((state) => state.employee);
+  const { employeeIssues } = useSelector((state) => state.employee);
+  const [localCustomer, setLocalCustomer] = useState(customer);
+  const [supportStatus, setSupportStatus] = useState(
+  customer?.active ? "Available" : "Unavailable");
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+  if (customer) {
+    setSupportStatus(localCustomer.active ? "Available" : "Unavailable");
+  }
+}, [customer]);
+
+const handleStatusChange = async (newStatus) => {
+  try {
+    setUpdatingStatus(true);
+    const payload = {
+      active: newStatus === "Available",
+    };
+    await dispatch(
+      editEmployee({ id: localCustomer.id, data: payload })
+    ).unwrap();    
+    setLocalCustomer(prev => ({
+      ...prev,
+      active: newStatus === "Available",
+    }));    
+    setSupportStatus(newStatus);
+    toast({
+      title: "Success",
+      description: `Status updated to ${newStatus}`,
+    });
+  } catch (err) {
+    toast({
+      title: "Error",
+      description: "Failed to update status",
+      variant: "destructive",
+    });
+  } finally {
+    setUpdatingStatus(false);
+  }
+};
 
   const priorityOrder = { high: 1, medium: 2, low: 3 };
 
@@ -52,12 +93,11 @@ export function CustomerSupportDetails() {
 
   useEffect(() => {
   if (customer?.id) {
-    dispatch(fetchIssuesByEmployeeId(customer.id));
+    dispatch(fetchIssuesByEmployeeId(localCustomer.id));
   }
 }, [customer?.id, dispatch]);
 
-const issues = (employeeIssues && customer) ? (employeeIssues[customer.id] || []) : [];
-console.log("All issues for employee:", issues.map(i => ({id: i.id, status: i.status})));
+const issues = (employeeIssues && customer) ? (employeeIssues[localCustomer.id] || []) : [];
 
 const getStatusBadge = (status) => {
   const s = (status || "").toLowerCase();
@@ -106,12 +146,6 @@ const filteredIssues = issues.filter((issue) => {
     return <p>Loading customer data...</p>;
   }
 
-  // Helper functions
-  const formatDate = (dateString) => {
-    if (!dateString) return "N/A";
-    return new Date(dateString).toLocaleDateString();
-  };
-
   const sortedIssues = [...filteredIssues].sort((a, b) => {
   const aPriority = priorityOrder[a.priority?.toLowerCase()] || 4;
   const bPriority = priorityOrder[b.priority?.toLowerCase()] || 4;
@@ -144,18 +178,15 @@ const handleIssueSubmit = async (e) => {
     location: newIssue.location || "",
     dueDate: newIssue.dueDate || null,
     userId: 1,
-    employeeId: customer.id,
+    employeeId: localCustomer.id,
     type: "Ticket",
     category: newIssue.subcategory,
-    // category: newIssue.category && newIssue.subcategory
-    //   ? `${newIssue.subcategory}`
-    //   : newIssue.category || newIssue.subcategory || "N/A",
   };
 
   try {
     setSubmitting(true);
     await dispatch(addIssue(payload));
-    await dispatch(fetchIssuesByEmployeeId(customer.id));
+    await dispatch(fetchIssuesByEmployeeId(localCustomer.id));
     setNewIssue({ issue: "", comment: "", priority: "medium", location: "", dueDate: "", category:"", subcategory:"",status:"open" });
     setIsReporting(false);
     toast({
@@ -178,39 +209,78 @@ const handleCancelReport = () => {
   setNewIssue({ issue: "", comment: "" });
   setIsReporting(false);
 };
+const StatusDropdown = () => {
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        className={`flex items-center px-4 py-1.5 border rounded-full transition ${
+          supportStatus === "Available"
+            ? "bg-green-100 text-green-800 border-green-400"
+            : "bg-red-200 text-red-800 border-red-400"
+        } ${updatingStatus ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+        onClick={() => !updatingStatus && setDropdownOpen(prev => !prev)}
+        disabled={updatingStatus}
+      >
+        {supportStatus}
+        <ChevronDown className="ml-2 h-4 w-4" />
+      </button>
+      
+      {dropdownOpen && (
+        <div className="absolute mt-2 w-48 bg-white dark:bg-gray-800 shadow-lg rounded-md z-50 p-3">
+          <p className="font-medium text-sm mb-2 text-gray-700 dark:text-gray-300">
+            Select Status
+          </p>
+          {["Available", "Unavailable"].map((option) => (
+            <button
+              key={option}
+              className={`w-full text-left px-4 py-1.5 mb-1 rounded-full border transition ${
+                option === "Available"
+                  ? "bg-green-100 text-green-800 border-green-400 hover:bg-green-200"
+                  : "bg-red-200 text-red-800 border-red-400 hover:bg-red-300"
+              }`}
+              onClick={() => {
+                handleStatusChange(option);
+                setDropdownOpen(false);
+              }}
+            >
+              {option}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
   return (
-    <div className="container mx-auto px-8 py-8 max-w-5xl">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">
-          Customer Support Details
-        </h1>
-        <div className="flex justify-between items-center mb-4 gap-4">
-            <Button className="bg-green-600 hover:bg-green-500 text-white"
-    onClick={() => navigate(`/customer-support/edit/${customer.id}`, { state: { customer } })}
-  >
-    Edit
-  </Button>
-        <Button
+  <div className="container mx-auto px-8 py-8 max-w-5xl">
+  <div className="flex items-center justify-between mb-6">
+    <div className="flex items-center gap-4">
+      <h1 className="text-2xl font-bold text-gray-900">
+        {localCustomer.username} Details
+      </h1>
+      <StatusDropdown />
+    </div>
+    <Button
       variant="outline"
       onClick={() => navigate("/customer-support")}
-    > <ArrowLeftIcon className="h-4 w-4 mr-2" />
+    >
+      <ArrowLeftIcon className="h-4 w-4 mr-2" />
       Back
     </Button>
-    </div>
-      </div>
-<Tabs
-  value={activeTab}
-  onValueChange={(val) => {
-    setActiveTab(val);
-    if (val !== "issues") {
-      setIsReporting(false);
-  }
-  else {
-    setStatusFilter("open");
-  }}
-}
->
+  </div>
+        <Tabs
+          value={activeTab}
+          onValueChange={(val) => {
+            setActiveTab(val);
+            if (val !== "issues") {
+              setIsReporting(false);
+          }
+          else {
+            setStatusFilter("open");
+          }}
+        }
+        >
         <TabsList className="grid w-full grid-cols-2 mb-5">
           <TabsTrigger value="info">Basic Details</TabsTrigger>
           <TabsTrigger value="issues">Issues Assigned</TabsTrigger>
@@ -218,40 +288,43 @@ const handleCancelReport = () => {
         <div>
         </div>
         <TabsContent value="info">
-          <div><h2 className="text-xl font-semibold mb-8">Personal Information</h2></div>
+          <div className="flex justify-between">
+            <h2 className="text-xl font-semibold mb-8">Personal Information</h2>
+           <Button className="bg-green-600 hover:bg-green-500 text-white"
+            onClick={() => navigate(`/customer-support/edit/${localCustomer.id}`, { state: { customer } })}
+          >
+            Edit
+          </Button>
+          </div>
           <Card className="py-8">
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="space-y-4">
                   <div>
-                    <h3 className="text-sm font-medium text-gray-500">Full Name</h3>
-                    <p className="text-md">{customer.username || customer.name}</p>
+                    <h3 className="text-sm font-medium text-gray-500">User Name</h3>
+                    <p className="text-md">{localCustomer.username || localCustomer.name}</p>
                   </div>
-                  {/* <div>
-                    <h3 className="text-sm font-medium text-gray-500">Location</h3>
-                    <p className="text-md">{customer.location}</p>
-                  </div> */}
                   <div>
                     <h3 className="text-sm font-medium text-gray-500">Designation</h3>
-                    <p className="text-md">{customer.designation}</p>
+                    <p className="text-md">{localCustomer.designation}</p>
                   </div>
                 </div>
                 <div className="space-y-4">
                   <div>
                     <h3 className="text-sm font-medium text-gray-500">Email Address</h3>
-                    <p className="text-md">{customer.email}</p>
+                    <p className="text-md">{localCustomer.email}</p>
                   </div>
                   <div className="space-y-1">
                     <h3 className="text-sm font-medium text-gray-500">Status</h3>
-                    <p className="text-sm font-bold ">
+                    <p className="text-sm">
                       <span
-                        className={`px-2 py-1 rounded-md ${
-                          customer.active
-                            ? "bg-green-600 text-white"
-                            : "bg-gray-200 text-gray-900"
+                        className={`px-4 py-2 rounded-full ${
+                          localCustomer.active
+                            ? "bg-green-200 text-green-800"
+                            : "bg-red-200 text-red-800"
                         }`}
                       >
-                        {customer.active ? "Available" : "Unavailable"}
+                        {localCustomer.active ? "Available" : "Unavailable"}
                       </span>
                     </p>
                 </div>
@@ -259,15 +332,15 @@ const handleCancelReport = () => {
                 <div className="space-y-4">
                    <div>
                     <h3 className="text-sm font-medium text-gray-500">Phone Number</h3>
-                    <p className="text-md">{customer.mobileNumber}</p>
+                    <p className="text-md">{localCustomer.mobileNumber}</p>
                   </div>
                   <div>
                     <h3 className="text-sm font-medium text-gray-500">Join Date</h3>
                     <p className="font-medium">
-                    {customer.joiningDate ? 
-                      (Array.isArray(customer.joiningDate) ? 
-                        customer.joiningDate.join('-') : 
-                        customer.joiningDate
+                    {localCustomer.joiningDate ? 
+                      (Array.isArray(localCustomer.joiningDate) ? 
+                        localCustomer.joiningDate.join('-') : 
+                        localCustomer.joiningDate
                       ) : 
                       'N/A'
                     }
@@ -306,7 +379,7 @@ const handleCancelReport = () => {
              <div className="space-y-2">
             <Label>Assigned To</Label>
             <Input
-              value={customer.username || customer.name}
+              value={localCustomer.username || localCustomer.name}
               readOnly
             />
           </div>
@@ -404,16 +477,17 @@ const handleCancelReport = () => {
               </SelectContent>
             </Select>
           </div>
-             {/* Location */}
-          <div className="space-y-2">
-            <Label>Location</Label>
-            <Input
-              name="location"
-              value={newIssue.location || ""}
-              onChange={handleIssueChange}
-              placeholder="Enter location"
-            />
-          </div>
+          {/* Location */}
+<div className="space-y-2">
+  <Label>Location</Label>
+  <Input
+    name="location"
+    value={newIssue.location || ""}
+    onChange={handleIssueChange}
+    placeholder="Enter location"
+    disabled={newIssue.category !== "Hardware"} // Enable only for Software
+  />
+</div>         
           </div>
           <div className="flex justify-end space-x-2 pt-2">
             <Button variant="outline" type="button" onClick={handleCancelReport}>
@@ -473,9 +547,9 @@ const handleCancelReport = () => {
         </Table>
       </CardContent>
     </Card>
-  )}
-</TabsContent>
-      </Tabs>
-    </div>
+   )}
+ </TabsContent>
+ </Tabs>
+</div>
    );
  } 

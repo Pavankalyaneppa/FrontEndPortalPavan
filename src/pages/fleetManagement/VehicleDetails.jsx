@@ -19,9 +19,10 @@ const VehicleDetails = () => {
   const { currentVehicle, status, error } = useSelector((state) => state.fleet);
   const [editMode, setEditMode] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const fleetFromState = location.state?.fleet;
 
   const [editForm, setEditForm] = useState({
-    vehicleId: '',
+    vehicleNumber: '',
     model: '',
     capacityKw: '',
     driver: '',
@@ -32,17 +33,34 @@ const VehicleDetails = () => {
   });
 
 useEffect(() => {
+  console.log('URL param id:', id); // Check what id is from URL
   if (id) {
     dispatch(fetchVehicleDetails(String(id)));
   }
-
 }, [dispatch, id]);
 
+useEffect(() => {
+  console.log('Current Vehicle:', currentVehicle); // Check what's in currentVehicle
+  console.log('Current Vehicle Number:', currentVehicle?.vehicleNumber); // Check vehicleNumber specifically
+  
+  if (currentVehicle) {
+    setEditForm({
+      vehicleNumber: currentVehicle.vehicleNumber || '',
+      model: currentVehicle.model || '',
+      capacityKw: currentVehicle.capacityKw || '',
+      driver: currentVehicle.driver || '',
+      location: currentVehicle.location || '',
+      batteryLeft: currentVehicle.batteryLeft || '',
+      bookings: currentVehicle.bookings || '',
+      status: currentVehicle.status || ''
+    });
+  }
+}, [currentVehicle]);
 
   useEffect(() => {
     if (currentVehicle) {
       setEditForm({
-        vehicleId: currentVehicle.vehicleId || '',
+        vehicleNumber: currentVehicle.vehicleNumber || '',
         model: currentVehicle.model || '',
         capacityKw: currentVehicle.capacityKw || '',
         driver: currentVehicle.driver || '',
@@ -65,32 +83,105 @@ useEffect(() => {
   const handleEditVehicle = () => {
     setEditMode(true);
   };
-
+const handleDeleteConfirm = async () => {
+  if (vehicleToDelete && id) {
+    try {
+      console.log('Deleting vehicle:', vehicleToDelete); // Add debug
+      console.log('Vehicle Number:', vehicleToDelete.vehicleNumber); // Add debug
+      
+      await dispatch(deleteVehicleFromFleet({ 
+        fleetId: id, 
+        vehicleNumber: vehicleToDelete.vehicleNumber  // Make sure this is vehicleNumber
+      })).unwrap();
+      
+      dispatch(fetchFleetVehicles(id));
+      
+      toast({
+        title: 'Success',
+        description: 'Vehicle deleted successfully',
+        variant: 'default',
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to delete vehicle',
+        variant: 'destructive',
+      });
+    }
+  }
+  setDeleteDialogOpen(false);
+  setVehicleToDelete(null);
+};
 const handleSave = async () => {
   try {
     setIsSubmitting(true);
+
+    // DEBUG: Log what we have
+    console.log('currentVehicle in handleSave:', currentVehicle);
+    console.log('editForm.vehicleNumber:', editForm.vehicleNumber);
+    console.log('URL param id:', id);
+
+    // FIRST: Try to get vehicleNumber from currentVehicle
+    let vehicleNumber = currentVehicle?.vehicleNumber;
     
-    const vehicleId = String(currentVehicle.vehicleId);
+    // SECOND: If not found, try from editForm
+    if (!vehicleNumber) {
+      vehicleNumber = editForm.vehicleNumber;
+    }
     
-    await dispatch(updateFleetVehicle({ 
-      vehicleId: vehicleId, 
-      vehicleData: editForm 
-    })).unwrap();
+    // THIRD: If still not found, try from URL params
+    if (!vehicleNumber) {
+      vehicleNumber = id;
+    }
     
+    // FINAL: If still undefined, throw error
+    if (!vehicleNumber || vehicleNumber === 'undefined') {
+      throw new Error(`Vehicle number is undefined. 
+        currentVehicle.vehicleNumber: ${currentVehicle?.vehicleNumber}
+        editForm.vehicleNumber: ${editForm.vehicleNumber}
+        URL id: ${id}`);
+    }
+
+    console.log('Using vehicleNumber for update:', vehicleNumber);
+
+    const payload = {
+      ...editForm,
+      capacityKw: Number(editForm.capacityKw),
+      batteryLeft: Number(editForm.batteryLeft),
+      bookings: Number(editForm.bookings),
+    };
+
+
+
+    await dispatch(
+      updateFleetVehicle({
+        vehicleNumber: vehicleNumber,
+        vehicleData: payload,
+      })
+    ).unwrap();
+
+    // refresh fleet vehicles
+    if (fleetFromState?.id) {
+      dispatch(fetchVehicleDetails(fleetFromState.id));
+    }
+
     toast({
       title: "Success",
       description: "Vehicle details updated successfully",
     });
-    
+
     setEditMode(false);
-    
-    // Refresh with string vehicleId
-    dispatch(fetchVehicleDetails(vehicleId));
-    
+
+    navigate(`/fleet/${fleetFromState?.id}`, {
+      state: { activeTab: "vehicles" },
+    });
+
   } catch (error) {
+    console.error("Update failed:", error);
+
     toast({
       title: "Error",
-      description: "Failed to update vehicle details",
+      description: error?.message || "Failed to update vehicle details",
       variant: "destructive",
     });
   } finally {
@@ -98,10 +189,12 @@ const handleSave = async () => {
   }
 };
 
+
+
   const handleCancel = () => {
     if (currentVehicle) {
       setEditForm({
-        vehicleId: currentVehicle.vehicleId || '',
+        vehicleNumber: currentVehicle.vehicleNumber || '',
         model: currentVehicle.model || '',
         capacityKw: currentVehicle.capacityKw || '',
         driver: currentVehicle.driver || '',
@@ -130,9 +223,8 @@ const handleSave = async () => {
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Vehicle Details - {currentVehicle.vehicleId}</h1>
+        <h1 className="text-2xl font-bold">Vehicle Details - {currentVehicle.vehicleNumber}</h1>
         <div className="flex gap-2">
-          <Button onClick={handleEditVehicle}>Edit Vehicle</Button>
           <BackButton />
         </div>
       </div>
@@ -151,11 +243,11 @@ const handleSave = async () => {
             <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="vehicleId">Vehicle ID</Label>
+                  <Label htmlFor="vehiclenumber">Vehicle ID</Label>
                   <Input
-                    id="vehicleId"
-                    name="vehicleId"
-                    value={editForm.vehicleId}
+                    id="vehiclenumber"
+                    name="vehicleNumber"
+                    value={editForm.vehicleNumber}
                     onChange={handleInputChange}
                   />
                 </div>
@@ -248,13 +340,20 @@ const handleSave = async () => {
             <div>
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-semibold">Vehicle Information</h2>
-              </div>
-              
+                <Button
+                  size="sm"
+                  onClick={handleEditVehicle}
+                  className="px-4 py-3 text-base"
+
+                >
+                  Edit
+                </Button>
+              </div>             
               <Card className="p-6 mb-6">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="font-semibold text-gray-600">Vehicle ID</p>
-                    <p className="font-medium">{currentVehicle.vehicleId || '-'}</p>
+                    <p className="font-semibold text-gray-600">Vehicle Number</p>
+                    <p className="font-medium">{currentVehicle.vehicleNumber || '-'}</p>
                   </div>
                   <div>
                     <p className="font-semibold text-gray-600">Model</p>

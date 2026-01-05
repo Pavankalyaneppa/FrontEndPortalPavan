@@ -31,6 +31,27 @@ export const validateName = (value) => {
   return "";
 };
 
+export const validateVehicleNumber = (value) => {
+  if (!value || value.trim() === '') {
+    return 'Vehicle number is required';
+  }
+  if (value.length < 3 || value.length > 20) {
+    return 'Vehicle number must be between 3 and 20 characters';
+  }
+  const vehicleNumberRegex = /^[A-Z0-9\s\-]+$/i;
+  if (!vehicleNumberRegex.test(value)) {
+    return 'Vehicle number can only contain letters, numbers, spaces, and hyphens';
+  }
+  return '';
+};
+
+export const validateOrganizationName = (value) => {
+  const error = safeStringValidation(value, 'Organization name');
+  if (error) return error;
+
+  const trimmed = value.trim();
+}
+
 export const validateMobileNumber = (value) => {
   const error = safeStringValidation(value, 'Mobile number');
   if (error) return error;
@@ -248,17 +269,39 @@ export const validateEmail = (value) => {
   const error = safeStringValidation(value, 'Email');
   if (error) return error;
 
-  const trimmedValue = value.trim();
-  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
- 
-  if (!emailRegex.test(trimmedValue)) return "Invalid email format";
-  if (/\.\./.test(trimmedValue)) return "Email cannot contain consecutive dots";
- 
-  const [local, domain] = trimmedValue.split("@");
-  if (local?.startsWith(".") || local?.endsWith(".") || domain?.startsWith(".") || domain?.endsWith(".")) {
-    return "Email cannot start or end with a dot";
+  const email = value.trim();
+
+  // One and only one @
+  if (email.split("@").length !== 2) {
+    return "Invalid email format";
   }
- 
+
+  const [local, domain] = email.split("@");
+
+  // Local-part validation
+  const localRegex = /^[a-zA-Z0-9._-]+$/;
+
+  if (
+    !local ||
+    !localRegex.test(local) ||
+    local.startsWith(".") ||
+    local.endsWith(".") ||
+    local.startsWith("_") ||
+    local.endsWith("_") ||
+    local.startsWith("-") ||
+    local.endsWith("-") ||
+    local.includes("..")
+  ) {
+    return "Invalid email username";
+  }
+
+  // Domain validation (subdomains allowed)
+  const domainRegex = /^([a-zA-Z0-9]+(-[a-zA-Z0-9]+)*\.)+[a-zA-Z]{2,}$/;
+
+  if (!domainRegex.test(domain)) {
+    return "Invalid email domain";
+  }
+
   return "";
 };
 
@@ -269,7 +312,7 @@ export const validateUsername = (value) => {
   const trimmedValue = value.trim();
   if (trimmedValue.length < 2) return "Username must be at least 2 characters";
   if (trimmedValue.length > 30) return "Username cannot exceed 30 characters";
-  if (!/^[a-zA-Z0-9_\-]+(?: [a-zA-Z0-9_\-]+)*$/.test(trimmedValue)) {
+  if (!/^[a-zA-Z0-9._\-]+(?: [a-zA-Z0-9._\-]+)*$/.test(trimmedValue)) {
     return "Username can only contain letters, numbers, underscores, and single hyphens";
   }
   if (/^[-_]|[-_]$/.test(trimmedValue)) return "Username cannot start or end with special characters";
@@ -278,7 +321,7 @@ export const validateUsername = (value) => {
   if (/^[0-9]/.test(trimmedValue)) return "Username cannot start with a number";
   if (/([a-zA-Z0-9])\1{3,}/i.test(trimmedValue)) return "Username has too many repeating characters";
 
-  const restrictedWords = ['admin', 'root', 'system', 'null', 'undefined', 'guest', 'anonymous'];
+  const restrictedWords = ['root', 'system', 'null', 'undefined', 'guest', 'anonymous'];
   if (restrictedWords.includes(trimmedValue.toLowerCase())) return "This username is not allowed";
   if (/^[A-Z]+$/.test(trimmedValue)) return "Username cannot be all uppercase letters";
 

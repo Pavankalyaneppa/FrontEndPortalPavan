@@ -2,6 +2,7 @@ import './App.css'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import Login from './pages/authentication/Login';
 import Registation from './pages/authentication/Registation';
+import TermsOfUse from './pages/authentication/TermsOfUse';
 import Dashboard from './pages/dashboard/Dashboard';
 import ProtectedRoute from './pages/authentication/ProtectedRoute';
 import ValidationRoute from './pages/authentication/ValidationRoute';
@@ -64,13 +65,13 @@ import AddFleet from './pages/fleetManagement/AddFleet';
 import FleetDetails from './pages/fleetManagement/FleetDetails';
 import AddVehicle from './pages/fleetManagement/AddVehicle';
 import VehicleDetails from './pages/fleetManagement/VehicleDetails';
-import RevenueDashboard from './pages/fleetManagement/RevenueDashboard';
+// import RevenueDashboard from './pages/fleetManagement/RevenueDashboard';
 import TechnicianDashboard from './pages/technician/TechnicianDashboard';
 import TechnicianProfile from './pages/technicianProfile/TechnicianProfile';
 import TechnicianDashboardDetails from './pages/technician/TechnicianDashboardDetails';
 import CompletedTasks from './pages/technician/CompletedTasks';
 import FranchiseRequests from './pages/franchiseRequests/FranchiseRequests';
-
+import StationLogsPage from './pages/stations/StationLogsPage';
 const router = createBrowserRouter([
   {
     path: "/",
@@ -133,11 +134,11 @@ const router = createBrowserRouter([
       { path: "/fleet/:id", element: <FleetDetails /> },
       { path: "/vehicle/add", element: <AddVehicle />},
       { path: "/vehicle/:id", element: <VehicleDetails />},
-      { path: "/fleet/revenue", element: <RevenueDashboard />},
+      // { path: "/fleet/revenue", element: <RevenueDashboard />},
       { path: "/FranchiseRequests", element: <FranchiseRequests />},
       { path: "/sites-requests", element: <FranchiseRequests />},
       { path: "/stations-requests",element: <FranchiseRequests />},
-
+      { path:"/stations/:id/logs", element:<StationLogsPage />},
     ]
   },
 
@@ -148,6 +149,10 @@ const router = createBrowserRouter([
   {
     path: "/register",
     element: (<ValidationRoute><Registation /></ValidationRoute>),
+  },
+  {
+    path: "/terms",
+    element: (<ValidationRoute><TermsOfUse /></ValidationRoute>),
   },
   {
     path: "/evdashboard",

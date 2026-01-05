@@ -64,12 +64,14 @@ export const addTeam = createAsyncThunk(
   async (teamData, { rejectWithValue }) => {
     try {
       let formattedJoiningDate = null;
+
       if (teamData.joiningDate) {
         if (Array.isArray(teamData.joiningDate)) {
           const [year, month, day] = teamData.joiningDate;
-          formattedJoiningDate = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
-        } 
-        else if (typeof teamData.joiningDate === 'string') {
+          formattedJoiningDate = `${year}-${month.toString().padStart(2, "0")}-${day
+            .toString()
+            .padStart(2, "0")}`;
+        } else {
           formattedJoiningDate = teamData.joiningDate;
         }
       }
@@ -79,27 +81,30 @@ export const addTeam = createAsyncThunk(
         mobileNumber: teamData.mobileNumber,
         email: teamData.email,
         location: teamData.location,
-        designation: teamData.designation || 'charger installer',
+        designation: teamData.designation || "charger installer",
         active: teamData.active === "true" || teamData.active === true,
         joiningDate: formattedJoiningDate,
-        password: 'defaultPassword123',
-        confirmPassword: 'defaultPassword123'
+        password: "defaultPassword123",
+        confirmPassword: "defaultPassword123",
       };
-
-      console.log('Sending payload to backend:', payload);
 
       const response = await AxiosServices.addEmployee(payload);
       return response;
     } catch (error) {
-      console.error('Error in addTeam:', error);
-      return rejectWithValue(
-        error.response?.data?.message || 
-        error.message || 
-        'Failed to add team member'
-      );
+      console.error("Error in addTeam:", error);
+
+      // EXACT MATCH to AddCustomerSupport
+      const backendMessage =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.message ||
+        "Failed to add team member";
+
+      return rejectWithValue(backendMessage);
     }
   }
 );
+
 
 export const editTeam = createAsyncThunk(
   'chargerInstallation/editTeam',
@@ -111,7 +116,7 @@ export const editTeam = createAsyncThunk(
         email: teamData.email,
         location: teamData.location,
         designation: 'charger installer',
-        isActive: teamData.active,
+        active: teamData.active,
         joiningDate: teamData.joiningDate ? new Date(teamData.joiningDate.join('-')) : null,
       };     
       await AxiosServices.updateTeam(id, payload);

@@ -5,10 +5,10 @@ const Description = "Where ever Current"
 // const baseURL = 'http://178.16.139.5:8800';
 // const baseOCPPURL = 'http://178.16.139.5:8085';
 const baseURL = 'http://localhost:8800';
-// const baseOCPPURL = 'https://ocpp.chargeevya.com';
+//const baseOCPPURL = 'https://ocpp.chargeevya.com';
 
-const baseOCPPURL = 'http://13.232.8.31:8085';
-// const baseURL = 'https://backend.chargeevya.com';
+ const baseOCPPURL = 'https://ocpp.evyaa.com';
+//  const baseURL = 'https://server.evyaa.com';
 
 const OrganizationID=1;
 

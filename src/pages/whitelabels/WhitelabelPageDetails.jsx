@@ -16,6 +16,7 @@ import BackButton from '@/users/BackButton';
 import Loading from '@/users/Loading';
 import StatusButton from '@/users/StatusButton';
 import AxiosServices from '@/services/AxiosServices';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
 const WhitelabelPageDetails = () => {
   const { id,orgId,orgName } = useParams();
@@ -29,7 +30,22 @@ const WhitelabelPageDetails = () => {
   const [passwordChangeEnabled, setPasswordChangeEnabled] = useState(false);
   const [formErrors, setFormErrors] = useState({});
   const [editFormErrors, setEditFormErrors] = useState({});
-  
+  const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
+  const [userStatus, setUserStatus] = useState('');
+  const normalizeStatus = (status) =>
+  (status || '').toString().trim().toUpperCase();
+
+  const getStatusClasses = (status) => {
+    switch (normalizeStatus(status)) {
+      case 'ACTIVE':
+        return 'bg-green-100 text-green-800 border-green-400';
+      case 'INACTIVE':
+        return 'bg-red-100 text-red-800 border-red-400';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-400';
+    }
+  };
+
   const [editFormData, setEditFormData] = useState({
     orgName: '',
     fullname: '',
@@ -212,6 +228,14 @@ useEffect(() => {
     loadDetails();
   }, [id]);
 
+
+  useEffect(() => {
+  if (currentUser) {
+    setUserStatus(currentUser.enabled ? 'ACTIVE' : 'INACTIVE');
+  }
+}, [currentUser]);
+
+
  const handleAddFranchiseOwner = async (e) => {
   e.preventDefault();
   const errors = {};
@@ -384,11 +408,10 @@ useEffect(() => {
 
   const handleUpdateUser = async (e) => {
     e.preventDefault();
-
  if (Object.keys(editFormErrors).length > 0) {
     toast({
       title: 'Validation Error',
-      description: Object.values(errors).filter(Boolean).join(", "),
+      description: Object.values(editFormErrors).filter(Boolean).join(", "),
       variant: 'destructive',
     });
     return;
@@ -426,6 +449,8 @@ useEffect(() => {
         setPasswordChangeEnabled(false);
         const updatedUser = await fetchUserDetails(id);
         setCurrentUser(updatedUser);
+        setUserStatus(updatedUser.enabled ? 'ACTIVE' : 'INACTIVE');
+
       }
     } catch (error) {
       console.error('Error updating white label:', error);
@@ -439,6 +464,32 @@ useEffect(() => {
       setIsSubmitting(false);
     }
   };
+const handleUserStatusChange = async (newStatus) => {
+  const enabled = newStatus === 'ACTIVE';
+
+  try {
+    await AxiosServices.updateUserStatus(id, enabled);
+    setUserStatus(newStatus);
+    setCurrentUser((prev) => ({
+      ...prev,
+      enabled,
+    }));
+
+    toast({
+      title: 'Success',
+      description: 'User status updated successfully',
+    });
+  } catch (error) {
+    toast({
+      title: 'Error',
+      description:
+        error?.response?.data?.message || 'Failed to update status',
+      variant: 'destructive',
+    });
+  } finally {
+    setStatusDropdownOpen(false);
+  }
+};
 
   if (loading) {
     return <div ><Loading/></div>;
@@ -559,14 +610,20 @@ useEffect(() => {
                 {editFormErrors.zipCode && (  <p className="text-xs text-red-500 mt-1">{editFormErrors.zipCode}</p>)}
               </div>
               <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="edit-enabled"
-                  name="enabled"
-                  checked={editFormData.enabled}
-                  onCheckedChange={(checked) =>
-                    setEditFormData((prev) => ({ ...prev, enabled: checked }))
-                  }
-                />
+            <Checkbox
+                checked={editFormData.enabled}
+                onCheckedChange={(checked) => {
+                  const enabled = Boolean(checked);
+
+                  setEditFormData((prev) => ({
+                    ...prev,
+                    enabled,
+                  }));
+                  setUserStatus(enabled ? 'ACTIVE' : 'INACTIVE');
+                }}
+              />
+
+
                 <Label htmlFor="edit-enabled">Enabled</Label>
               </div>
             </div>
@@ -592,8 +649,46 @@ useEffect(() => {
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
          <div className="flex justify-between items-center mb-6">
+            <div className="flex items-center gap-2">
                 <div><h1 className="text-2xl font-bold">{orgName}</h1></div>
-                <StatusButton status={currentUser.enabled?"Active":"In Active"}/>
+<div className="relative">
+  <button
+    className={`flex items-center px-4 py-1.5 border rounded-full transition 
+      ${getStatusClasses(userStatus)}`}
+    onClick={() => setStatusDropdownOpen(prev => !prev)}
+  >
+    {normalizeStatus(userStatus)}
+    {statusDropdownOpen ? (
+      <ChevronUp className="ml-2 h-4 w-4" />
+    ) : (
+      <ChevronDown className="ml-2 h-4 w-4" />
+    )}
+  </button>
+
+  {statusDropdownOpen && (
+    <div className="absolute mt-2 w-44 bg-white shadow-lg rounded-md z-20 p-3">
+      <p className="font-medium text-sm mb-2 text-gray-700">
+        Select Status
+      </p>
+
+      {['ACTIVE', 'INACTIVE'].map((option) => (
+        <button
+          key={option}
+          onClick={() => handleUserStatusChange(option)}
+          className={`w-full text-left px-4 py-1.5 mb-1 rounded-full border transition ${
+            option === 'ACTIVE'
+              ? 'bg-green-100 text-green-800 border-green-400'
+              : 'bg-red-100 text-red-800 border-red-400'
+          }`}
+        >
+          {option}
+        </button>
+      ))}
+    </div>
+  )}
+</div>
+      </div>
+
                 </div>
                 <div className="flex gap-2">
          <BackButton />

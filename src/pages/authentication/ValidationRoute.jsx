@@ -9,7 +9,7 @@ export default function ValidationRoute({ children }) {
 
   console.log('ValidationRoute - roleId:', roleId);
 
-  const publicRoutes = ['/login', '/register', '/evdashboard', '/evdashboard/*'];
+  const publicRoutes = ['/login', '/register', '/evdashboard','/terms', '/evdashboard/*'];
 
   const isPublicRoute = publicRoutes.some(route => {
     if (route.endsWith('*')) {

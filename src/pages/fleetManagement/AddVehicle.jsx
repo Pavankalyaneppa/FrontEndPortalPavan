@@ -9,11 +9,14 @@ import { toast } from '@/components/ui/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ReloadIcon } from "@radix-ui/react-icons";
+import { validateVehicleNumber } from '../validations/Validation';
 
 const AddVehicle = ({ open,
   onOpenChange,
   onVehicleAdded,
-  fleetId: propFleetId}) => {
+  fleetId: propFleetId,
+  fleetName
+}) => {
   const { fleetId: paramFleetId } = useParams();
   const dispatch = useDispatch();
   const { addVehicleStatus, addVehicleError, fleets } = useSelector((state) => state.fleet);
@@ -22,7 +25,7 @@ const AddVehicle = ({ open,
   const initialFleetId = propFleetId || paramFleetId || '';
 
   const [formData, setFormData] = useState({
-    vehicleId: '', 
+    vehicleNumber: '', 
     model: '', 
     capacityKw: '', 
     driver: '', 
@@ -34,7 +37,6 @@ const AddVehicle = ({ open,
   });
 
   const [errors, setErrors] = useState({});
-// Fix useEffect - remove navigate
 useEffect(() => {
   if (addVehicleStatus === 'succeeded') {
     toast({
@@ -42,14 +44,31 @@ useEffect(() => {
       description: 'Vehicle added successfully!',
       variant: 'default',
     });
-    if (onVehicleAdded) {
-      onVehicleAdded();
-    }
-    onOpenChange(false); // Close dialog
+
+    if (onVehicleAdded) onVehicleAdded();
+    onOpenChange(false);
     dispatch(resetVehicleStatus());
   }
-  // Remove navigate from dependencies
+
+  if (addVehicleStatus === 'failed') {
+    const errorMessage =
+      addVehicleError?.response?.data?.message ||
+      addVehicleError?.message ||
+      'Failed to add vehicle';
+    if (errorMessage.toLowerCase().includes("vehicle")) {
+      setErrors({ vehicleNumber: errorMessage });
+    }
+
+    toast({
+      title: 'Error',
+      description: errorMessage,
+      variant: 'destructive',
+    });
+
+    dispatch(resetVehicleStatus());
+  }
 }, [addVehicleStatus, addVehicleError, dispatch, toast, onVehicleAdded, onOpenChange]);
+
 
   const validateForm = () => {
     const newErrors = {};
@@ -57,9 +76,11 @@ useEffect(() => {
     if (!formData.fleetId) {
       newErrors.fleetId = 'Fleet ID is required';
     }
-    if (!formData.vehicleId) {
-      newErrors.vehicleId = 'Vehicle ID is required';
+    const vehicleNumberError = validateVehicleNumber(formData.vehicleNumber);
+    if (vehicleNumberError) {
+      newErrors.vehicleNumber = vehicleNumberError;
     }
+
     if (!formData.model) {
       newErrors.model = 'Model is required';
     }
@@ -83,13 +104,20 @@ useEffect(() => {
   };
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
-    }
-  };
+  const { name, value } = e.target;
+
+  setFormData(prev => ({ ...prev, [name]: value }));
+
+  if (name === "vehicleNumber") {
+    const error = validateVehicleNumber(value);
+    setErrors(prev => ({ ...prev, vehicleNumber: error }));
+    return;
+  }
+
+  if (errors[name]) {
+    setErrors(prev => ({ ...prev, [name]: '' }));
+  }
+};
 
   const handleSelectChange = (name, value) => {
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -108,7 +136,7 @@ useEffect(() => {
     }
     
     const vehicleData = {
-      vehicleId: formData.vehicleId,
+      vehicleNumber: formData.vehicleNumber,
       model: formData.model,
       capacityKw: parseFloat(formData.capacityKw),
       driver: formData.driver,
@@ -133,16 +161,25 @@ useEffect(() => {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="vehicleId">Vehicle ID *</Label>
-                <Input 
-                  id="vehicleId" 
-                  name="vehicleId" 
-                  value={formData.vehicleId} 
-                  onChange={handleChange} 
-                  className={errors.vehicleId ? 'border-red-500' : ''}
+                <Label>Fleet Name</Label>
+                <Input
+                  value={fleetName || ''}
+                  readOnly
+                  disabled
+                  className="cursor-not-allowed bg-gray-100 text-gray-700"
                 />
-                {errors.vehicleId && (
-                  <p className="text-red-500 text-sm">{errors.vehicleId}</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="vehiclenumber">Vehicle Number *</Label>
+                <Input 
+                  id="vehicleNumber" 
+                  name="vehicleNumber" 
+                  value={formData.vehicleNumber} 
+                  onChange={handleChange} 
+                  className={errors.vehicleNumber ? 'border-red-500' : ''}
+                />
+                {errors.vehicleNumber && (
+                  <p className="text-red-500 text-sm">{errors.vehicleNumber}</p>
                 )}
               </div>
 
@@ -222,7 +259,7 @@ useEffect(() => {
                 )}
               </div>
 
-              <div className="space-y-2">
+              {/* <div className="space-y-2">
                 <Label htmlFor="bookings">Bookings</Label>
                 <Input 
                   id="bookings" 
@@ -232,7 +269,7 @@ useEffect(() => {
                   value={formData.bookings} 
                   onChange={handleChange} 
                 />
-              </div>
+              </div> */}
 
               <div className="space-y-2">
                 <Label>Status *</Label>
@@ -252,7 +289,7 @@ useEffect(() => {
                 </Select>
               </div>
 
-              <div className="space-y-2">
+              {/* <div className="space-y-2">
                 <Label htmlFor="fleetId">Fleet ID</Label>
                 <Input 
                   id="fleetId" 
@@ -260,7 +297,7 @@ useEffect(() => {
                   value={formData.fleetId} 
                   disabled 
                 />
-              </div>
+              </div> */}
             </div>
                <div className="flex justify-end space-x-4 pt-4">
               <Button 

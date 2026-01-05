@@ -29,6 +29,8 @@ import {
   validateZipCode,
   validateEmail,
   validateUsername,
+  validateChargerName,
+  validateOrganizationName
 } from '@/pages/validations/Validation';
 import {
   flexRender,
@@ -155,6 +157,12 @@ const FranchiseOwners = () => {
   
     const cityError = validateCity(formData.city);
     if (cityError) errors.city = cityError;
+
+    const organizationNameError = validateOrganizationName(formData.orgName);
+    if(organizationNameError) errors.orgName = organizationNameError;
+
+    const usernameError = validateUsername(formData.username);
+    if(usernameError) errors.username = usernameError;
   
     setFormErrors(errors);
   }, [formData]);
@@ -507,6 +515,7 @@ const handleAddFranchiseOwner = async (e) => {
                   value={formData.orgName} 
                   onChange={handleInputChange} 
                 />
+                {formErrors.orgName && <p className="text-sm text-red-500">{formErrors.orgName}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="fullname">Full Name *</Label>
@@ -547,6 +556,7 @@ const handleAddFranchiseOwner = async (e) => {
                   value={formData.username} 
                   onChange={handleInputChange} 
                 />
+                {formErrors.username && <p className="text-sm text-red-500">{formErrors.username}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="address">Address *</Label>

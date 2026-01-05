@@ -112,10 +112,10 @@ getStationBySiteId:(id)=> {
     }
   },
 
-searchStations: async ({ siteName, stationStatus, currentType, page = 0, size = 10 }) => {
+searchStations: async ({ siteName, stationStatus, currentType, page = 0, size = 10,roleId,orgId }) => {
   try {
     const response = await axiosInstance.get("/services/station/search", {
-      params: { siteName, stationStatus, currentType, page, size },
+      params: { roleId, orgId, siteName, stationStatus, currentType, page, size },
     });
 
     return {
@@ -336,7 +336,7 @@ getIssuesByStatus : async (params = {}) => {
   try {
     const response = await axiosInstance.get(`/services/site/getAllByTable?tableName=${tablename}&OrgId=${localStorage.getItem("orgId")}`);
     console.log("Stations:", response.data);
-    return response.data; // make sure this is the array of stations
+    return response.data; 
   } catch (error) {
     throw error.response?.data || error;
   }
@@ -358,6 +358,50 @@ getIssuesByStatus : async (params = {}) => {
       throw error.response.data;
     }
   },
+
+
+
+
+  // // for ocpp logs..
+  // getOcppLogFiles: async (stationId) => {
+  //   try {
+  //     // If your OCPP server has an API endpoint for listing files
+  //     // const response = await ocppApi.get(`/ocpp/${stationId}`);
+  //           const response = await ocppApi.get(`${baseURL}/ocpp/123/2025-12-02_123.txt`});
+  //     return response.data;
+  //   } catch (error) {
+  //     console.error('Error fetching log files:', error);
+  //     throw error.response?.data || error.message;
+  //   }
+  // },
+
+  // // Download specific log file with optional filter
+  // downloadOcppLog: async (stationId, filename, filter = null) => {
+  //   try {
+  //     let url = `/ocpp/${stationId}/${filename}`;
+  //     const params = new URLSearchParams();
+      
+  //     if (filter && filter.trim() !== '') {
+  //       params.append('filter', filter);
+  //     }
+      
+  //     if (params.toString()) {
+  //       url += `?${params.toString()}`;
+  //     }
+      
+  //     const response = await ocppApi.get(url, {
+  //       responseType: 'text' // Important for text files
+  //     });
+  //     return response.data;
+  //   } catch (error) {
+  //     console.error('Error downloading log:', error);
+  //     throw error.response?.data || error.message;
+  //   }
+  // },
+
+
+
+
   
   sendOcppRequest: async (data) => {
     try {
@@ -469,6 +513,15 @@ addVehicle: async (vehicleData) => {
   }
 },
 
+getEVBrand: async () => {
+  try {
+    const response = await axiosInstance.get('/api/mobile/evBrand');
+    return response;
+  } catch (error) {
+    throw error.response?.data || error.message;
+  }
+},
+
 updateVehicle: async (vehicleId, vehicleData) => {
   try {
     const response = await axiosInstance.put(`/api/mobile/updateEV/${vehicleId}`, vehicleData);
@@ -501,6 +554,19 @@ updateUser: async (id, userData) => {
     throw error;
   }
 },
+
+
+//for updating the user status...
+updateUserStatus: async (id, enabled) => {
+  try {
+    return await axiosInstance.put(
+      `/services/userprofile/updateStatus/${id}`,null,{ params: { enabled } } );
+  } catch (error) {
+    console.error("Axios error:", error);
+    throw error;
+  }
+},
+
 
 getUserDetails: async (userId) => {
     try {
@@ -688,12 +754,14 @@ updateStationStatus :async (stationId, newStatus) => {
       throw error.response?.data?.message || error.message || "Failed to update station status";
     }
   },
-  getStationsByFilters: async (siteName, stationStatus, currentType, page = 0, size = 10) => {
+  getStationsByFilters: async (siteName, stationStatus, currentType, page = 0, size = 10, orgId, roleId) => {
   try {
     const params = new URLSearchParams();
     if (siteName) params.append('siteName', siteName); 
     if (stationStatus) params.append('stationStatus', stationStatus);
     if (currentType) params.append('currentType', currentType);
+    if (orgId) params.append('orgId', orgId); 
+    if (roleId) params.append('roleId', roleId); 
     params.append('page', page);
     params.append('size', size);
 
@@ -1104,6 +1172,7 @@ updateTechnician : async (id, technicianData) => {
     throw error.response?.data || error.message;
   }
 },
+
 
 // Add a new note for a task
  addNoteToTask : async (noteData) => {

@@ -257,15 +257,9 @@ const handleSubmit = async (e) => {
   return (
     <div className="container mx-auto p-4">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Edit Team Member</h1>
+        <h1 className="text-2xl font-bold">Edit Employee</h1>
         <div className="flex gap-2">
           <BackButton />
-          <Button 
-            variant="outline"
-            onClick={() => navigate(`/charger-installation-team/${id}`)}
-          >
-            Cancel
-          </Button>
         </div>
       </div>
 
@@ -347,7 +341,7 @@ const handleSubmit = async (e) => {
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="space-y-2">
+                    {/* <div className="space-y-2">
                       <Label htmlFor="joiningDate">Join Date</Label>
                       <Input
                         id="joiningDate"
@@ -356,8 +350,11 @@ const handleSubmit = async (e) => {
                         value={formData.joiningDate}
                         onChange={handleChange}
                         required
+                        readOnly
+                        className="mt-1 bg-gray-100 text-gray-700 cursor-not-allowed"
+
                       />
-                    </div>
+                    </div> */}
                     <div className="space-y-2">
                       <Label htmlFor="designation">Designation</Label>
                       <Input
@@ -365,6 +362,8 @@ const handleSubmit = async (e) => {
                         name="designation"
                         value={formData.designation}
                         readOnly
+                        className="mt-1 bg-gray-100 text-gray-700 cursor-not-allowed"
+
                       />
                     </div>
                   </div>

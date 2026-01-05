@@ -96,7 +96,7 @@ const handleAddNote = async (e) => {
   setSaving(true);
   try {
     const payload = {
-      employeeId: recipientId,
+      employeeId: employeeId,
       recipientId: Number(recipientId),
       taskId: taskId ? Number(taskId) : null,
       issueId: issueId ? Number(issueId) : null,
@@ -104,6 +104,8 @@ const handleAddNote = async (e) => {
       description: noteDescription,
       createdByRole: createdByRole.toUpperCase(),
     };
+
+    console.log("Sending payload:", payload);
 
     await dispatch(addIssueNote(payload));
     await dispatch(fetchIssueNotes(issue.id));
@@ -328,9 +330,7 @@ const handleSaveEdit = async (noteId) => {
                       className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-700"
                       required
                     >
-                      <SelectTrigger id = "recipient">
-                        <SelectValue placeholder="Select recipient (optional)" />
-                      </SelectTrigger>
+                      <option value="">Select Recipient</option>
                       {employees.map((emp) => (
                         <option key={emp.id} value={emp.id}>
                           {emp.username}
@@ -339,16 +339,14 @@ const handleSaveEdit = async (noteId) => {
                     </select>
                   </div>
                   <div className="flex flex-col">
-  <label className="text-sm font-medium text-gray-700 mb-1">Employee ID</label>
-  <input
-    type="text"
-    value={employeeId}
-    readOnly
-    className="w-full rounded-md border border-gray-300 px-3 py-2 bg-gray-100 cursor-not-allowed"
-  />
-</div>
-
-  
+                    <label className="text-sm font-medium text-gray-700 mb-1">Employee ID</label>
+                    <input
+                      type="text"
+                      value={employeeId}
+                      readOnly
+                      className="w-full rounded-md border border-gray-300 px-3 py-2 bg-gray-100 cursor-not-allowed"
+                    />
+                  </div>  
                   <div className="flex flex-col">
                     <label className="text-sm font-medium text-gray-700 mb-1">Created By Role</label>
                     <select

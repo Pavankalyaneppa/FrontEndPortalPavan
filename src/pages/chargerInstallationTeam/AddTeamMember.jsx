@@ -4,9 +4,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
-import { useDispatch, useSelector } from 'react-redux';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { addTeam } from '@/store/reducers/chargerInstallation/ChargerInstallationSlice';
+import AxiosServices from '@/services/AxiosServices';
 import {
   validateName,
   validateMobileNumber,
@@ -17,11 +16,7 @@ import { ReloadIcon } from '@radix-ui/react-icons';
 
 const AddTeamMember = ({ open, onOpenChange, onTeamMemberAdded }) => {
   const { toast } = useToast();
-  const dispatch = useDispatch();
-
   const [formErrors, setFormErrors] = useState({});
-  const chargerInstallationState = useSelector(state => state.chargerInstallation);
-  const error = chargerInstallationState?.error || null;
 
   const [touched, setTouched] = useState({
     username: false,
@@ -39,6 +34,9 @@ const AddTeamMember = ({ open, onOpenChange, onTeamMemberAdded }) => {
   };
 
   const [isSubmitting, setIsSubmitting] = useState(false); 
+const getTodayDate = () => {
+  return new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+};
 
   const [formData, setFormData] = useState({
     username: "",
@@ -46,7 +44,7 @@ const AddTeamMember = ({ open, onOpenChange, onTeamMemberAdded }) => {
     email: "",
     location: "",
     active: "true",
-    joiningDate: "",
+    joiningDate: getTodayDate(),
     experience: "",
     country: "",
     state: "",
@@ -61,6 +59,16 @@ const AddTeamMember = ({ open, onOpenChange, onTeamMemberAdded }) => {
       [name]: value
     });
   };
+
+  useEffect(() => {
+  if (open) {
+    setFormData(prev => ({
+      ...prev,
+      joiningDate: getTodayDate()
+    }));
+  }
+}, [open]);
+
 
   // Validations
   useEffect(() => {
@@ -81,80 +89,93 @@ const AddTeamMember = ({ open, onOpenChange, onTeamMemberAdded }) => {
     setFormErrors(errors);
   }, [formData]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+ const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    // Mark all fields as touched
-    setTouched({
-      username: true,
-      mobileNumber: true,
-      email: true,
-      location: true
+  setTouched({
+    username: true,
+    mobileNumber: true,
+    email: true,
+    location: true
+  });
+
+  if (Object.keys(formErrors).length > 0) {
+    const firstError = Object.values(formErrors).find(error => error);
+    toast({
+      title: "Validation Error",
+      description: firstError || "Please fix the validation errors",
+      variant: "destructive",
     });
+    return;
+  }
 
-    // Check for validation errors
-    if (Object.keys(formErrors).length > 0) {
-      const firstError = Object.values(formErrors).find(error => error);
-      toast({
-        title: "Validation Error",
-        description: firstError || "Please fix the validation errors",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Check for empty required fields
-    const requiredFields = {
-      username: "Full Name",
-      mobileNumber: "Mobile Number",
-      email: "Email",
-      location: "Location"
-    };
-
-    const emptyFields = Object.entries(requiredFields)
-      .filter(([field]) => !formData[field])
-      .map(([_, name]) => name);
-
-    if (emptyFields.length > 0) {
-      toast({
-        title: "Validation Error",
-        description: `Please fill in the following fields: ${emptyFields.join(", ")}`,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      setIsSubmitting(true);
-      const payload = {
-        ...formData,
-        joiningDate: formData.joiningDate ? formData.joiningDate.split('-').map(part => parseInt(part, 10)) : []
-      };
-
-      await dispatch(addTeam(payload)).unwrap();
-
-      toast({
-        title: "Success",
-        description: "Team member added successfully!",
-      });
-
-      // Close dialog and callback
-      if (onTeamMemberAdded) {
-        onTeamMemberAdded();
-      }
-      onOpenChange(false);    
-    } catch (error) {
-      console.error("Error adding team member:", error);
-      toast({
-        title: "Error",
-        description: error || "Failed to add team member",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false); 
-    }
+  const requiredFields = {
+    username: "Full Name",
+    mobileNumber: "Mobile Number",
+    email: "Email",
+    location: "Location"
   };
 
+  const emptyFields = Object.entries(requiredFields)
+    .filter(([field]) => !formData[field])
+    .map(([_, name]) => name);
+
+  if (emptyFields.length > 0) {
+    toast({
+      title: "Validation Error",
+      description: `Please fill in: ${emptyFields.join(", ")}`,
+      variant: "destructive",
+    });
+    return;
+  }
+
+  try {
+    setIsSubmitting(true);
+
+    const payload = {
+      username: formData.username,
+      mobileNumber: formData.mobileNumber,
+      email: formData.email,
+      location: formData.location,
+      designation: formData.designation || "charger installer",
+      active: formData.active === "true" || formData.active === true,
+      joiningDate: formData.joiningDate
+        ? new Date(formData.joiningDate).toISOString().split("T")[0]
+        : null,
+      password: "defaultPassword123",
+      confirmPassword: "defaultPassword123",
+    };
+
+    await AxiosServices.addEmployee(payload);
+
+    toast({
+      title: "Success",
+      description: "Team member added successfully!",
+    });
+
+    if (onTeamMemberAdded) {
+      onTeamMemberAdded();
+    }
+
+    onOpenChange(false);
+} catch (error) {
+  const errorMessage =
+    typeof error === "string"                 
+      ? error
+      : error?.response?.data?.message       
+      || "Failed to add team member";
+
+  toast({
+    title: "Error",
+    description: errorMessage,
+    variant: "destructive",
+  });
+}
+
+ finally {
+    setIsSubmitting(false);
+  }
+};
   return (
      <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
@@ -225,7 +246,7 @@ const AddTeamMember = ({ open, onOpenChange, onTeamMemberAdded }) => {
             </div>
 
             {/* Joining Date */}
-            <div>
+            {/* <div>
               <Label htmlFor="joiningDate">Joining Date</Label>
               <Input
                 type="date"
@@ -233,10 +254,9 @@ const AddTeamMember = ({ open, onOpenChange, onTeamMemberAdded }) => {
                 name="joiningDate"
                 value={formData.joiningDate}
                 onChange={handleChange}
-                className="mt-1"
+                className="mt-1 bg-gray-100 text-gray-700 cursor-not-allowed"
               />
-            </div>
-
+            </div> */}
             {/* Designation */}
             <div>
               <Label htmlFor="designation">Designation</Label>
@@ -246,27 +266,9 @@ const AddTeamMember = ({ open, onOpenChange, onTeamMemberAdded }) => {
                 value={formData.designation}
                 onChange={handleChange}
                 readOnly
-                className="mt-1"
+                className="mt-1 bg-gray-100 text-gray-700 cursor-not-allowed"
               />
             </div>
-
-            {/* Active Status */}
-            <div className="space-y-2">
-              <Label>Status</Label>
-              <Select
-                value={formData.active}
-                onValueChange={(value) => setFormData({ ...formData, active: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="true">active</SelectItem>
-                  <SelectItem value="false">inactive</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
           </div>
 
           {/* Buttons */}

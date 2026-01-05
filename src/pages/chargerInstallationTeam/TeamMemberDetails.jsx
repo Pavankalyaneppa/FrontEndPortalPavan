@@ -11,6 +11,8 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import BackButton from '@/users/BackButton';
 import { Badge } from "@/components/ui/badge";
 import { useDispatch, useSelector } from 'react-redux';
+import { ChevronDown, ChevronUp } from "lucide-react";
+
 import {
   Dialog,
   DialogContent,
@@ -36,6 +38,7 @@ import {
   assignTeamTask, 
   updateTeamTaskProgress,
   fetchAllEmployees,
+  editTeam
 } from '@/store/reducers/chargerInstallation/ChargerInstallationSlice';
 import { 
   fetchTasksByEmployee,
@@ -85,6 +88,15 @@ const TeamMemberDetails = () => {
   const [dropdownOpen, setDropdownOpen] = useState(null);
   const filterRef = useRef(null);
   
+  const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
+  const [employeeStatus, setEmployeeStatus] = useState("");
+
+  const handleBackToTasks = () => {
+  setViewingTaskNotes(false);
+  setSelectedTaskId(null);
+};
+
+
   const [taskFilter, setTaskFilter] = useState("PENDING");
   const [formErrors, setFormErrors] = useState({});
   const [touched, setTouched] = useState({
@@ -113,6 +125,72 @@ const TeamMemberDetails = () => {
     description: '',
     employeeId: id
   });
+
+
+const normalizeStatus = (status) =>
+  (status || "").toString().trim().toUpperCase();
+
+const getStatusClasses = (status) => {
+  switch (normalizeStatus(status)) {
+    case "ACTIVE":
+      return "bg-green-100 text-green-800 border-green-400";
+    case "INACTIVE":
+      return "bg-red-100 text-red-800 border-red-400";
+    default:
+      return "bg-gray-100 text-gray-800 border-gray-400";
+  }
+};
+useEffect(() => {
+  if (currentTeam) {
+    setEmployeeStatus(currentTeam.active ? "ACTIVE" : "INACTIVE");
+  }
+}, [currentTeam]);
+
+const handleEmployeeStatusChange = async (newStatus) => {
+  try {
+    const payload = {
+      username: currentTeam.username || '',
+      mobileNumber: currentTeam.mobileNumber || '',
+      email: currentTeam.email || '',
+      location: currentTeam.location || '',
+      designation: currentTeam.designation || 'charger installer',
+      isActive: newStatus === "ACTIVE",  // boolean
+      joiningDate: currentTeam.joiningDate 
+        ? new Date(Array.isArray(currentTeam.joiningDate) ? currentTeam.joiningDate.join('-') : currentTeam.joiningDate)
+        : null,
+    };
+    console.log("Payload sent to update team:", payload);
+await dispatch(
+      editTeam({
+        id,
+        teamData: {
+          ...currentTeam,
+          active: newStatus === "ACTIVE",
+        },
+      })
+    ).unwrap();
+
+    setEmployeeStatus(newStatus);
+    setStatusDropdownOpen(false);
+
+    toast({
+      title: "Success",
+      description: `Status updated to ${newStatus}`,
+      variant: "default",
+    });
+
+    dispatch(fetchEmployeeById(id));
+  } catch (error) {
+    console.error("Failed to update status:", error);
+    toast({
+      title: "Error",
+      description: error.message || "Failed to update status",
+      variant: "destructive",
+    });
+  }
+};
+
+
 
   useEffect(() => {
     dispatch(fetchAllEmployees());
@@ -281,6 +359,32 @@ const TeamMemberDetails = () => {
     }
   };
 
+const getTaskStatusClasses = (status) => {
+  switch ((status || "").toUpperCase()) {
+    case "PENDING":
+      return "bg-yellow-100 text-yellow-800 border-yellow-400";
+    case "IN_PROGRESS":
+      return "bg-blue-100 text-blue-800 border-blue-400";
+    case "COMPLETED":
+      return "bg-green-100 text-green-800 border-green-400";
+    default:
+      return "bg-gray-100 text-gray-800 border-gray-400";
+  }
+};
+
+const getPriorityClasses = (priority) => {
+  switch ((priority || "").toUpperCase()) {
+    case "HIGH":
+      return "bg-red-100 text-red-800 border-red-400";
+    case "MEDIUM":
+      return "bg-orange-100 text-orange-800 border-orange-400";
+    case "LOW":
+      return "bg-green-100 text-green-800 border-green-400";
+    default:
+      return "bg-gray-100 text-gray-800 border-gray-400";
+  }
+};
+
   const handleStatusChange = async (taskId, newStatus) => {
     try {
       const result = await dispatch(updateTaskStatus({ taskId, status: newStatus })).unwrap();
@@ -372,21 +476,55 @@ const TeamMemberDetails = () => {
       </div>
     );
   }
-
   return (
     <div className="container mx-auto p-4">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Team Member Details</h1>
-        <div className="flex gap-2">
-          <BackButton />
-          <Button 
-            variant="outline" 
-            onClick={() => navigate(`/charger-installation-team/edit/${id}`)}
-          >
-            Edit
-          </Button>
+  <div className="flex items-center justify-between mb-6">
+  <div className="flex items-center gap-3 flex-1 min-w-0">
+    <h1 className="text-2xl font-bold truncate min-w-0">
+      {currentTeam.username}
+    </h1>
+
+    <div className="relative flex-shrink-0">
+      <button
+        className={`flex items-center px-4 py-1.5 border rounded-full transition whitespace-nowrap
+          ${getStatusClasses(employeeStatus)}`}
+        onClick={() => setStatusDropdownOpen(prev => !prev)}
+      >
+        {normalizeStatus(employeeStatus)}
+        {statusDropdownOpen ? (
+          <ChevronUp className="ml-2 h-4 w-4 flex-shrink-0" />
+        ) : (
+          <ChevronDown className="ml-2 h-4 w-4 flex-shrink-0" />
+        )}
+      </button>
+
+      {statusDropdownOpen && (
+        <div className="absolute mt-2 w-44 bg-white shadow-lg rounded-md z-20 p-3">
+          <p className="font-medium text-sm mb-2 text-gray-700">
+            Select Status
+          </p>
+
+          {["ACTIVE", "INACTIVE"].map(option => (
+            <button
+              key={option}
+              onClick={() => handleEmployeeStatusChange(option)}
+              className={`w-full text-left px-4 py-1.5 mb-1 rounded-full border transition ${
+                option === "ACTIVE"
+                  ? "bg-green-100 text-green-800 border-green-400"
+                  : "bg-red-100 text-red-800 border-red-400"
+              }`}
+            >
+              {option}
+            </button>
+          ))}
         </div>
-      </div>
+      )}
+    </div>
+  </div>
+  <div className="flex-shrink-0 ml-4">
+    <BackButton />
+  </div>
+</div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-2 mb-4">
@@ -395,6 +533,13 @@ const TeamMemberDetails = () => {
         </TabsList>
 
         <TabsContent value="basic">
+          <div className="flex justify-end mb-3">
+          <Button 
+            onClick={() => navigate(`/charger-installation-team/edit/${id}`)}
+          >
+            Edit
+          </Button>
+          </div>
           <Card>
             <CardHeader>
               <CardTitle>Personal Information</CardTitle>
@@ -455,31 +600,40 @@ const TeamMemberDetails = () => {
         </TabsContent>
         <TabsContent value="tasks">
           {viewingTaskNotes ? (
-            <div>
-              <NotesSection 
-                taskId={parseInt(selectedTaskId)} 
-                currentUser={currentUser}
-                employeeId={id}
-                isTechnicianPortal={false}
-                availableEmployees={availableEmployees} 
-                employeesLoading={employeesLoading}
-              />
-            </div>
-          ) : (
+  <div className="space-y-4">
+    {/* Back button */}
+    <NotesSection 
+      taskId={parseInt(selectedTaskId)} 
+      currentUser={currentUser}
+      employeeId={id}
+      isTechnicianPortal={false}
+      availableEmployees={availableEmployees} 
+      employeesLoading={employeesLoading}
+      onBack={handleBackToTasks}
+    />
+  </div>
+) : (
             <>
-              <div className='flex justify-between items-center mb-6'>
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-3">
-                  </div>
-                </div>
-               <Button 
-                  variant="outline" 
-                  onClick={() => setIsAssignTaskDialogOpen(true)}
-                >
+          <div className="flex justify-between items-center mb-6">
+                {/* LEFT: Filter */}
+                <Select value={taskFilter} onValueChange={setTaskFilter}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">All</SelectItem>
+                    <SelectItem value="PENDING">Pending</SelectItem>
+                    <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+                    <SelectItem value="COMPLETED">Completed</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {/* RIGHT: Assign button */}
+                <Button onClick={() => setIsAssignTaskDialogOpen(true)}>
                   Assign New Task
                 </Button>
               </div>
-              
+           
                 {/* Assign Task Dialog */}
                 <Dialog open={isAssignTaskDialogOpen} onOpenChange={setIsAssignTaskDialogOpen}>
                   <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
@@ -572,118 +726,67 @@ const TeamMemberDetails = () => {
                   </form>
                 </DialogContent>
               </Dialog>
+              <div className="rounded-md border mb-6">
+  <Table>
+    <TableHeader>
+      <TableRow>
+        <TableHead>Task ID</TableHead>
+        <TableHead>Task Name</TableHead>
+        <TableHead>Description</TableHead>
+        <TableHead>Priority</TableHead>
+        <TableHead>Status</TableHead>
+        <TableHead>Actions</TableHead>
+      </TableRow>
+    </TableHeader>
 
-              <div className="flex justify-left mb-4">
-                <Select value={taskFilter} onValueChange={setTaskFilter}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ALL">All</SelectItem>
-                    <SelectItem value="PENDING">Pending</SelectItem>
-                    <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-                    <SelectItem value="COMPLETED">Completed</SelectItem>   
-                  </SelectContent>
-                </Select>
-              </div>
+    <TableBody>
+      {filteredTasks.length > 0 ? (
+        filteredTasks.map((task) => (
+          <TableRow key={task.id}>
+            <TableCell>{task.id}</TableCell>
+            <TableCell className="font-medium">
+              {task.taskName}
+            </TableCell>
+            <TableCell>{task.description}</TableCell>
+           <TableCell>
+            <span
+              className={`px-3 py-1 rounded-full text-xs font-medium border whitespace-nowrap
+                ${getPriorityClasses(task.priority)}`}
+            >
+              {task.priority}
+      </span>
+    </TableCell>
 
-              <Card className="mb-6">
-                <CardContent>
-                  {tasksLoading ? (
-                    <div className="text-center py-4">Loading tasks...</div>
-                  ) : tasksError ? (
-                    <div className="text-center py-4 text-red-500">
-                      Error loading tasks: {tasksError}
-                      <div className="mt-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => dispatch(fetchTasksByEmployee(id))}
-                        >
-                          Retry
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Task ID</TableHead>
-                          <TableHead>Task Name</TableHead>
-                          <TableHead>Description</TableHead>
-                          <TableHead>Priority</TableHead>
-                          <TableHead>Status</TableHead>
+    <TableCell>
+      <span
+        className={`px-3 py-1 rounded-full text-xs font-medium border whitespace-nowrap
+          ${getTaskStatusClasses(task.status)}`}
+      >
+        {task.status?.replace("_", " ")}
+      </span>
+</TableCell>
+            <TableCell>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => handleViewTaskNotes(task.id)}
+              >
+                <InfoIcon className="h-4 w-4" />
+              </Button>
+            </TableCell>
+          </TableRow>
+        ))
+      ) : (
+        <TableRow>
+          <TableCell colSpan={6} className="text-center">
+            No tasks found.
+          </TableCell>
+        </TableRow>
+      )}
+    </TableBody>
+  </Table>
+</div>
 
-                          {/* <TableHead>Duration</TableHead> */}
-                          
-                          <TableHead>Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredTasks.length > 0 ? (
-                          filteredTasks.map((task) => (
-                            <TableRow key={task.id}>
-                              <TableCell>{task.id}</TableCell>
-                              <TableCell className="font-medium">
-                                {task.taskName || "N/A"}
-                              </TableCell>
-                              <TableCell>{task.description || "N/A"}</TableCell>
-                              <TableCell>
-                                <span
-                                  className={`px-3 py-1 rounded-full text-xs font-medium ${
-                                    task.priority === "high" || task.priority === "High"
-                                      ? "bg-red-100 text-red-800"
-                                      : task.priority === "medium" || task.priority === "Medium"
-                                      ? "bg-yellow-100 text-yellow-800"
-                                      : task.priority === "low" || task.priority === "Low"
-                                      ? "bg-green-100 text-green-800"
-                                      : "bg-gray-100 text-gray-800"
-                                  }`}
-                                >
-                                  {task.priority || "N/A"}
-                                </span>
-                              </TableCell>
-                              <TableCell>
-                                <div className="relative" ref={filterRef}>
-                                  <button
-                                    className={`flex items-center px-4 py-1.5 border rounded-full transition ${
-                                      task.status === "COMPLETED"
-                                        ? "bg-green-100 text-green-800 border-green-400"
-                                        : task.status === "PENDING"
-                                        ? "bg-yellow-100 text-yellow-800 border-yellow-400"
-                                        : task.status === "INPROGRESS" || task.status === "IN_PROGRESS"
-                                        ? "bg-blue-100 text-blue-800 border-blue-400"
-                                        : "bg-gray-100 text-gray-800 border-gray-400"
-                                    }`}
-                                  >
-                                    {task.status}
-                                  </button>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleViewTaskNotes(task.id)}
-                                  className="flex items-center gap-1"
-                                >
-                                  <InfoIcon className="h-4 w-4" />
-                                </Button>
-                              </TableCell>
-                            </TableRow>
-                          ))
-                        ) : (
-                          <TableRow>
-                            <TableCell colSpan="7" className="text-center">
-                              No {taskFilter === "ALL" ? "" : taskFilter.toLowerCase()} tasks found.
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </TableBody>
-                    </Table>
-                  )}
-                </CardContent>
-              </Card>
             </>
           )}
         </TabsContent>

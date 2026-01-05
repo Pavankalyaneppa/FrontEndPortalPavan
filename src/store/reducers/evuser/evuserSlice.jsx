@@ -8,7 +8,24 @@ const initialState = {
   walletHistory: [],
   walletHistoryStatus: "idle",
   walletHistoryError: null,
+  evBrands: [],
+  evBrandStatus: "idle",
+  evBrandError: null,
 };
+
+export const fetchEVBrand = createAsyncThunk(
+  "evuser/fetchEVBrand",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await AxiosServices.getEVBrand();
+      return response;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data || error.message || "Failed to fetch EV brands"
+      );
+    }
+  }
+);
 
 export const fetchWalletDetails = createAsyncThunk(
   "evuser/fetchWalletDetails",
@@ -69,6 +86,20 @@ const evuserSlice = createSlice({
       .addCase(fetchWalletTransaction.rejected, (state, action) => {
         state.walletHistoryStatus = "failed";
         state.walletHistoryError = action.payload;
+      });
+
+    builder
+      .addCase(fetchEVBrand.pending, (state) => {
+        state.evBrandStatus = "loading";
+        state.evBrandError = null;
+      })
+      .addCase(fetchEVBrand.fulfilled, (state, action) => {
+        state.evBrandStatus = "succeeded";
+        state.evBrands = action.payload?.data?.data || [];
+      })
+      .addCase(fetchEVBrand.rejected, (state, action) => {
+        state.evBrandStatus = "failed";
+        state.evBrandError = action.payload;
       });
   },
 });

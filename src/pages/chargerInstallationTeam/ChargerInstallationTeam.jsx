@@ -103,7 +103,7 @@ export default function ChargerInstallationTeam() {
             </Button>
           ) : (
             <>
-              <Button variant="outline" onClick={handleAllTasksClick}>
+              <Button onClick={handleAllTasksClick}>
                 All Tasks
               </Button>
                <Button onClick={() => setIsAddDialogOpen(true)}>

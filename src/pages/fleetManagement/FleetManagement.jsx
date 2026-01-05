@@ -122,10 +122,10 @@ const handleFleetAdded = () => {
     <h1 className="text-2xl font-bold">Fleet Management</h1>
 
     <div className="flex gap-3">
-      <Button onClick={() => navigate('/fleet/revenue')}>
+      {/* <Button onClick={() => navigate('/fleet/revenue')}>
         <TrendingUp className="h-4 w-4 mr-2" />
         View Revenue
-      </Button>
+      </Button> */}
 
       <Button onClick={() => setAddFleetOpen(true)}>
         Add Fleet

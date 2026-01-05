@@ -31,7 +31,10 @@ const itemsPerPage = 10;
 const totalPages = Math.ceil(stationList.length / itemsPerPage);
 const startIndex = (currentPage - 1) * itemsPerPage;
 const endIndex = startIndex + itemsPerPage;
- 
+//added for station status dropdown..
+const [openStationDropdown, setOpenStationDropdown] = useState(null);
+const [stationStatusMap, setStationStatusMap] = useState({});
+
 const handlePageChange = (page) => {
   if (page >= 1 && page <= totalPages) {
     setCurrentPage(page);
@@ -42,38 +45,86 @@ const [dropdownOpen, setDropdownOpen] = useState(false);
 
 const handleStatusChange = async (newStatus) => {
   try {
-    setStatus(newStatus);    
-    const response= await AxiosServices.updateSiteStatus(id, newStatus);
-    if(response.status==200)
-    {
-    toast({
-      title: 'Success',
-      description: 'Status updated successfully',
-      variant: 'default',
-    });
-    }
-    else{
+    setStatus(newStatus);
+    const response = await AxiosServices.updateSiteStatus(id, newStatus);
+    if (response.status === 200) {
+      const updatePromises = stationList.map((station) =>
+        AxiosServices.updateStationStatus(station.id, newStatus)
+      );
+      await Promise.all(updatePromises);
       toast({
-      title: 'failed',
-      description: 'Status not updated successfully',
-      variant: 'default',
-    });
+        title: 'Success',
+        description: 'Site & all station statuses updated successfully',
+      });
+      dispatch(
+        fetchStations(id, {
+          page: currentPage - 1,
+          size: itemsPerPage,
+        })
+      );
+    } else {
+      throw new Error('Status update failed');
     }
-    dispatch(fetchStations(id, { 
-      page: currentPage - 1, 
-      size: itemsPerPage 
-    }));
-
   } catch (error) {
     toast({
       title: 'Error',
-      description: error.toString(),
+      description: error?.message || 'Failed to update site status',
       variant: 'destructive',
     });
   } finally {
     setDropdownOpen(false);
   }
 };
+
+
+const normalizeStatus = (status) =>
+  (status || '').toString().trim().toUpperCase();
+
+const getStatusClasses = (status) => {
+  switch (normalizeStatus(status)) {
+    case 'ACTIVE':
+      return 'bg-green-100 text-green-800 border-green-400';
+    case 'MAINTENANCE':
+      return 'bg-yellow-100 text-yellow-800 border-yellow-400';
+    case 'INACTIVE':
+      return 'bg-red-100 text-red-800 border-red-400';
+    default:
+      return 'bg-gray-100 text-gray-800 border-gray-400';
+  }
+};
+
+
+//added for station status dropdown..
+const handleStationStatusChange = async (stationId, newStatus) => { 
+  try {
+    setStationStatusMap((prev) => ({
+      ...prev,
+      [stationId]: newStatus,
+    }));
+
+    await AxiosServices.updateStationStatus(stationId, newStatus);
+    toast({
+      title: 'Success',
+      description: 'Station status updated successfully',
+    });
+
+    dispatch(
+      fetchStations(id, {
+        page: currentPage - 1,
+        size: itemsPerPage,
+      })
+    );
+  } catch (error) {
+    toast({
+      title: 'Error',
+      description: error?.message || 'Failed to update station status',
+      variant: 'destructive',
+    });
+  } finally {
+    setOpenStationDropdown(null);
+  }
+};
+
   useEffect(() => {
     if (currentSite) {
       setStatus(currentSite?.siteStatus);
@@ -86,6 +137,18 @@ const handleStatusChange = async (newStatus) => {
     dispatch(fetchStations(id, { page:0, size:10 }));
   }
 }, [dispatch, id]);
+
+//added for station status dropdown..
+useEffect(() => {
+  if (stationList?.length) {
+    const map = {};
+    stationList.forEach((s) => {
+      map[s.id] = s.stationStatus;
+    });
+    setStationStatusMap(map);
+  }
+}, [stationList]);
+
 
   if (siteDetailsStatus === 'loading') {
     return <Loading />;
@@ -114,25 +177,19 @@ const handleStatusChange = async (newStatus) => {
       <div className="flex items-center gap-4 mb-6">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{currentSite.siteName}</h1>
           <div className="relative">
-            <button
-              className={`flex items-center px-4 py-1.5 border rounded-full transition ${
-                status === 'ACTIVE'
-                  ? 'bg-green-100 text-green-800 border-green-400'
-                  : status === 'MAINTENANCE'
-                  ? 'bg-yellow-100 text-yellow-800 border-yellow-400'
-                  : status === 'INACTIVE'
-                  ? 'bg-red-100 text-red-800 border-red-400'
-                  : 'bg-gray-100 text-gray-800 border-gray-400'
-              }`}
+        <button
+              className={`flex items-center px-4 py-1.5 border rounded-full transition 
+                ${getStatusClasses(status)}`}
               onClick={() => setDropdownOpen((prev) => !prev)}
             >
-              {status}
+              {normalizeStatus(status)}
               {dropdownOpen ? (
                 <ChevronUp className="ml-2 h-4 w-4" />
               ) : (
                 <ChevronDown className="ml-2 h-4 w-4" />
               )}
             </button>
+
             {dropdownOpen && (
               <div className="absolute mt-2 w-48 bg-white dark:bg-gray-800 shadow-lg rounded-md z-10 p-3">
                 <p className="font-medium text-sm mb-2 text-gray-700 dark:text-gray-300">
@@ -289,7 +346,7 @@ const handleStatusChange = async (newStatus) => {
                     <TableHead>Station Name</TableHead>
                     <TableHead>Type</TableHead>
                     <TableHead>Port Quantity</TableHead>
-                     <TableHead>Voltage</TableHead>
+                     <TableHead>Capacity</TableHead>
                     <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -301,13 +358,51 @@ const handleStatusChange = async (newStatus) => {
                       <TableCell>{station.model || '-'}</TableCell>
                       <TableCell>{station.number_of_ports || '-'}</TableCell>
                        <TableCell>{station.max_output_power_kW+" Kw/h" || '-'}</TableCell>
-                      <TableCell>
-                        {station.stationStatus ? (
-                          <span className="text-green-600">Active</span>
-                        ) : (
-                          <span className="text-red-600">Inactive</span>
+                     <TableCell onClick={(e) => e.stopPropagation()}>
+                      <div className="relative">
+                       <button
+                            onClick={() =>
+                              setOpenStationDropdown(
+                                openStationDropdown === station.id ? null : station.id
+                              )
+                            }
+                            className={`flex items-center px-3 py-1.5 border rounded-full transition 
+                              ${getStatusClasses(stationStatusMap[station.id])}`}
+                          >
+                            {normalizeStatus(stationStatusMap[station.id])}
+                            {openStationDropdown === station.id ? (
+                              <ChevronUp className="ml-2 h-4 w-4" />
+                            ) : (
+                              <ChevronDown className="ml-2 h-4 w-4" />
+                            )}
+                          </button>
+                        {openStationDropdown === station.id && (
+                          <div className="absolute mt-2 w-44 bg-white shadow-lg rounded-md z-20 p-3">
+                            <p className="font-medium text-sm mb-2 text-gray-700">
+                              Select Status
+                            </p>
+
+                            {['ACTIVE', 'MAINTENANCE', 'INACTIVE'].map((option) => (
+                              <button
+                                key={option}
+                                onClick={() =>
+                                  handleStationStatusChange(station.id, option)
+                                }
+                                className={`w-full text-left px-4 py-1.5 mb-1 rounded-full border transition ${
+                                  option === 'ACTIVE'
+                                    ? 'bg-green-100 text-green-800 border-green-400'
+                                    : option === 'MAINTENANCE'
+                                    ? 'bg-yellow-100 text-yellow-800 border-yellow-400'
+                                    : 'bg-red-100 text-red-800 border-red-400'
+                                }`}
+                              >
+                                {option}
+                              </button>
+                            ))}
+                          </div>
                         )}
-                      </TableCell>
+                      </div>
+                    </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -349,3 +444,4 @@ const handleStatusChange = async (newStatus) => {
     </div>
   );
 }
+//single site..

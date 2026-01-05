@@ -16,6 +16,8 @@ function Registration() {
     const dispatch = useDispatch();
     const { registerStatus, registerError, auth } = useSelector(state => state.authentication);
     const { countries, status: countriesStatus, error: countriesError } = useSelector(state => state.countries);
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     const defaultForm = {
         fullname: '',
@@ -227,26 +229,48 @@ function Registration() {
                                 {errors.mobileNumber && <p className="text-red-500 text-xs">{errors.mobileNumber}</p>}
                             </div>
                 {/* Role selection removed as requested */}
-                            <div className="space-y-2">
-                                <Input
-                                    id="password"
-                                    type="password"
-                                    placeholder="Password"
-                                    value={formData.password}
-                                    onChange={handleChange}
-                                />
-                                {errors.password && <p className="text-red-500 text-xs">{errors.password}</p>}
+                          <div className="space-y-2 relative">
+                            <Input
+                                id="password"
+                                type={showPassword ? "text" : "password"}
+                                placeholder="Password"
+                                value={formData.password}
+                                onChange={handleChange}
+                            />
+
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute right-3 top-3 text-xs text-blue-600"
+                            >
+                                {showPassword ? "Hide" : "Show"}
+                            </button>
+
+                            {errors.password && <p className="text-red-500 text-xs">{errors.password}</p>}
                             </div>
-                            <div className="space-y-2">
-                                <Input
-                                    id="confirmPassword"
-                                    type="password"
-                                    placeholder="Confirm Password"
-                                    value={formData.confirmPassword}
-                                    onChange={handleChange}
-                                />
-                                {errors.confirmPassword && <p className="text-red-500 text-xs">{errors.confirmPassword}</p>}
+
+                      <div className="space-y-2 relative">
+                            <Input
+                                id="confirmPassword"
+                                type={showConfirmPassword ? "text" : "password"}
+                                placeholder="Confirm Password"
+                                value={formData.confirmPassword}
+                                onChange={handleChange}
+                            />
+
+                            <button
+                                type="button"
+                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                className="absolute right-3 top-3 text-xs text-blue-600"
+                            >
+                                {/* {showConfirmPassword ? "Hide" : "Show"} */}
+                            </button>
+
+                            {errors.confirmPassword && (
+                                <p className="text-red-500 text-xs">{errors.confirmPassword}</p>
+                            )}
                             </div>
+
                             <div className="space-y-2">
                                 <Input
                                     id="address"
@@ -302,8 +326,10 @@ function Registration() {
                                 </div>
                             </div>
                             <p className="text-xs text-gray-500">
-                                By registering you agree to the {CompanyName}{" "}
-                                <a href="#" className="text-blue-600 hover:underline">Terms of Use</a>
+                                 By logging in you agree to the {CompanyName}{" "}
+                                <Link to="/terms" className="text-blue-600 hover:underline">
+                                    Terms of Use
+                                </Link>
                             </p>
                             <Button className="w-full bg-green-500 hover:bg-green-600" type="submit">
                                 {auth.loading ? (

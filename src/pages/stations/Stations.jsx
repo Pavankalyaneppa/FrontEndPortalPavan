@@ -11,6 +11,17 @@ import { flexRender, getCoreRowModel, useReactTable, getSortedRowModel, getFilte
 import Loading from '@/users/Loading';
 import { toast } from '@/components/ui/use-toast';
 import AxiosServices from '@/services/AxiosServices';
+import {FileText } from 'lucide-react';
+
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Filter } from 'lucide-react'; 
 
 const useClickOutside = (ref, dropdownRef, callback) => {
       useEffect(() => {
@@ -52,6 +63,13 @@ export default function Stations() {
   const pageSize = 10;
   const totalPages = Math.max(1, Math.ceil((totalElements || 0) / pageSize));
   const { user } = useSelector(state => state.authentication);
+  const [isLogsDialogOpen, setIsLogsDialogOpen] = useState(false);
+  const [selectedStationForLogs, setSelectedStationForLogs] = useState(null);
+  const [logFiles, setLogFiles] = useState([]);
+  const [selectedLogFile, setSelectedLogFile] = useState(null);
+  const [logsContent, setLogsContent] = useState('');
+  const [loadingLogs, setLoadingLogs] = useState(false);
+  const [searchFilter, setSearchFilter] = useState('');
     console.log("user",user.orgId);
 useClickOutside(filterRef, dropdownRef, () => {
   setIsFilterOpen(false);
@@ -100,7 +118,9 @@ useClickOutside(filterRef, dropdownRef, () => {
         selectedFilters.status,
         selectedFilters.currentType,
         page,
-        pageSize
+        pageSize,
+        user.orgId,  
+        user.roleId 
       )
     );
   } else {
@@ -111,6 +131,7 @@ useClickOutside(filterRef, dropdownRef, () => {
         sortBy: 'id',
         orderBy: 'desc',
         orgId: user.orgId,
+        roleId: user.roleId
       })
     );
   }
@@ -125,7 +146,7 @@ useEffect(() => {
   }, 400);
 
   return () => clearTimeout(delay);
-}, [globalFilter, currentPage]);
+}, [globalFilter, currentPage, user]);
   useEffect(() => {
     fetchData();
   }, [currentPage, selectedFilters]);
@@ -219,12 +240,18 @@ useEffect(() => {
       header: 'Actions',
       cell: ({ row }) => {
         const data = row.original;
-        return (
-          <>
-            <Button variant="ghost" size="icon" onClick={() => navigate(`/stations/${data.id}`)}>
-              <InfoIcon className="h-4 w-4 me-3" />
-            </Button>
-          </>
+       return (
+        <div className="flex gap-2">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => navigate(`/stations/${data.id}`)}
+            title="View Details"
+          >
+            <InfoIcon className="h-4 w-4" />
+          </Button>
+          
+        </div>
         );
       },
     },
@@ -279,12 +306,67 @@ useEffect(() => {
   );
 
   if (status === 'failed') return <div>Error: {error}</div>;
+// Add these functions before your return statement
 
+const fetchLogFiles = async (stationId) => {
+  try {
+    const response = await AxiosServices.getOcppLogFiles(stationId);
+    setLogFiles(response || []);
+    if (response && response.length > 0) {
+      setSelectedLogFile(response[0]);
+      fetchLogContent(stationId, response[0].name);
+    }
+  } catch (error) {
+    toast({ 
+      title: 'Error', 
+      description: 'Failed to load log files', 
+      variant: 'destructive' 
+    });
+  }
+};
+
+const fetchLogContent = async (stationId, filename, filter = '') => {
+  try {
+    setLoadingLogs(true);
+    const content = await AxiosServices.downloadOcppLog(stationId, filename, filter);
+    setLogsContent(content);
+  } catch (error) {
+    toast({ 
+      title: 'Error', 
+      description: 'Failed to load log content', 
+      variant: 'destructive' 
+    });
+  } finally {
+    setLoadingLogs(false);
+  }
+};
+
+const openLogsDialog = async (station) => {
+  setSelectedStationForLogs(station);
+  setIsLogsDialogOpen(true);
+  await fetchLogFiles(station.id);
+};
+
+
+
+const handleFileSelect = async (file) => {
+  setSelectedLogFile(file);
+  if (selectedStationForLogs) {
+    await fetchLogContent(selectedStationForLogs.id, file.name, searchFilter);
+  }
+};
+
+const applyLogSearch = () => {
+  if (selectedStationForLogs && selectedLogFile) {
+    fetchLogContent(selectedStationForLogs.id, selectedLogFile.name, searchFilter);
+  }
+};
   return (
     <div className="container mx-auto p-4">
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-bold">Stations</h1>
         <div className="flex gap-4 items-center">
+  
           <div className="relative" ref={filterRef}>  
           <button
             className="flex items-center px-4 py-2 bg-white border rounded-md shadow-sm"
@@ -520,6 +602,7 @@ useEffect(() => {
         >
           Next
         </Button>
+        
       </div>
       {isDeleteDialogOpen && (
         <DeleteOtp
@@ -532,6 +615,105 @@ useEffect(() => {
           role="station"
         />
       )}
-    </div>
+{isLogsDialogOpen && (
+  <Dialog open={isLogsDialogOpen} onOpenChange={setIsLogsDialogOpen}>
+    <DialogContent className="max-w-6xl max-h-[80vh]">
+      <DialogHeader>
+        <DialogTitle className="flex items-center gap-2">
+          <FileText className="h-5 w-5" />
+          Logs for Station: {selectedStationForLogs?.manufacturerId || selectedStationForLogs?.id}
+          {selectedStationForLogs?.site?.siteName && 
+            ` (${selectedStationForLogs.site.siteName})`}
+        </DialogTitle>
+      </DialogHeader>
+      
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {/* Left sidebar - File list */}
+        <div className="md:col-span-1">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold">Log Files</h3>
+            <Badge variant="secondary">{logFiles.length}</Badge>
+          </div>
+          
+          <ScrollArea className="h-[300px] border rounded">
+            {logFiles.length > 0 ? (
+              <div className="p-2 space-y-1">
+                {logFiles.map((file, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleFileSelect(file)}
+                    className={`w-full text-left p-2 rounded text-sm transition-colors ${
+                      selectedLogFile?.name === file.name
+                        ? 'bg-blue-50 border border-blue-200 text-blue-700'
+                        : 'hover:bg-gray-50'
+                    }`}
+                  >
+                    <div className="truncate">{file.name}</div>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center p-4 text-gray-500">
+                No log files available
+              </div>
+            )}
+          </ScrollArea>
+        </div>
+        
+        {/* Right panel - Log content */}
+        <div className="md:col-span-3 flex flex-col">
+          <div className="flex gap-2 mb-3">
+            <Input
+              placeholder="Search in logs..."
+              value={searchFilter}
+              onChange={(e) => setSearchFilter(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && applyLogSearch()}
+              className="flex-1"
+            />
+            <Button onClick={applyLogSearch}>
+              Search
+            </Button>
+          </div>
+          
+          <div className="border rounded flex-1 overflow-hidden">
+            <div className="bg-gray-50 px-4 py-2 border-b">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium">
+                  {selectedLogFile?.name || 'Select a log file'}
+                </span>
+                {loadingLogs && (
+                  <span className="text-sm text-blue-600">Loading...</span>
+                )}
+              </div>
+            </div>
+            
+            <ScrollArea className="h-[400px] p-4">
+              {logsContent ? (
+                <pre className="text-xs font-mono whitespace-pre-wrap">
+                  {logsContent}
+                </pre>
+              ) : (
+                <div className="text-center py-20 text-gray-500">
+                  {selectedLogFile ? 'No content to display' : 'Select a log file from the left panel'}
+                </div>
+              )}
+            </ScrollArea>
+          </div>
+          
+          {/* Footer with stats */}
+          {logsContent && !loadingLogs && (
+            <div className="mt-2 text-xs text-gray-500">
+              <div className="flex gap-4">
+                <span>Lines: {logsContent.split('\n').length}</span>
+                <span>Size: {(logsContent.length / 1024).toFixed(1)} KB</span>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </DialogContent>
+  </Dialog>
+)}      
+    </div> 
   );
 }

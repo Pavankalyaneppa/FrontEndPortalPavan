@@ -133,6 +133,19 @@ dispatch(fetchEmployeesByDesignation('Customer Support'));
     }
   };
 
+const getPriorityBadgeClass = (priority) => {
+  switch (priority) {
+    case 'high':
+      return 'bg-red-100 text-red-700 border border-red-300';
+    case 'medium':
+      return 'bg-yellow-100 text-yellow-700 border border-yellow-300';
+    case 'low':
+      return 'bg-green-100 text-green-700 border border-green-300';
+    default:
+      return '';
+  }
+};
+
   // Notes CRUD operations
   const addNote = async () => {
     if (!newNote.trim()) return;
@@ -310,11 +323,13 @@ dispatch(fetchEmployeesByDesignation('Customer Support'));
                 </div>
                 <div>
   <Label className="me-1">Current Priority</Label>
-  <Badge className="mt-1 capitalize">{issue.priority}</Badge>
+<Badge
+  className={`mt-1 capitalize ${getPriorityBadgeClass(issue.priority)}`}
+>
+  {issue.priority}
+</Badge>
 </div>
-
-
-                  {/* <div>
+                {/* <div>
                     <Label>Assigned To</Label>
                     <Input
                       value={assignedTo}

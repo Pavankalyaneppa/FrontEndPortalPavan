@@ -98,7 +98,6 @@ const Reports = () => {
         revenue: Number(item.revenue) || 0,
         siteName: item.siteName || 'N/A',
         stationName: item.stationName || 'N/A',
-        portName: item.portName || 'N/A',
         location: item.location || 'N/A'
       };
     });
@@ -200,7 +199,6 @@ const Reports = () => {
   const columns = [
     { accessorKey: "siteName", header: "Site Name" },
     { accessorKey: "stationName", header: "Station Name" },
-    { accessorKey: "portName", header: "Port Name" },
     { 
       accessorKey: "startTime", 
       header: "Start Time",
@@ -271,7 +269,6 @@ const Reports = () => {
     const tableData = transformedData.map((d) => ({
       Site: d.siteName,
       Station: d.stationName,
-      Port: d.portName,
       "Start Time": formatDateTime(d.startTime),
       "End Time": formatDateTime(d.endTime),
       "Consumption (kW)": d.kwConsumption.toFixed(2),
@@ -324,7 +321,6 @@ const Reports = () => {
       body: transformedData.map((d) => [
         d.siteName,
         d.stationName,
-        d.portName,
         formatDateTime(d.startTime),
         formatDateTime(d.endTime),
         d.kwConsumption.toFixed(2),
@@ -594,8 +590,7 @@ const Reports = () => {
                   )}
                 </TableBody>
               </Table>
-            </div>
-            
+            </div>            
             <div className="flex items-center justify-between py-4">
               <div className="space-x-2">
                 <Button 

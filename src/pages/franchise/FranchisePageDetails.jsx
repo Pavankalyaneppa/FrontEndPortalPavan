@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import {
     Table,
     TableBody,
@@ -20,7 +21,9 @@ import {
   validateMobileNumber,
   validateCity,
   validateZipCode,
-  validateEmail
+  validateEmail,
+  validateOrganizationName,
+  validateUsername
 } from '@/pages/validations/Validation';
 import Loading from '@/users/Loading';
 import BackButton from '@/users/BackButton';
@@ -45,6 +48,8 @@ const FranchisePageDetails = () => {
   const [editMode, setEditMode] = useState(false);
   const [passwordChangeEnabled, setPasswordChangeEnabled] = useState(false);
   const [formErrors, setFormErrors] = useState({});
+  const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
+  const [userStatus, setUserStatus] = useState('');
   
   const [editFormData, setEditFormData] = useState({
     orgName: "",
@@ -84,6 +89,12 @@ useEffect(() => {
     
       const cityError = validateCity(editFormData.city);
       if (cityError) errors.city = cityError;
+
+      const organizationNameError = validateOrganizationName(editFormData.orgName);
+      if(organizationNameError) errors.orgName = organizationNameError;
+
+      const usernameError = validateUsername(editFormData.username);
+      if(userNameError) errors.username = usernameError;
     
       setFormErrors(errors);
     }, [editFormData]);
@@ -91,7 +102,68 @@ useEffect(() => {
   const handlePageChange = (page) => {
     setCurrentPage(page);
   };
+const normalizeStatus = (status) =>
+  (status || '').toString().trim().toUpperCase();
 
+const getStatusClasses = (status) => {
+  switch (normalizeStatus(status)) {
+    case 'ACTIVE':
+      return 'bg-green-100 text-green-800 border-green-400';
+    case 'INACTIVE':
+      return 'bg-red-100 text-red-800 border-red-400';
+    default:
+      return 'bg-gray-100 text-gray-800 border-gray-400';
+  }
+};
+
+const handleUserStatusChange = async (newStatus) => {
+  const enabled = newStatus === 'ACTIVE';
+
+  try {
+    await AxiosServices.updateUserStatus(id, enabled);
+    setUserStatus(newStatus);
+    
+    setCurrentOwner(prev => ({
+      ...prev,
+      userDetails: {
+        ...prev.userDetails,
+        enabled,
+      }
+    }));
+
+    toast({
+      title: 'Success',
+      description: 'User status updated successfully',
+    });
+  } catch (error) {
+    toast({
+      title: 'Error',
+      description: error?.response?.data?.message || 'Failed to update status',
+      variant: 'destructive',
+    });
+  } finally {
+    setStatusDropdownOpen(false);
+  }
+};
+useEffect(() => {
+  const loadDetails = async () => {
+    try {
+      setLoading(true);
+      const details = await fetchOwnerDetails(id, orgId);
+      if (details) {
+        setCurrentOwner(details);
+        // Set initial status
+        setUserStatus(details.userDetails.enabled ? 'ACTIVE' : 'INACTIVE');
+      }
+      setLoading(false);
+    } catch (error) {
+      console.error("Failed to load owner details", error);
+      setLoading(false);
+    }
+  };
+
+  loadDetails();
+}, [id, orgId]);
   const handleSaveNote = () => {
     toast({
       title: "Note Saved",
@@ -155,7 +227,7 @@ useEffect(() => {
           title: "Success",
           description: "Franchise owner updated successfully!",
         });
-        
+        setUserStatus(editFormData.enabled ? 'ACTIVE' : 'INACTIVE');
         const updatedDetails = await fetchOwnerDetails(id, orgId);
         if (updatedDetails) {
           setCurrentOwner(updatedDetails);
@@ -179,6 +251,7 @@ useEffect(() => {
   const handleEditClick = () => {
     if (!currentOwner.userDetails) return;
     const address = currentOwner.userDetails.address?.[0] || {};
+    const enabled = userStatus === 'ACTIVE';
     setEditFormData({
       orgName: orgName || "",
       fullname: currentOwner.userDetails.fullname || "",
@@ -191,7 +264,7 @@ useEffect(() => {
       country: address.country || "",
       state: address.state || "",
       zipCode: address.zipCode || "",
-      enabled: currentOwner.userDetails.enabled || true,
+      enabled: enabled,
       password: "",
       confirmPassword: "",
       passwordChange: false
@@ -216,6 +289,13 @@ useEffect(() => {
 
     loadDetails();
   }, [id, orgId]);
+
+useEffect(() => {
+  if (currentOwner.userDetails) {
+    const status = currentOwner.userDetails.enabled ? 'ACTIVE' : 'INACTIVE';
+    setUserStatus(status);
+  }
+}, [currentOwner.userDetails]);
 
   if (loading) {
     return <div><Loading/></div>;
@@ -348,9 +428,11 @@ useEffect(() => {
                   id="edit-enabled" 
                   name="enabled" 
                   checked={editFormData.enabled}
-                  onCheckedChange={(checked) => 
-                    setEditFormData(prev => ({...prev, enabled: checked}))
-                  }
+                  onCheckedChange={(checked) => {
+                  const enabled = Boolean(checked);
+                  setEditFormData(prev => ({...prev, enabled}));
+                  setUserStatus(enabled ? 'ACTIVE' : 'INACTIVE');
+                }}
                 />
                 <Label htmlFor="edit-enabled">Enabled</Label>
               </div>
@@ -375,14 +457,49 @@ useEffect(() => {
       </div>
     );
   }
-
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
          <div className="flex justify-between items-center mb-6">
+        <div className="flex items-center gap-2">
         <div><h1 className="text-2xl font-bold">{orgName}</h1></div>
-        <StatusButton status={currentOwner.userDetails.enabled?"Active":"In Active"}/>
-        </div>
+<div className="relative">
+  <button
+    className={`flex items-center px-4 py-1.5 border rounded-full transition 
+      ${getStatusClasses(userStatus)}`}
+    onClick={() => setStatusDropdownOpen(prev => !prev)}
+  >
+    {normalizeStatus(userStatus)}
+    {statusDropdownOpen ? (
+      <ChevronUp className="ml-2 h-4 w-4" />
+    ) : (
+      <ChevronDown className="ml-2 h-4 w-4" />
+    )}
+  </button>
+
+  {statusDropdownOpen && (
+    <div className="absolute mt-2 w-44 bg-white shadow-lg rounded-md z-20 p-3">
+      <p className="font-medium text-sm mb-2 text-gray-700">
+        Select Status
+      </p>
+      {['ACTIVE', 'INACTIVE'].map((option) => (
+        <button
+          key={option}
+          onClick={() => handleUserStatusChange(option)}
+          className={`w-full text-left px-4 py-1.5 mb-1 rounded-full border transition ${
+            option === 'ACTIVE'
+              ? 'bg-green-100 text-green-800 border-green-400'
+              : 'bg-red-100 text-red-800 border-red-400'
+          }`}
+        >
+          {option}
+        </button>
+      ))}
+    </div>
+  )}
+</div>  
+      </div>
+      </div>
         <div className="flex gap-2">
           <BackButton />
         </div>

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from '@/components/ui/card';
 import { useDispatch, useSelector } from "react-redux";
 import { Input } from "@/components/ui/input";
-import { fetchWalletDetails, fetchWalletTransaction } from "@/store/reducers/evuser/evuserSlice";
+import { fetchWalletDetails, fetchWalletTransaction, fetchEVBrand } from "@/store/reducers/evuser/evuserSlice";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -37,7 +37,6 @@ import {
   validateModel,
   validateVIN,
   validateUsername,
-  validateVehicleType,
   validateRegistrationNo,
   validateForm as validateFormHelper,
   validateEditForm as validateEditFormHelper } from '@/pages/validations/Validation';
@@ -82,6 +81,10 @@ const EvUserPageDetails = () => {
  const [activeTab, setActiveTab] = useState("details"); 
  const [loadedTabs, setLoadedTabs] = useState(new Set(["details"])); 
 
+ const approvedRfidCount = Array.isArray(rfidRequests)
+  ? rfidRequests.filter(item => item?.rfId).length
+  : 0;
+
 const getPageNumbers = () => {
   const maxVisible = 5; 
 
@@ -114,7 +117,6 @@ const getPageNumbers = () => {
     vin:"",
     registrationNo:"",
     make:"",
-    vehicleType:"", 
   });
 
   useEffect(() => {
@@ -124,7 +126,7 @@ const getPageNumbers = () => {
     }
   }, [activeTab, id, dispatch, loadedTabs]);
 
-useEffect(() => {
+ useEffect(() => {
     if (activeTab === "transactions" && walletDetails?.id && !loadedTabs.has("transactions")) {
       dispatch(fetchWalletTransaction(walletDetails.id));
       setLoadedTabs(prev => new Set([...prev, "transactions"]));
@@ -161,12 +163,6 @@ useEffect(() => {
   const modelError = validateModel(editFormData.model);
   if (modelError) errors.model = modelError;
 
-  const vinError = validateVIN(editFormData.vin);
-  if (vinError) errors.vin = vinError;
-
-  const vehicleTypeError = validateVehicleType(editFormData.vehicleType);
-  if (vehicleTypeError) errors.vehicleType = vehicleTypeError;
-
   const registrationNoError = validateRegistrationNo(editFormData.registrationNo);
   if (registrationNoError) errors.registrationNo = registrationNoError;
 
@@ -181,8 +177,21 @@ useEffect(() => {
   model: "",
   year: "",
   make: "",
-  vehicleType: "",
 });
+
+const { evBrands, evBrandStatus } = useSelector(state => state.evuser);
+
+const selectedBrand = evBrands.find(
+  brand => brand.brandName === vehicleFormData.make
+);
+
+const availableModels = selectedBrand?.models || [];
+
+  useEffect(() => {
+  if (evBrandStatus === "idle") {
+    dispatch(fetchEVBrand());
+  }
+}, [dispatch, evBrandStatus]);
 
   useEffect(() => {
   const errors = {};
@@ -194,12 +203,6 @@ useEffect(() => {
 
   const modelError = validateModel(vehicleFormData.model);
   if (modelError) errors.model = modelError;
-
-  const vinError = validateVIN(vehicleFormData.vin);
-  if (vinError) errors.vin = vinError;
-
-  const vehicleTypeError = validateVehicleType(vehicleFormData.vehicleType);
-  if (vehicleTypeError) errors.vehicleType = vehicleTypeError;
 
   const registrationNoError = validateRegistrationNo(vehicleFormData.registrationNo);
   if (registrationNoError) errors.registrationNo = registrationNoError;
@@ -217,7 +220,7 @@ useEffect(() => {
 
 const [newRfid, setNewRfid] = useState({
   firstName: '',
-  lastName: '',
+  username: '',
   email: '',
   mobile: '',
   status: 'Pending',
@@ -258,7 +261,7 @@ const [newRfid, setNewRfid] = useState({
       fetchRfidRequests(id);
       setNewRfid({
         firstName:currentUser?.fullname ,
-        lastName: '',
+        username: currentUser.username,
         email: currentUser?.email ,
         mobile: currentUser?.mobileNumber ,
         status: 'Pending',
@@ -388,7 +391,6 @@ const handleInfoClick = (vehicle) => {
     model: vehicle.model || "",
     year: vehicle.year || "",
     make: vehicle.make || "",
-    vehicleType: vehicle.vehicleType || ""
   });
   
   setVechileId(vehicle.id); 
@@ -439,7 +441,6 @@ const handleInfoClick = (vehicle) => {
         break;
     }
   };
-// Only load user details on mount
   useEffect(() => {
     const loadDetails = async () => {      
       try {
@@ -449,7 +450,7 @@ const handleInfoClick = (vehicle) => {
           setCurrentUser(details);
           setNewRfid((prev) => ({
             ...prev,
-            firstName: details.fullname || '',
+            username: details.username || '',
             email: details.email || '',
             mobile: details.mobileNumber || '',
             userId: id,
@@ -524,8 +525,6 @@ const handleAddressPartsChange = (e) => {
       country: currentUser.address && currentUser.address.length > 0 ? currentUser.address[0].country : "",
       state: currentUser.address && currentUser.address.length > 0 ? currentUser.address[0].state : "",
       zipCode: currentUser.address && currentUser.address.length > 0 ? currentUser.address[0].zipCode : "",
-      // password: "",
-      // confirmPassword: ""
     });
 
     setEditMode(true);
@@ -541,22 +540,18 @@ const handleAddressPartsChange = (e) => {
 const handleAddVehicle = async (e) => {
   e.preventDefault();
 
-  // Validate all fields using your validation functions
   const newErrors = {
     connectorType: validateConnectorType(vehicleFormData.connectorType),
     model: validateModel(vehicleFormData.model),
-    vin: validateVIN(vehicleFormData.vin),
     registrationNo: validateRegistrationNo(vehicleFormData.registrationNo),
     make: validateMake(vehicleFormData.make),
-    vehicleType: validateVehicleType(vehicleFormData.vehicleType),
     year: vehicleFormData.year ? "" : "Year is required" // Basic required check for year
   };
 
-  // Check if any errors exist
-
-  // Update the errors state
   setVehicleFormErrors(newErrors);
     const hasErrors = Object.values(newErrors).some(error => error !== "");
+    console.log("🚨 Vehicle Validation Errors:", newErrors);
+
 
   if (hasErrors) {
     toast({
@@ -568,8 +563,7 @@ const handleAddVehicle = async (e) => {
   }
 
   try {
-    setIsSubmitting(true);
-    
+    setIsSubmitting(true);    
     const response = await AxiosServices.addVehicle({
       ...vehicleFormData,
       userId: id
@@ -583,7 +577,6 @@ const handleAddVehicle = async (e) => {
       setIsAddVehicleDialogOpen(false);
       fetchVehicles(id);
       
-      // Reset form
       setVehicleFormData({
         connectorType: "",
         description: "",
@@ -592,7 +585,6 @@ const handleAddVehicle = async (e) => {
         model: "",
         year: "",
         make: "",
-        vehicleType: ""
       });
     }
   } catch (error) {
@@ -609,11 +601,6 @@ const handleAddVehicle = async (e) => {
 const handleUpdateVehicle = async (e) => {
   e.preventDefault();
 
-  console.log("🔍 === VEHICLE UPDATE DEBUG START ===");
-  console.log("1. Vehicle ID to update:", vechileId);
-  console.log("2. Vehicle form data:", vehicleFormData);
-  console.log("3. User ID:", id);
-
   if (!vechileId) {
     console.error("❌ CRITICAL: Vehicle ID is null/undefined!");
     toast({
@@ -628,10 +615,8 @@ const handleUpdateVehicle = async (e) => {
   const newErrors = {
     connectorType: validateConnectorType(vehicleFormData.connectorType),
     model: validateModel(vehicleFormData.model),
-    vin: validateVIN(vehicleFormData.vin),
     registrationNo: validateRegistrationNo(vehicleFormData.registrationNo),
     make: validateMake(vehicleFormData.make),
-    vehicleType: validateVehicleType(vehicleFormData.vehicleType),
     year: vehicleFormData.year ? "" : "Year is required"
   };
 
@@ -650,7 +635,6 @@ const handleUpdateVehicle = async (e) => {
   try {
     setIsSubmitting(true);
     
-    // Prepare update data
     const updateData = {
       vin: vehicleFormData.vin || "",
       year: vehicleFormData.year || "",
@@ -658,31 +642,19 @@ const handleUpdateVehicle = async (e) => {
       model: vehicleFormData.model || "",
       description: vehicleFormData.description || "",
       connectorType: vehicleFormData.connectorType || "",
-      vehicleType: vehicleFormData.vehicleType || "",
       registrationNo: vehicleFormData.registrationNo || ""
     };
-
-    console.log("4. Data being sent:", updateData);
-    console.log("5. Full URL will be:", `/api/mobile/updateEV/${vechileId}`);
-    
-    // Make the API call
-    console.log("6. Making API call...");
     const response = await AxiosServices.updateVehicle(vechileId, updateData);
     
-    console.log("7. API Response received:", response);
-    console.log("8. Response data:", response.data);
-    
     if (response.data.success) {
-      console.log("✅ Vehicle updated successfully!");
       toast({
         title: "Success",
         description: response.data.message || "Vehicle updated successfully",
       });
       
       setIsEditVehicleDialogOpen(false);
-      fetchVehicles(id); // Refresh the list
+      fetchVehicles(id);
       
-      // Reset form
       setVehicleFormData({
         connectorType: "",
         description: "",
@@ -691,20 +663,13 @@ const handleUpdateVehicle = async (e) => {
         model: "",
         year: "",
         make: "",
-        vehicleType: ""
       });
       setVechileId(null);
     } else {
       console.warn("⚠️ API returned success:false");
       throw new Error(response.data.message || 'Update failed');
     }
-  } catch (error) {
-    console.error("❌ UPDATE FAILED:");
-    console.error("Error object:", error);
-    console.error("Error response:", error.response);
-    console.error("Error message:", error.message);
-    console.error("Error config:", error.config);
-    
+  } catch (error) {    
     let errorMessage = 'Vehicle update failed';
     
     if (error.response) {
@@ -780,6 +745,7 @@ const handleUpdateUser = async (e) => {
       zipCode: editFormData.zipCode, // Individual zipCode field
       passwordchange: false // Set to true if password is being changed
     };
+
     const response = await AxiosServices.updateUser(id, updateData);
     console.log("Update response:", response);
 
@@ -949,7 +915,7 @@ const handleUpdateUser = async (e) => {
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
          <div className="flex justify-between items-center mb-6">
-                <div><h1 className="text-2xl font-bold">{currentUser.fullname}</h1></div>
+                <div><h1 className="text-2xl font-bold">{currentUser.username}</h1></div>
                 <StatusButton status={currentUser.enabled?"Active":"In Active"}/>
                 </div>
         <div className="flex gap-2">
@@ -1030,7 +996,6 @@ const handleUpdateUser = async (e) => {
             )}
           </div>
         </TabsContent>
-
             <TabsContent value="vehicles">
                       <div className="bg-white rounded-lg shadow p-6 mt-4">
                         <div className="flex items-center justify-between mb-4">
@@ -1048,8 +1013,8 @@ const handleUpdateUser = async (e) => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>ConnectorType</TableHead>
+                    <TableHead>Make</TableHead>
                     <TableHead>Model</TableHead>
-                    <TableHead>Description</TableHead>
                     <TableHead>VIN</TableHead>
                     <TableHead>Registration</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -1059,35 +1024,32 @@ const handleUpdateUser = async (e) => {
                   {vehicleList.map((vehicle) => (
                     <TableRow key={vehicle.id}>
                       <TableCell>{vehicle.connectorType}</TableCell>
+                      <TableCell>{vehicle.make}</TableCell>
                       <TableCell>{vehicle.model}</TableCell>
-                      <TableCell>{vehicle.description}</TableCell>
                       <TableCell>{vehicle.vin}</TableCell>
                       <TableCell>{vehicle.registrationNo}</TableCell>
                       <TableCell className="text-right">
                          <div className="flex justify-end gap-2">
-                                           
-                                            <Button 
-                                              key={vehicle.vin}
-                                              variant="ghost" 
-                                              size="icon" 
-                                              onClick={() =>{ handleInfoClick(vehicle), setVechileId(vehicle.id);}}
-                                            >
-                                              <PencilIcon className="h-4 w-4" />
-                                            </Button>
-
-                                            <Button 
-                                              variant="ghost" 
-                                              size="icon" 
-                                              onClick={() => {
-                                                setVechileId(vehicle.id);
-                                                setIsDeleteDialogOpen(true);
-                                              }}
-                                            >
-                                              <Trash className="h-4 w-4" />
-                                            </Button>
-                                          </div>
-                                        </TableCell>
-                                         
+                          <Button 
+                            key={vehicle.vin}
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={() =>{ handleInfoClick(vehicle), setVechileId(vehicle.id);}}
+                          >
+                          <PencilIcon className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={() => {
+                            setVechileId(vehicle.id);
+                            setIsDeleteDialogOpen(true);
+                            }}
+                          >
+                          <Trash className="h-4 w-4" />
+                         </Button>
+                        </div>
+                      </TableCell>                                         
                     </TableRow>
                   ))}
                 </TableBody>
@@ -1103,7 +1065,7 @@ const handleUpdateUser = async (e) => {
               <h2 className="text-xl font-semibold">RFID Information</h2>
               <div className="flex items-center gap-4">
                 <span className="text-sm text-gray-500">
-                  {Array.isArray(rfidRequests) ? rfidRequests.filter(r => !r.rfId).length : 0} / {MAX_RFID_REQUESTS} cards requested
+                  {approvedRfidCount} / {MAX_RFID_REQUESTS} cards issued
                 </span>
                 <Button
                   onClick={() => setIsRfidDialogOpen(true)}
@@ -1120,7 +1082,6 @@ const handleUpdateUser = async (e) => {
                 </p>
               </div>
             )}
-    {/* === First Table: Issued RFIDs === */}
     <h3 className="text-lg font-semibold mt-4 mb-2">RFIDs</h3>
     <Table className="border mb-8">
       <TableHeader>
@@ -1192,13 +1153,13 @@ const handleUpdateUser = async (e) => {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {Array.isArray(rfidRequests) && rfidRequests.filter(item => !item?.expiryDate).length > 0 ? (
+        {Array.isArray(rfidRequests) && rfidRequests.filter(item => item.status=== "PENDING").length > 0 ? (
           rfidRequests
-            .filter(item => !item?.expiryDate)
+            .filter(item =>item.status === "PENDING")
             .map((rfid, index) => (
               <TableRow key={index}>
                 <TableCell>{rfid.firstName || 'N/A'}</TableCell>
-                <TableCell>{rfid.lastName }</TableCell>
+                <TableCell>{rfid.lastName || 'N/A' }</TableCell>
                 <TableCell>{rfid.email || 'N/A'}</TableCell>
                 <TableCell>{rfid.mobile || 'N/A'}</TableCell>
                 <TableCell>
@@ -1233,8 +1194,7 @@ const handleUpdateUser = async (e) => {
         </TableBody>
        </Table>
       </div>
-     </TabsContent>
-     
+        </TabsContent>     
        <TabsContent value="wallet">
           <div className="bg-white rounded-lg shadow p-6 mt-4">
             <h2 className="text-xl font-semibold mb-4">Wallet Details</h2>
@@ -1242,8 +1202,6 @@ const handleUpdateUser = async (e) => {
               <div className="text-center py-4">
                 <p>Click the Wallet tab to load wallet data</p>
               </div>
-            ) : walletStatus === "loading" ? (
-              <p className="text-blue-500">Loading wallet details...</p>
             ) : walletStatus === "failed" ? (
               <p className="text-red-500">{walletError}</p>
             ) : walletStatus === "succeeded" && walletDetails ? (
@@ -1251,7 +1209,7 @@ const handleUpdateUser = async (e) => {
                 <div>
                   <p className="text-gray-600 font-medium">Balance:</p>
                   <p className="font-semibold text-lg">
-                    ₹ {walletDetails.accountBalance}
+                    ₹ {walletDetails.accountBalance.toFixed(2)}
                   </p>
                 </div>
                 <div>
@@ -1266,7 +1224,7 @@ const handleUpdateUser = async (e) => {
         </TabsContent>
      <TabsContent value="transactions">
         <div className="bg-white rounded-xl mt-4">
-        <h2 className="text-2xl font-semibold mb-6">Transaction History</h2>
+        <h2 className="text-xl font-semibold mb-6">Transaction History</h2>
        {!loadedTabs.has("transactions") ? (
               <div className="text-center py-4">
                 <p>Click the Transactions tab to load transaction data</p>
@@ -1278,20 +1236,20 @@ const handleUpdateUser = async (e) => {
             ) : (
           <div className="overflow-x-auto">
           <table className="min-w-full bg-white border border-gray-200 rounded-lg">
-      <thead className="bg-gray-100">
+      <thead className="border text-gray-500">
       <tr>
-        <th className="px-4 py-2 text-left font-semibold text-gray-700 min-w-[160px]">Date</th>
-        <th className="px-4 py-2 text-left font-semibold text-gray-700 min-w-[120px]">Debit</th>
-        <th className="px-4 py-2 text-left font-semibold text-gray-700 min-w-[120px]">Credit</th>
-        <th className="px-4 py-2 text-left font-semibold text-gray-700 min-w-[140px]">Balance</th>
-        <th className="px-4 py-2 text-left font-semibold text-gray-700 min-w-[140px]">Status</th>
-        <th className="px-4 py-2 text-left font-semibold text-gray-700 min-w-[240px]">Comment</th>
+        <th className="px-4 py-2 text-left text-sm font-medium min-w-[100px]">Date</th>
+        <th className="px-4 py-2 text-left text-sm font-medium min-w-[100px]">Debit</th>
+        <th className="px-4 py-2 text-left text-sm font-medium min-w-[100px]">Credit</th>
+        <th className="px-4 py-2 text-left text-sm font-medium min-w-[140px]">Balance</th>
+        <th className="px-4 py-2 text-left text-sm font-medium min-w-[140px]">Status</th>
+        <th className="px-4 py-2 text-left text-sm font-medium min-w-[200px]">Comment</th>
       </tr>
     </thead>
     <tbody>
     {currentRecords.map((t) => (
       <tr key={t.id} className="border-b hover:bg-gray-50 transition-all">
-        <td className="px-6 py-4 text-sm">
+        <td className="px-4 py-2 text-sm">
           {new Date(t.createTimeStamp).toLocaleString("en-IN", {
             year: "numeric",
             month: "short",
@@ -1300,72 +1258,71 @@ const handleUpdateUser = async (e) => {
             minute: "2-digit"
           })}
         </td>
-        <td className="px-6 py-4 text-red-600 font-medium">
+        <td className="px-4 py-2 text-sm font-medium">
           {t.amtDebit ? `₹${t.amtDebit}` : "-"}
         </td>
-        <td className="px-6 py-4 text-green-600 font-medium">
+        <td className="px-4 py-2 text-sm font-medium">
           {t.amtCredit ? `₹${t.amtCredit}` : "-"}
         </td>
-        <td className="px-6 py-4 font-semibold text-gray-800">
+        <td className="px-4 py-2 text-sm text-gray-800">
           ₹ {Number(t.currentBalance).toFixed(2)}
         </td>
-        <td className="px-6 py-4">
+        <td className="px-4 py-2">
           <span
             className={`px-3 py-1 text-xs rounded-full font-medium 
               ${
                 t.status === "COMPLETED"
-                  ? "bg-yellow-100 text-yellow-700"
+                  ? "bg-gray-100"
                   : t.status === "FAILED"
-                  ? "bg-red-100 text-red-700"
-                  : "bg-blue-100 text-blue-700"
-              }
-            `}
-          >
-            {t.status}
-          </span>
-        </td>
-        <td className="px-6 py-4 text-sm text-gray-600">
-          {t.comment || "-"}
-        </td>
-        </tr>
-        ))}
-      </tbody>
-      </table>
-      <div className="flex justify-center items-center gap-3 py-4">
+                  ? "bg-gray-100 "
+                  : "bg-gray-100"
+                  }
+                `}
+              >
+                {t.status}
+              </span>
+            </td>
+            <td className="px-6 py-4 text-sm text-gray-600">
+              {t.comment || "-"}
+            </td>
+            </tr>
+            ))}
+          </tbody>
+          </table>
+          <div className="flex justify-center items-center gap-3 py-4">
+          <button
+        disabled={currentPage === 1}
+        onClick={() => setCurrentPage((p) => p - 1)}
+        className={`px-3 py-1.5 rounded-md border text-sm
+          ${currentPage === 1 ? "opacity-40 cursor-not-allowed" : "hover:bg-gray-100"}
+        `}
+      >
+        Previous
+      </button>
+      {getPageNumbers().map((page) => (
+        <button
+          key={page}
+          onClick={() => setCurrentPage(page)}
+          className={`px-3 py-1.5 rounded-md border text-center text-sm
+            ${currentPage === page ? "bg-green-600 text-white" : "hover:bg-gray-100"}
+          `}
+        >
+          {page}
+        </button>
+      ))}
       <button
-    disabled={currentPage === 1}
-    onClick={() => setCurrentPage((p) => p - 1)}
-    className={`px-3 py-1.5 rounded-md border text-sm
-      ${currentPage === 1 ? "opacity-40 cursor-not-allowed" : "hover:bg-gray-100"}
-    `}
-  >
-    Previous
-  </button>
-  {getPageNumbers().map((page) => (
-    <button
-      key={page}
-      onClick={() => setCurrentPage(page)}
-      className={`px-3 py-1.5 rounded-md border text-center text-sm
-        ${currentPage === page ? "bg-green-600 text-white" : "hover:bg-gray-100"}
-      `}
-    >
-      {page}
-    </button>
-  ))}
-  {/* Next */}
-  <button
-    disabled={currentPage === totalPages}
-    onClick={() => setCurrentPage((p) => p + 1)}
-    className={`px-3 py-1.5 rounded-md border text-sm 
-      ${currentPage === totalPages ? "opacity-40 cursor-not-allowed" : "hover:bg-gray-100"}
-    `}
-  >
-    Next
-  </button>
-</div>     
-      </div>
-      )}
-    </div>
+        disabled={currentPage === totalPages}
+        onClick={() => setCurrentPage((p) => p + 1)}
+        className={`px-3 py-1.5 rounded-md border text-sm 
+          ${currentPage === totalPages ? "opacity-40 cursor-not-allowed" : "hover:bg-gray-100"}
+        `}
+      >
+        Next
+      </button>
+    </div>     
+          </div>
+          )}
+        </div>
        </TabsContent>
       </Tabs>
       <Dialog open={isAddVehicleDialogOpen} onOpenChange={setIsAddVehicleDialogOpen}>
@@ -1384,19 +1341,60 @@ const handleUpdateUser = async (e) => {
             onChange={handleVehicleInputChange}
             required
           />
-                {vehicleFormErrors.connectorType && (  <p className="text-xs text-red-500 mt-1">{vehicleFormErrors.connectorType}</p>)}
-        </div>        
-        <div className="space-y-2">
-          <Label htmlFor="model">Model *</Label>
-          <Input
-            id="model"
-            name="model"
-            value={vehicleFormData.model}
-            onChange={handleVehicleInputChange}
-            required
-          />
-                {vehicleFormErrors.model && (  <p className="text-xs text-red-500 mt-1">{vehicleFormErrors.model}</p>)}
-        </div>        
+            {vehicleFormErrors.connectorType && (  <p className="text-xs text-red-500 mt-1">{vehicleFormErrors.connectorType}</p>)}
+        </div>  
+         <div className="space-y-2">
+  <Label htmlFor="make">Make *</Label>
+  <select
+    id="make"
+    name="make"
+    value={vehicleFormData.make}
+    onChange={(e) => {
+      const selectedMake = e.target.value;
+      setVehicleFormData(prev => ({
+        ...prev,
+        make: selectedMake,
+        model: "" // reset model when make changes
+      }));
+    }}
+    className="w-full border rounded-md p-2"
+    required
+  >
+    <option value="">Select Make</option>
+    {evBrands.map(brand => (
+      <option key={brand.id} value={brand.brandName}>
+        {brand.brandName}
+      </option>
+    ))}
+  </select>
+
+  {vehicleFormErrors.make && (
+    <p className="text-xs text-red-500">{vehicleFormErrors.make}</p>
+  )}
+</div>      
+       <div className="space-y-2">
+  <Label htmlFor="model">Model *</Label>
+  <select
+    id="model"
+    name="model"
+    value={vehicleFormData.model}
+    onChange={handleVehicleInputChange}
+    disabled={!vehicleFormData.make}
+    className="w-full border rounded-md p-2 disabled:bg-gray-100"
+    required
+  >
+    <option value="">Select Model</option>
+    {availableModels.map(m => (
+      <option key={m.id} value={m.model}>
+        {m.model}
+      </option>
+    ))}
+  </select>
+
+  {vehicleFormErrors.model && (
+    <p className="text-xs text-red-500">{vehicleFormErrors.model}</p>
+  )}
+      </div>
         <div className="space-y-2">
           <Label htmlFor="vin">VIN *</Label>
           <Input
@@ -1404,9 +1402,7 @@ const handleUpdateUser = async (e) => {
             name="vin"
             value={vehicleFormData.vin}
             onChange={handleVehicleInputChange}
-            required
           />
-                {vehicleFormErrors.vin && (  <p className="text-xs text-red-500 mt-1">{vehicleFormErrors.vin}</p>)}
         </div>
         <div className="space-y-2">
           <Label htmlFor="registrationNo">Registration No *</Label>
@@ -1417,7 +1413,7 @@ const handleUpdateUser = async (e) => {
             onChange={handleVehicleInputChange}
             required
           />
-                {vehicleFormErrors.registrationNo && (  <p className="text-xs text-red-500 mt-1">{vehicleFormErrors.registrationNo}</p>)}
+            {vehicleFormErrors.registrationNo && (  <p className="text-xs text-red-500 mt-1">{vehicleFormErrors.registrationNo}</p>)}
         </div>
         
         <div className="space-y-2">
@@ -1430,29 +1426,7 @@ const handleUpdateUser = async (e) => {
             onChange={handleVehicleInputChange}
             required
           />
-        </div>        
-        <div className="space-y-2">
-          <Label htmlFor="make">Make *</Label>
-          <Input
-            id="make"
-            name="make"
-            value={vehicleFormData.make}
-            onChange={handleVehicleInputChange}
-            required
-          />
-                {vehicleFormErrors.make && (  <p className="text-xs text-red-500 mt-1">{vehicleFormErrors.make}</p>)}
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="vehicleType">Vehicle Type *</Label>
-          <Input
-            id="vehicleType"
-            name="vehicleType"
-            value={vehicleFormData.vehicleType}
-            onChange={handleVehicleInputChange}
-            required
-          />
-                {vehicleFormErrors.vehicleType && (  <p className="text-xs text-red-500 mt-1">{vehicleFormErrors.vehicleType}</p>)}
-        </div>        
+        </div>     
         <div className="space-y-2 col-span-2">
           <Label htmlFor="description">Description</Label>
           <Input
@@ -1488,9 +1462,9 @@ const handleUpdateUser = async (e) => {
   <DialogContent className="sm:max-w-[800px] max-h-[80vh] overflow-y-auto">
     <DialogHeader>
       <DialogTitle>Edit Vehicle</DialogTitle>
-    </DialogHeader>
-    <form onSubmit={handleUpdateVehicle} className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
+      </DialogHeader>
+      <form onSubmit={handleUpdateVehicle} className="space-y-4">
+       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="edit-connectorType">Connector Type *</Label>
           <Input
@@ -1500,7 +1474,7 @@ const handleUpdateUser = async (e) => {
             onChange={handleVehicleInputChange}
             required
           />
-                {vehicleFormErrors.connectorType && (  <p className="text-xs text-red-500 mt-1">{vehicleFormErrors.connectorType}</p>)}
+            {vehicleFormErrors.connectorType && (  <p className="text-xs text-red-500 mt-1">{vehicleFormErrors.connectorType}</p>)}
         </div>        
         <div className="space-y-2">
           <Label htmlFor="edit-model">Model *</Label>
@@ -1511,7 +1485,7 @@ const handleUpdateUser = async (e) => {
             onChange={handleVehicleInputChange}
             required
           />
-                {vehicleFormErrors.model && (  <p className="text-xs text-red-500 mt-1">{vehicleFormErrors.model}</p>)}
+            {vehicleFormErrors.model && (  <p className="text-xs text-red-500 mt-1">{vehicleFormErrors.model}</p>)}
         </div>
         <div className="space-y-2">
           <Label htmlFor="edit-vin">VIN *</Label>
@@ -1522,7 +1496,7 @@ const handleUpdateUser = async (e) => {
             onChange={handleVehicleInputChange}
             required
           />
-                {vehicleFormErrors.vin && (<p className="text-xs text-red-500 mt-1">{vehicleFormErrors.vin}</p>)}
+            {vehicleFormErrors.vin && (<p className="text-xs text-red-500 mt-1">{vehicleFormErrors.vin}</p>)}
         </div>        
         <div className="space-y-2">
           <Label htmlFor="edit-registrationNo">Registration No *</Label>
@@ -1533,7 +1507,7 @@ const handleUpdateUser = async (e) => {
             onChange={handleVehicleInputChange}
             required
           />
-                {vehicleFormErrors.registrationNo && (  <p className="text-xs text-red-500 mt-1">{vehicleFormErrors.registrationNo}</p>)}
+            {vehicleFormErrors.registrationNo && (  <p className="text-xs text-red-500 mt-1">{vehicleFormErrors.registrationNo}</p>)}
         </div>        
         <div className="space-y-2">
           <Label htmlFor="edit-year">Year *</Label>
@@ -1555,19 +1529,8 @@ const handleUpdateUser = async (e) => {
             onChange={handleVehicleInputChange}
             required
           />
-                {vehicleFormErrors.make && (  <p className="text-xs text-red-500 mt-1">{vehicleFormErrors.make}</p>)}
-        </div>        
-        <div className="space-y-2">
-          <Label htmlFor="edit-vehicleType">Vehicle Type *</Label>
-          <Input
-            id="edit-vehicleType"
-            name="vehicleType"
-            value={vehicleFormData.vehicleType}
-            onChange={handleVehicleInputChange}
-            required
-          />
-                {vehicleFormErrors.vehicleType && (  <p className="text-xs text-red-500 mt-1">{vehicleFormErrors.vehicleType}</p>)}
-        </div>        
+            {vehicleFormErrors.make && (  <p className="text-xs text-red-500 mt-1">{vehicleFormErrors.make}</p>)}
+        </div>      
         <div className="space-y-2 col-span-2">
           <Label htmlFor="edit-description">Description</Label>
           <Input
@@ -1577,8 +1540,7 @@ const handleUpdateUser = async (e) => {
             onChange={handleVehicleInputChange}
           />
         </div>
-      </div>
-      
+      </div>      
       <DialogFooter>
         <Button 
           type="button" 
@@ -1598,50 +1560,29 @@ const handleUpdateUser = async (e) => {
       </DialogFooter>
     </form>
   </DialogContent>
-</Dialog>   
-
+</Dialog>
 <Dialog open={isRfidDialogOpen} onOpenChange={setIsRfidDialogOpen}>
   <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
     <DialogHeader>
       <DialogTitle>Request New RFID</DialogTitle>
-      <DialogDescription>
-        Fill in the details to request a new RFID card for this user.
         {rfidRequests.length >= MAX_RFID_REQUESTS && (
           <span className="block mt-2 text-red-600">
             Maximum {MAX_RFID_REQUESTS} RFID cards allowed per user.
           </span>
         )}
-      </DialogDescription>
     </DialogHeader>
-
     <div className="grid gap-4 py-4">
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="firstName">First Name *</Label>
+          <Label htmlFor="lastName">User Name *</Label>
           <Input
-            id="firstName"
-            name="firstName"
-            value={newRfid.firstName}
+            id="username"
+            name="username"
+            value={newRfid.username}
             onChange={handleRfidInputChange}
-            placeholder="Enter first name"
-            required
-            readOnly
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="lastName">Last Name *</Label>
-          <Input
-            id="lastName"
-            name="lastName"
-            value={newRfid.lastName}
-            onChange={handleRfidInputChange}
-            placeholder="Enter last name"
             required
           />
         </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="email">Email *</Label>
           <Input
@@ -1655,6 +1596,8 @@ const handleUpdateUser = async (e) => {
             readOnly
           />
         </div>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="mobile">Phone *</Label>
           <Input
@@ -1668,7 +1611,6 @@ const handleUpdateUser = async (e) => {
           />
         </div>
       </div>
-
       <div className="space-y-2">
         <div className="flex items-center space-x-2">
           <Checkbox
@@ -1752,8 +1694,6 @@ const handleUpdateUser = async (e) => {
             </div>
           </div>
         </div>
-     
-
       <div className="space-y-2">
         <Label htmlFor="rfidCount">Number of RFID Cards *</Label>
         <Input
@@ -1782,6 +1722,7 @@ const handleUpdateUser = async (e) => {
           setNewRfid({
             firstName: currentUser?.fullname ,
             lastName: '',
+            username: currentUser?.username || '',
             email: currentUser?.email ,
             mobile: currentUser?.mobileNumber ,
             status: 'Pending',
@@ -1808,8 +1749,6 @@ const handleUpdateUser = async (e) => {
     </DialogFooter>
   </DialogContent>
 </Dialog>
-
-
        {isDeleteDialogOpen && currentUser&& (
         <DeleteOtp 
           userId={vechileId}

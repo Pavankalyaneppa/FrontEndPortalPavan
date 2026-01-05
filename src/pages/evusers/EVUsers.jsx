@@ -52,10 +52,6 @@ const EVUsers = () => {
 
   const columns = [
     {
-      accessorKey: "fullname",
-      header: "Name",
-    },
-    {
       accessorKey: "email",
       header: "Email",
     },

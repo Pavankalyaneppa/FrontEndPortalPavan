@@ -9,7 +9,7 @@ import { InfoIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ReloadIcon } from '@radix-ui/react-icons';
 import DeleteOtp from '@/users/DeleteOtp';
-import { validateName, validateMobileNumber, validateCity, validateZipCode, validateEmail } from '@/pages/validations/Validation';
+import { validateName, validateMobileNumber, validateCity, validateZipCode, validateEmail,validateUsername,validateOrganizationName } from '@/pages/validations/Validation';
 import { flexRender, getCoreRowModel, useReactTable, getPaginationRowModel, getSortedRowModel, getFilteredRowModel } from "@tanstack/react-table";
 import Loading from '@/users/Loading';
 import { fetchWhiteLabellist ,fetchSearchWhiteLabellist} from '@/store/reducers/whitelabel/whitelabelslice';
@@ -109,6 +109,12 @@ useEffect(() => {
 
   const cityError = validateCity(formData.city);
   if (cityError) errors.city = cityError;
+  
+  const organizationNameError = validateOrganizationName(formData.orgName);
+  if(organizationNameError) errors.orgName = organizationNameError;
+
+  const usernameError = validateUsername(formData.username);
+  if(usernameError) errors.username = usernameError;
 
   setFormErrors(errors);
 }, [formData]);
@@ -244,6 +250,12 @@ const handleAddWhiteLabel = async (e) => {
 
   const cityError = validateCity(formData.city);
   if (cityError) errors.city = cityError;
+
+  const organizationNameError = validateOrganizationName(formData.orgName);
+  if(organizationNameError) errors.orgName = organizationNameError;
+
+  const usernameError = validateUsername(formData.username);
+  if(usernameError) errors.username = usernameError;
 
   setFormErrors(errors);
 
@@ -419,7 +431,9 @@ const handleAddWhiteLabel = async (e) => {
                   name="orgName" 
                   value={formData.orgName} 
                   onChange={handleInputChange} 
+                  required
                 />
+                {formErrors.orgName && (  <p className="text-xs text-red-500 mt-1">{formErrors.orgName}</p>)}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="fullname">Point Of Contact</Label>
@@ -459,7 +473,9 @@ const handleAddWhiteLabel = async (e) => {
                   name="username" 
                   value={formData.username} 
                   onChange={handleInputChange} 
+                  required
                 />
+                {formErrors.username && (  <p className="text-xs text-red-500 mt-1">{formErrors.username}</p>)}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="address">Address</Label>

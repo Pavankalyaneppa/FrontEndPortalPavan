@@ -12,9 +12,10 @@ const LocationPicker = ({ formData, setFormData }) => {
   const { toast } = useToast();
   const locationButtonRef = useRef(null);
 
-  const defaultLocation = { lat: 17.441692, lng: 78.38257 }; // Hyderabad
+  const defaultLocation = { lat: 17.441692, lng: 78.38257 };
 
-  const handleCurrentLocation = () => {
+  const handleCurrentLocation = (e) => {
+      e?.preventDefault();
     if (isLoading) return;
     
     setIsLoading(true);
@@ -164,7 +165,10 @@ const LocationPicker = ({ formData, setFormData }) => {
       });
 
       // Create custom location button
+      // const locationButton = document.createElement('button');
       const locationButton = document.createElement('button');
+      locationButton.type = 'button'; // ✅ VERY IMPORTANT
+
       locationButton.innerHTML = `
         <div style="
           background: white;
@@ -228,6 +232,7 @@ const LocationPicker = ({ formData, setFormData }) => {
           Select Location
         </h2>
         <Button 
+          type="button"
           variant="outline" 
           size="sm" 
           onClick={handleCurrentLocation}

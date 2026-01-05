@@ -18,6 +18,7 @@ const Login = () => {
   const { loginLoading, loginText, loginNotification, isAuthenticated } = useSelector(state => state.authentication);
   const [formData, setFormData] = useState({ username: "", password: "" });
   const [errors, setErrors] = useState({});
+  const [showPassword, setShowPassword] = useState(false);
   const { user } = useSelector(state => state.authentication);
 
 useEffect(() => {
@@ -52,9 +53,8 @@ useEffect(() => {
       default:
         redirectPath = "/login";
     }
-setTimeout(() => {
-  navigate(redirectPath, { replace: true });
-}, 100);  }
+    navigate(redirectPath, { replace: true });
+  }
 }, [isAuthenticated, navigate, user]);
 
   useEffect(() => {
@@ -65,7 +65,6 @@ setTimeout(() => {
       return () => clearTimeout(timer);
     }
   }, [loginNotification, dispatch]);
-
 
   const validateForm = () => {
     let newErrors = {};
@@ -164,21 +163,53 @@ setTimeout(() => {
                 <label htmlFor="password" className="text-sm font-medium text-gray-700">
                   Password
                 </label>
-                <Input
-                  id="password"
-                  name="password"
-                  type="password"
-                  placeholder="Enter password"
-                  value={formData.password}
-                  onChange={handleChange}
-                />
+               <div className="relative">
+              <Input
+                id="password"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="Enter password"
+                value={formData.password}
+                onChange={handleChange}
+                className="pr-10"
+              />
+
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700"
+              >
+                {showPassword ? (
+                  // Eye Off Icon
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none"
+                    viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                      d="M3 3l18 18M10.477 10.477A3 3 0 0114.12 14.12m2.598-2.598A8.986 8.986 
+                      0 0021 12c-1.5-4.5-5.25-7.5-9-7.5a8.96 8.96 0 00-4.882 1.465M6.32 
+                      6.32A8.965 8.965 0 003 12c1.5 4.5 5.25 7.5 9 7.5 1.575 0 3.07-.36 
+                      4.387-1.005" />
+                  </svg>
+                ) : (
+                  // Eye Icon
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none"
+                    viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                      d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 
+                      8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 
+                      7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                )}
+              </button>
+            </div>
                 {errors.password && <p className="text-red-500 text-xs">{errors.password}</p>}
               </div>
               <p className="text-xs text-gray-500">
                 By logging in you agree to the {CompanyName}{" "}
-                <a href="#" className="text-blue-600 hover:underline">
+                <Link to="/terms" className="text-blue-600 hover:underline">
                   Terms of Use
-                </a>
+                </Link>
               </p>
               <Button className="w-full" type="submit" >
               {loginLoading ? (

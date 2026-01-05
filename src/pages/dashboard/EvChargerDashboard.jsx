@@ -72,14 +72,21 @@ export function EVChargerDashboard() {
   const dispatch = useDispatch();
   const { whiteLabels, franchises, stats, status, revenueGraph, sessionGraph, stationStats, portStats, dateRange } = useSelector(state => state.dashboard);
   const { user } = useSelector(state => state.authentication);
-  
-  const [selectedOrgId, setSelectedOrgId] = useState(user?.orgId?.toString() || '1');
+
+  const [selectedOrgId, setSelectedOrgId] = useState(
+    user?.orgId === 1 ? "admin" : user?.orgId?.toString()
+  );
+
+const effectiveOrgId =
+  selectedOrgId === "admin" ? user?.orgId?.toString() : selectedOrgId;
+
   const selectedWhitelabel = whiteLabels?.find(wl => wl.id === parseInt(selectedOrgId));
   const selectedFranchise = franchises?.find(f => f.id === parseInt(selectedOrgId));
   const orgName = selectedWhitelabel?.orgName || selectedFranchise?.orgName || 'EV Charger';
 
   const jsonRequests = useSelector(state => state.requests.jsonRequests);
   const dbRequests = useSelector(state => state.requests.dbRequests.requests || []);
+ 
 
   const [pendingStats, setPendingStats] = useState({
     pendingRequests: 0,
@@ -147,11 +154,12 @@ export function EVChargerDashboard() {
     ...(dateRange.startDate && { startDate: dateRange.startDate }),
     ...(dateRange.endDate && { endDate: dateRange.endDate })
   };
-    dispatch(fetchDashboardStats(selectedOrgId));
-    dispatch(fetchRevenueGraph(selectedOrgId));
-    dispatch(fetchSessionGraph(selectedOrgId));
-    dispatch(fetchStationStats(selectedOrgId));
-    dispatch(fetchPortStats(selectedOrgId));
+    dispatch(fetchDashboardStats(effectiveOrgId));
+    dispatch(fetchRevenueGraph(effectiveOrgId));
+    dispatch(fetchSessionGraph(effectiveOrgId));
+    dispatch(fetchStationStats(effectiveOrgId));
+    dispatch(fetchPortStats(effectiveOrgId));
+
   };
 
   useEffect(() => {
@@ -225,25 +233,25 @@ const dbTotal = dbCounts.STATION;
   });
 }, [dbRequests, jsonRequests]);
 
-  useEffect(() => {
-    if (selectedOrgId) {
-      const initialDateRange = {
-        startDate: getDefaultStartDate(selectedRange),
-        endDate: new Date().toISOString().split('T')[0]
-      };
-      dispatch(setDateRange(initialDateRange));
-      fetchData(initialDateRange);
-    }
-  }, [dispatch, selectedOrgId]);
+useEffect(() => {
+  if (effectiveOrgId) {
+    const initialDateRange = {
+      startDate: getDefaultStartDate(selectedRange),
+      endDate: new Date().toISOString().split('T')[0]
+    };
+    dispatch(setDateRange(initialDateRange));
+    fetchData(initialDateRange);
+  }
+}, [dispatch, effectiveOrgId]);
 
   const handleWhitelabelChange = (orgId) => {
-    setSelectedOrgId(orgId);
-  };
+  setSelectedOrgId(orgId); 
+  setSelectedRange ("daily");
+};
 
   if (status === 'loading') {
     return <div><Loading/></div>;
   }
-
   const portStatusData = portStats?.length
     ? portStats.map((item) => ({
         name: item.status,
@@ -276,7 +284,6 @@ const dbTotal = dbCounts.STATION;
               <SelectItem value="custom">Custom Range</SelectItem>
             </SelectContent>
           </Select>
-
           {user?.orgId == 1 && (
             <Select onValueChange={handleWhitelabelChange} value={selectedOrgId}>
               <SelectTrigger className="w-[250px]">
@@ -293,7 +300,6 @@ const dbTotal = dbCounts.STATION;
           )}
         </div>
       </div>
-
       {isCustomRange && (
         <div className="flex items-end justify-end gap-4 mt-4 mb-8">
           <div>

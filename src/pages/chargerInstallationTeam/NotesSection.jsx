@@ -26,7 +26,7 @@ import {
   fetchAllEmployees, 
 } from "@/store/reducers/chargerInstallation/ChargerInstallationSlice";
 
-const NotesSection = ({ taskId, currentUser, employeeId, isTechnicianPortal = false }) => {
+const NotesSection = ({ taskId, currentUser, employeeId, isTechnicianPortal = false, onBack }) => {
   const dispatch = useDispatch();
 
   const {
@@ -71,14 +71,22 @@ const NotesSection = ({ taskId, currentUser, employeeId, isTechnicianPortal = fa
     }
   }, [isAddingNote, taskId, employeeId, currentUser]);
 
-   const formatDate = (dateString) => {
-    if (!dateString) return 'Date not available';
-    try {
-      return new Date(dateString).toLocaleDateString();
-    } catch (error) {
-      return 'Invalid date';
-    }
-  };
+const formatDate = (arr) => {
+  if (!arr || !Array.isArray(arr) || arr.length < 6) return "Date not available";
+
+  const [year, month, day, hour, minute, second] = arr;
+
+  const date = new Date(year, month - 1, day, hour, minute, second);
+
+  return date.toLocaleString("en-IN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
 
   const handleAddNote = async () => {
     if (!newNote.description.trim()) {
@@ -138,15 +146,25 @@ const NotesSection = ({ taskId, currentUser, employeeId, isTechnicianPortal = fa
   };
 
   const cancelAddNote = () => setIsAddingNote(false);
-
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold">Task Notes</h3>
-        {!isTechnicianPortal && !isAddingNote && (
-          <Button onClick={() => setIsAddingNote(true)}>Add Note</Button>
-        )}
-      </div>
+    <div className="space-y-6 ">
+     <div className="flex justify-end gap-1">
+  <Button
+    variant="outline"
+    onClick={onBack}
+    className="flex items-center gap-2"
+  >
+    ← Back
+  </Button>
+
+  {!isTechnicianPortal && !isAddingNote && (
+    <Button onClick={() => setIsAddingNote(true)}>
+      Add Note
+    </Button>
+  )}
+</div>
+
+      
 
       {/* Add Note Form */}
       {isAddingNote && (
@@ -175,30 +193,24 @@ const NotesSection = ({ taskId, currentUser, employeeId, isTechnicianPortal = fa
               </SelectContent>
             </Select>
           </div>
-          <div className="flex flex-col">
+          {/* <div className="flex flex-col">
             <label className="text-sm font-medium text-gray-700 mb-1">Employee ID</label>
             <input type="text"
             value = {employeeId}
             readOnly
             className="w-full rounded-md border border-gray-300 px-3 py-2 bg-gray-100 cursor-not-allowed" />
-            </div>
+            </div> */}
 
           {/* Created By Role Dropdown */}
-          <div>
-            <Label htmlFor="createdByRole">Created By Role</Label>
-            <Select
-              value={newNote.createdByRole}
-              onValueChange={(value) => setNewNote(prev => ({ ...prev, createdByRole: value }))}
-            >
-              <SelectTrigger id="createdByRole">
-                <SelectValue placeholder="Select Role" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ADMIN">Admin</SelectItem>
-                <SelectItem value="EMPLOYEE">Employee</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+           <div>
+              <Label>Created By Role</Label>
+              <Input
+                value="Admin"
+                readOnly
+                className="bg-gray-100 cursor-not-allowed"
+              />
+            </div>
+          
 
           {/* Title */}
           <div>

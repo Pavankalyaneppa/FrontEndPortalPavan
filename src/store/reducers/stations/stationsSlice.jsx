@@ -79,19 +79,62 @@ export const fetchStations = (params) => async (dispatch) => {
   }
 };
 
-export const fetchStationByFilters = (stationName, stationStatus, currentType, page = 0, size = 10) => async (dispatch) => {
+// export const fetchStationByFilters = (stationName, stationStatus, currentType, page = 0, size = 10) => async (dispatch) => {
+//   try {
+//     dispatch(getStationsStart());
+//     const response = await AxiosServices.getStationsByFilters(stationName, stationStatus, currentType, page, size);
+//     dispatch(getStationsSuccess(response.data ?? response));
+//   } catch (error) {
+//     dispatch(getStationsFailure(error.message));
+//   }
+// };
+
+export const fetchStationByFilters = (stationName, stationStatus, currentType, page = 0, size = 10) => async (dispatch, getState) => {
   try {
     dispatch(getStationsStart());
-    const response = await AxiosServices.getStationsByFilters(stationName, stationStatus, currentType, page, size);
+    const state = getState();
+    const { orgId, roleId } = state.authentication.user;
+    const response = await AxiosServices.getStationsByFilters(
+      stationName, 
+      stationStatus, 
+      currentType, 
+      page, 
+      size, 
+      orgId,
+      roleId 
+    );
+    
     dispatch(getStationsSuccess(response.data ?? response));
   } catch (error) {
     dispatch(getStationsFailure(error.message));
   }
 };
-export const searchStations = ({ search = '', page = 0, size = 10, searchField = '' }) => async (dispatch) => {
+
+// export const searchStations = ({ search = '', page = 0, size = 10, searchField = '' }) => async (dispatch) => {
+//   try {
+//     dispatch(getStationsStart());
+//     const response = await AxiosServices.searchStations({ search, page, size, searchField });
+//     dispatch(getStationsSuccess(response.data ?? response));
+//   } catch (error) {
+//     dispatch(getStationsFailure(error.message || 'Search failed'));
+//   }
+// };
+export const searchStations = ({ search = '', page = 0, size = 10, searchField = '' }) => 
+  async (dispatch, getState) => {
   try {
     dispatch(getStationsStart());
-    const response = await AxiosServices.searchStations({ search, page, size, searchField });
+
+    const { roleId, orgId } = getState().authentication.user;
+
+    const response = await AxiosServices.searchStations({
+      search,
+      page,
+      size,
+      searchField,
+      roleId,
+      orgId
+    });
+
     dispatch(getStationsSuccess(response.data ?? response));
   } catch (error) {
     dispatch(getStationsFailure(error.message || 'Search failed'));

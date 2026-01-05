@@ -211,7 +211,31 @@ export default function IssuesTracker() {
     },
   },
   {
-    id: "actions", // give a unique id since it isn't a data key
+  accessorKey: "priority",
+  header: "Priority",
+  cell: ({ row }) => {
+    const priority = row.original?.priority || "N/A";
+
+    // Optional colored badges
+    const priorityColors = {
+      high: "bg-red-100 text-red-700",
+      medium: "bg-yellow-100 text-yellow-700",
+      low: "bg-green-100 text-green-700",
+    };
+
+    const color =
+      priorityColors[priority?.toLowerCase()] ||
+      "bg-gray-200 text-gray-700";
+
+    return (
+      <span className={`px-2 py-1 rounded-full text-xs ${color}`}>
+        {priority}
+      </span>
+    );
+  },
+},
+  {
+    id: "actions", 
     header: "Actions",
     cell: ({ row }) => (
       <div className="flex space-x-2">

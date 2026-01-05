@@ -13,6 +13,7 @@ import {
   SelectItem,
   SelectValue,
 } from "@/components/ui/select";
+import { validateName, validateLocation, validateEmail, validateMobileNumber } from '@/pages/validations/Validation';
 import { Card, CardContent } from "@/components/ui/card";
 
 export default function EditCustomerSupport() {
@@ -53,6 +54,23 @@ useEffect(() => {
   }
 }, [customer]);
 
+  useEffect(() => {
+      const errors = {};
+  
+      const fullNameError = validateName(formData.username);
+      if (fullNameError) errors.username = fullNameError;
+  
+      const mobileError = validateMobileNumber(formData.mobileNumber);
+      if (mobileError) errors.mobileNumber = mobileError;
+  
+      const emailError = validateEmail(formData.email);
+      if (emailError) errors.email = emailError;
+  
+      const locationError = validateLocation(formData.location);
+      if (locationError) errors.location = locationError;
+  
+      setFormErrors(errors);
+    }, [formData]);
 
   if (!customer) return <p className="p-6">Loading customer data...</p>;
 
@@ -72,7 +90,6 @@ const handleSelectChange = (value) => {
 const handleSubmit = async (e) => {
   e.preventDefault();
 
-  // Validation
   const errors = {};
   if (!formData.username.trim()) errors.username = "Full name is required";
   if (!formData.email.trim()) errors.email = "Email is required";
@@ -93,7 +110,6 @@ const handleSubmit = async (e) => {
 
   try {
     setLoading(true);
-
     const payload = {
       username: formData.username,
       email: formData.email,
@@ -126,9 +142,8 @@ const handleSubmit = async (e) => {
  
   const handleCancel = () =>
     navigate(`/customer-support/${customer.id}`, { state: { customer } });
-
   return (
-    <div className="container mx-auto p-6">
+    <div className="container mx-auto p-8">
       {/* Header with Cancel button replacing the old BackButton */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Edit Customer Support</h1>
@@ -136,7 +151,6 @@ const handleSubmit = async (e) => {
           Cancel
         </Button>
       </div>
-
       <Card className="max-w-4xl mx-auto p-5 bg-white shadow rounded-lg">
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">

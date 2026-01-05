@@ -55,20 +55,53 @@ const AddFleet = ({
       dispatch(resetAddFleetStatus());
     }
 
-    if (addFleetStatus === 'failed') {
-      const errorMessage = addFleetError?.response?.message || 
-                          addFleetError?.message || 
-                          addFleetError?.error || 
-                          addFleetError || 
-                          'Failed to add fleet. Please check your data and try again.';
-      
-      toast({
-        title: 'Error',
-        description: errorMessage,
-        variant: 'destructive',
-      });
-      dispatch(resetAddFleetStatus());
-    }
+if (addFleetStatus === 'failed') {
+  console.log('Full addFleetError object:', addFleetError);
+  
+  // The error is now directly the string from error.response?.data
+  const errorMessage = addFleetError || 'Failed to add fleet';
+  
+  console.log('Error message extracted:', errorMessage);
+  
+  const lowerCaseError = String(errorMessage).toLowerCase();
+  
+  if (lowerCaseError.includes("email") && 
+      (lowerCaseError.includes("already") || lowerCaseError.includes("exists"))) {
+    setFormErrors(prev => ({ 
+      ...prev, 
+      ownerEmail: "Email already exists" 
+    }));
+    
+    toast({
+      title: 'Duplicate Email',
+      description: errorMessage,
+      variant: 'destructive',
+    });
+  } 
+  else if ((lowerCaseError.includes("mobile") || lowerCaseError.includes("phone")) &&
+           (lowerCaseError.includes("already") || lowerCaseError.includes("exists"))) {
+    setFormErrors(prev => ({ 
+      ...prev, 
+      ownerPhone: "Mobile number already exists" 
+    }));
+    
+    toast({
+      title: 'Duplicate Mobile Number',
+      description: errorMessage,
+      variant: 'destructive',
+    });
+  } 
+  else {
+    toast({
+      title: 'Error',
+      description: errorMessage,
+      variant: 'destructive',
+    });
+  }
+
+  dispatch(resetAddFleetStatus());
+}
+
   }, [addFleetStatus, addFleetError, dispatch, toast, onFleetAdded, onOpenChange]);
 
   useEffect(() => {
@@ -227,27 +260,7 @@ const handleBlur = (e) => {
                 <p className="text-sm text-red-500"> {formErrors.baseLocation}</p>
               )}
             </div>
-
-            <div className="space-y-2">
-              <Label>Status *</Label>
-              <Select 
-                value={formData.status} 
-                onValueChange={(value) => handleSelectChange("status", value)}
-                required
-                disabled={addFleetStatus === 'loading'}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ACTIVE">Active</SelectItem>
-                  <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
-                  <SelectItem value="INACTIVE">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
           </div>
-
           <div className="flex justify-end space-x-4 pt-4">
             <Button 
               type="button" 
@@ -279,4 +292,4 @@ const handleBlur = (e) => {
 
 export default AddFleet;
 
-//ADD fleet COMPONENT........................................................................................
+//ADD FLEETT COMPONENT......
