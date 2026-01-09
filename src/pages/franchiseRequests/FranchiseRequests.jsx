@@ -43,6 +43,7 @@ export default function RequestsTabsStatic() {
   const [combinedRequests, setCombinedRequests] = useState([]);
   const [verifyDialogOpen, setVerifyDialogOpen] = useState(false);
   const [selectedStation, setSelectedStation] = useState(null);
+  const [finalDeduplicated, setFinalDeduplicated] = useState([]);
   const [variantMap, setVariantMap] = useState({});
   const [loading, setLoading] = useState(true);
   const status = useSelector((state) => state.requests.status);
@@ -55,7 +56,6 @@ const { requestsData} = useSelector((state) => state.requests);
   const jsonRequestsList = useSelector(state => state.requests.jsonRequests) || [];
 
   const allRequests = [...jsonRequestsList, ...dbRequestsList];
-const [stationRequests, setStationRequests] = useState([]);
 
   //for franchiseRequests tab pagination
 
@@ -395,14 +395,6 @@ useEffect(() => {
     }
   }, [requestType]);
 
-useEffect(() => {
-  if (requestsData?.stations?.length) {
-    setStationRequests(requestsData.stations);
-  } else if (combinedRequests?.length) {
-    const stations = combinedRequests.filter(r => r.category === "station");
-    setStationRequests(stations);
-  }
-}, [requestsData, combinedRequests]);
 
 
 const handleInfoClick = (item) => {
@@ -704,131 +696,163 @@ const filteredRequests = combinedRequests.filter(item => {
   );
 });
 
+const filteredStations = combinedRequests.filter(
+  r => r.category === "station" &&
+       (
+         !search ||
+         r.franchiseName?.toLowerCase().includes(search.toLowerCase()) ||
+         r.siteName?.toLowerCase().includes(search.toLowerCase()) ||
+         r.stationName?.toLowerCase().includes(search.toLowerCase()) ||
+         r.serialNumber?.toLowerCase().includes(search.toLowerCase())
+       )
+);
 
 useEffect(() => {
   if (!dbRequests && !jsonRequests) return;
 
-  const normalizedDbFranchise = (dbRequests?.requests || []).map(r => ({
-    id: r.id || Math.random(),
-    category: "franchise",
-    serialNumber: r.application_number || r.serialNumber || (r.stations && r.stations.length > 0
-      ? r.stations[0]["serial number"] || r.stations[0].ports?.[0]?.serialNumber
-      : "-"),
-    franchiseName: r.franchiseName || r.managerName || "Unknown Franchise",
-    siteName: r.siteName || r.sitename || "",
-    stationName: r.stationName || "",
-    address: r.address || r.locations?.[0]?.address || "",
-    latitude: r.latitude || r.locations?.[0]?.latitude || "",
-    longitude: r.longitude || r.locations?.[0]?.longitude || "",
-    capacity: r.chargerCapacity || r.capacity || r.ports?.[0]?.capacity || "",
-    phoneNumber: r.phoneNumber || r.managerPhone || "",
-    email: r.email || r.managerEmail || "",
-    source: "db",
-  }));
-
-  const siteDbData = (dbRequests?.requests || []).map(r => ({
-  id: r.siteId || r.id || Math.random(),
-  category: "site",
-  serialNumber:
-    (r.stations && r.stations.length > 0 && r.stations[0]?.ports?.[0]?.serialNumber) ||
-    r.serialNumber ||
-    "-",
-  franchiseName: r.managerName || r.franchiseName || "Unknown Franchise",
-  siteName: r.siteName || r.sitename || "",
-  address: r.address || r.locations?.[0]?.address || "",
-  latitude: r.latitude || r.locations?.[0]?.latitude || "",
-  longitude: r.longitude || r.locations?.[0]?.longitude || "",
-  source: "db",
-}));
-
-
- // In your useEffect that sets combinedRequests, ensure stations have:
-const stationDbData = (dbRequests?.requests || []).flatMap(r => {
-  const siteName = r.siteName || r.sitename || "";
-  const franchiseName = r.managerName || r.franchiseName || "";
-  const location = r.locations?.[0] || {};
-
-  return (r.stations || []).map(station => {
-    const port = station.ports?.[0] || {};
-    return {
-      id: station.stationId || Math.random(),
-      category: "station",
+  const normalizedDbFranchise = [];
+  const seenFranchises = new Set();
+  
+  (dbRequests?.requests || []).forEach(r => {
+    const franchiseName = r.franchiseName || r.managerName || "Unknown Franchise";
+    const key = `${franchiseName}-${r.id || r.application_number}`;
+    
+    // Only add if not already seen
+    if (!seenFranchises.has(key)) {
+      seenFranchises.add(key);
       
-      // Essential IDs
-      stationId: station.stationId,
-      portId: port.portId,  
-      siteId: r.siteId,    
-      
-      // Basic info
-      franchiseName,
-      siteName,
-      stationName: station.stationName || "",
-      
-      // Port details
-      capacity: port.capacity || r.chargerCapacity || "",
-      connectorType: port.connectorType || "",
-      serialNumber: port.serialNumber || station.serialNumber || "",
-      portType: port.portType || "",
-      
-      // Location
-      address: location.address || r.address || "",
-      latitude: location.latitude || r.latitude || "",
-      longitude: location.longitude || r.longitude || "",
-      
-      // Status
-      status: station.status || port.status || "Pending",
-      portStatus: port.status || station.status || "Pending",
-      
-      source: "db"
-    };
-  });
-});
-
-  const normalizedJsonFranchise = (jsonRequests || [])
-    .filter(r => r.managerName && r.managerName.trim() !== "")
-    .map(r => ({
-      id: r.siteId || Math.random(),
-      category: "franchise",
-      serialNumber: r.application_number || (r.stations && r.stations.length > 0
-      ? r.stations[0]["serial number"] || r.stations[0].ports?.[0]?.serialNumber
-      : "-"),
-      franchiseName: r.managerName || "Unknown Franchise",
-      siteName: r.siteName || "",
-      stationName: r.stations?.[0]?.stationName || "",
-      address:  "",
-      latitude: r.locations?.[0]?.latitude || "",
-      longitude: r.locations?.[0]?.longitude || "",
-      capacity: r.stations?.[0]?.ports?.[0]?.capacity || "",
-      phoneNumber: r.managerPhone || "",
-      email: r.managerEmail || "",
-      source: "json",
-    }));
-  const { flatSites: siteJsonData, flatStations: stationJsonData } = flattenStationsData(jsonRequests || [], "json");
-
-  //  Merge all
- const merged = [
-  ...normalizedDbFranchise,
-  ...normalizedJsonFranchise,
-  ...siteDbData,
-  ...siteJsonData,
-  ...stationDbData,
-  ...stationJsonData   
-];
-
-const cleanMergedData = merged.map(item => {
-  const cleaned = {};
-  Object.entries(item).forEach(([key, value]) => {
-    if (typeof value === "string" && value.trim().toLowerCase() === "unknown") {
-      cleaned[key] = "-";
-    } else {
-      cleaned[key] = value;
+      normalizedDbFranchise.push({
+        id: r.id || Math.random(),
+        category: "franchise",
+        serialNumber: r.application_number || r.serialNumber || "-",
+        franchiseName: franchiseName,
+        siteName: r.siteName || r.sitename || "",
+        stationName: r.stationName || "",
+        address: r.address || r.locations?.[0]?.address || "",
+        latitude: r.latitude || r.locations?.[0]?.latitude || "",
+        longitude: r.longitude || r.locations?.[0]?.longitude || "",
+        capacity: r.chargerCapacity || r.capacity || "-",
+        phoneNumber: r.phoneNumber || r.managerPhone || "",
+        email: r.email || r.managerEmail || "",
+        source: "db",
+      });
     }
   });
-  return cleaned;
-});
-setCombinedRequests(cleanMergedData);
-}, [dbRequests, jsonRequests]);
 
+  // Process Sites - WITH DEDUPLICATION
+  const siteDbData = [];
+  const seenSites = new Set();
+  
+  (dbRequests?.requests || []).forEach((r, index) => {
+    const siteKey = `${r.siteName || r.sitename}-${r.latitude}-${r.longitude}`;
+    
+    // Only add if not already seen
+    if (!seenSites.has(siteKey)) {
+      seenSites.add(siteKey);
+      
+      siteDbData.push({
+        id: `site-${index}`,
+        category: "site",
+        franchiseName: r.managerName || r.franchiseName || "Unknown Franchise",
+        siteName: r.siteName || r.sitename || "",
+        address: r.address || r.locations?.[0]?.address || "",
+        latitude: r.locations?.[0]?.latitude || "",
+        longitude: r.locations?.[0]?.longitude || "",
+        serialNumber: r.stations?.[0]?.ports?.[0]?.serialNumber || "-",
+        source: "db",
+      });
+    }
+  });
+
+  // Process Stations - WITH DEDUPLICATION
+  const stationDbData = [];
+  const seenStations = new Set();
+  
+  (dbRequests?.requests || []).forEach((r, index) => {
+    (r.stations || []).forEach((station, sIndex) => {
+      const port = station.ports?.[0] || {};
+      const stationKey = port.serialNumber || `${station.stationName}-${index}-${sIndex}`;
+      
+      // Only add if not already seen
+      if (!seenStations.has(stationKey)) {
+        seenStations.add(stationKey);
+        
+        stationDbData.push({
+          id: stationKey,
+          category: "station",
+          franchiseName: r.managerName || r.franchiseName || "Unknown Franchise",
+          siteName: r.siteName || r.sitename || "",
+          stationName: station.stationName || "",
+          serialNumber: port.serialNumber || "-",
+          capacity: port.capacity || "",
+          connectorType: port.connectorType || "",
+          portType: port.portType || "",
+          address: r.locations?.[0]?.address || "",
+          latitude: r.locations?.[0]?.latitude || "",
+          longitude: r.locations?.[0]?.longitude || "",
+          status: "Pending",
+          source: "db",
+        });
+      }
+    });
+  });
+
+  const normalizedJsonFranchise = [];
+  const seenJsonFranchises = new Set();
+  
+  (jsonRequests || []).forEach(r => {
+    const franchiseName = r.managerName || "Unknown Franchise";
+    const key = `${franchiseName}-${r.siteId || Math.random()}`;
+    
+    if (!seenJsonFranchises.has(key)) {
+      seenJsonFranchises.add(key);
+      
+      normalizedJsonFranchise.push({
+        id: r.siteId || Math.random(),
+        category: "franchise",
+        serialNumber: r.application_number || "-",
+        franchiseName: franchiseName,
+        siteName: r.siteName || "",
+        stationName: r.stations?.[0]?.stationName || "",
+        address: r.locations?.[0]?.address || "",
+        latitude: r.locations?.[0]?.latitude || "",
+        longitude: r.locations?.[0]?.longitude || "",
+        capacity: r.stations?.[0]?.ports?.[0]?.capacity || "",
+        phoneNumber: r.managerPhone || "",
+        email: r.managerEmail || "",
+        source: "json",
+      });
+    }
+  });
+
+  // Merge all data
+  const merged = [
+    ...normalizedDbFranchise,
+    ...normalizedJsonFranchise,
+    ...siteDbData,
+    ...stationDbData
+  ];
+
+  const finalMap = new Map();
+
+  const finalDeduplicated = Array.from(finalMap.values());
+
+  const cleanMergedData = finalDeduplicated.map(item => {
+    const cleaned = {};
+    Object.entries(item).forEach(([key, value]) => {
+      if (typeof value === "string" && value.trim().toLowerCase() === "unknown") {
+        cleaned[key] = "-";
+      } else {
+        cleaned[key] = value;
+      }
+    });
+    return cleaned;
+  });
+  
+  setCombinedRequests(cleanMergedData);
+  const stationData = merged
+  .filter(r => r.category === "station");
+}, [dbRequests, jsonRequests]);
 
 // to display "-" instead of "unknown in downloaded file data "
 const formatValue = (value) => {
@@ -836,6 +860,36 @@ const formatValue = (value) => {
   if (typeof value === "string" && value.trim().toLowerCase() === "unknown") return "-";
   return value;
 };
+
+useEffect(() => {
+  const merged = getAllData();
+
+  const finalMap = new Map();
+
+  merged.forEach(item => {
+    let key;
+
+    if (item.category === "station") {
+      key = `station-${item.franchiseName}-${item.siteName}-${item.stationName}-${item.id}`;
+    } 
+    else if (item.category === "site") {
+      key = `site-${item.siteName}-${item.latitude}-${item.longitude}`;
+    } 
+    else if (item.category === "franchise") {
+      key = `franchise-${item.franchiseName}`;
+    }
+
+    if (key && !finalMap.has(key)) {
+      finalMap.set(key, item);
+    }
+  });
+
+  const deduped = Array.from(finalMap.values());
+
+  setFinalDeduplicated(deduped);
+  setCombinedRequests(deduped);
+
+}, [dbRequests, jsonRequests]);
 
 const getTableColumns = (tabType) => {
   switch (tabType) {
@@ -905,17 +959,35 @@ const getAllStations = () => {
 };
 
 const getAllData = () => {
-    return [
-      ...(Array.isArray(dbRequests) ? dbRequests : []),
-      ...(Array.isArray(jsonRequests) ? jsonRequests : [])
-    ];
+  const dbData = (dbRequests?.requests || []).map(d => ({
+    ...d,
+    managerName: d.franchiseName,
+    siteName: d.siteName || d.sitename,
+    category: d.category?.toLowerCase(),
+  }));
+
+  const jsonData = Array.isArray(jsonRequests)
+    ? jsonRequests.map(j => ({
+        ...j,
+        category: j.category?.toLowerCase() || "station",
+      }))
+    : [];
+
+  return [...dbData, ...jsonData];
 };
+
+const stationRequests = getAllData().filter(
+  r => r.category === "station"
+);
+
+console.log("✅ StationRequestssssss:", stationRequests);
 
 const getFranchiseData = (franchiseName) => {
     const allData = getAllData();
-    const franchiseData = allData.filter(f => 
-      f.managerName === franchiseName
-    );
+    const franchiseData = allData.filter(f =>
+  f.franchiseName === franchiseName || 
+  f.managerName === franchiseName
+);
 
     // Extract stations data
     const stationsData = franchiseData.flatMap(site => 
@@ -1131,7 +1203,6 @@ const handleDownloadAllFranchises = (format) => {
 
     pdfContent += '</div>';
 
-    // Add detailed data for each franchise
     allFranchises.forEach(franchise => {
       const franchiseData = getFranchiseData(franchise.franchiseName);
       
@@ -1487,20 +1558,19 @@ return (
     onPageChange={handleSitePageChange}
   />
 </TabsContent>
-
 <TabsContent value="station">
- {renderTable(
-  getPaginatedStations(stationRequests),
-  "station"
-)}
-
+  {renderTable(
+    getPaginatedStations(filteredStations),
+    "station"
+  )}
   <StationPaginationControls
     currentPage={stationPagination.page}
-    totalItems={filteredRequests.filter(r => r.category === "station").length}
+    totalItems={filteredStations.length}
     pageSize={stationPagination.pageSize}
     onPageChange={handleStationPageChange}
   />
 </TabsContent>
+
       </Tabs>
     ) : (
       renderForm()
@@ -1535,7 +1605,3 @@ return (
   </div>
 );
 }
-
-// 30-10-2024 zip file
-// after adding pagination
-//////////////////////////////////

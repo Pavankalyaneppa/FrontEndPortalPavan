@@ -32,9 +32,9 @@ export default function ValidationRoute({ children }) {
         '/franchiseOwners', '/franchiseOwners/*', '/evusers', '/evusers/*',
         '/profiles/*', '/rfid', '/issues-tracker', '/issues/*', '/reports',
         '/adminProfile', '/ocpp', '/manufacturers', '/manufacturers/*',
-        '/addcharger/*', '/referral-codes', '/referral-codes/*', '/loading',
+        '/addcharger/*', '/referral-codes', '/referral-codes/*','/edit-alert','/edit-alert/*',
         '/customer-support','/customer-support/:id','/customer-support/*',
-        '/1loading1','/charger-installation-team','/charger-installation-team/add',
+        '/chargerhealth','/loading','/charger-installation-team','/charger-installation-team/add',
         '/charger-installation-team/edit/:id','/charger-installation-team/*',
         '/fleetManagement','/fleet/add','/fleet/revenue','/fleet/*',
         '/vehicle/add','/vehicle/*','/technician-dashboard','/technician-dashboard/:id',
@@ -44,12 +44,12 @@ export default function ValidationRoute({ children }) {
         '/franchiseOwners', '/franchiseOwners/*', '/evusers', '/evusers/*',
         '/profiles/*', '/rfid', '/issues-tracker', '/issues/*', '/reports',
         '/adminProfile', '/ocpp', 
-        '/addcharger/*', '/referral-codes', '/referral-codes/*', '/loading',
-        '/1loading1',
+        '/addcharger/*', '/referral-codes', '/referral-codes/*', '/edit-alert','/edit-alert/*',
+        '/chargerhealth',
        '/FranchiseRequests'],
     4: ['/', '/sites', '/add-site', '/site/*', '/editsite/*', '/stations',
         '/add-stations', '/stations/*','/issues-tracker', '/issues/*', '/reports',
-        '/adminProfile', '/loading','/1loading1'],
+        '/adminProfile', '/edit-alert','/edit-alert/*','/chargerhealth'],
     6: (() => {
     const designation = user?.designation?.toLowerCase();
     if (designation?.includes("customer support")) {

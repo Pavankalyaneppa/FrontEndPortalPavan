@@ -70,7 +70,7 @@ const CustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, value, name }
 
 export function EVChargerDashboard() {
   const dispatch = useDispatch();
-  const { whiteLabels, franchises, stats, status, revenueGraph, sessionGraph, stationStats, portStats, dateRange } = useSelector(state => state.dashboard);
+  const { whiteLabels, franchises, owners, stats, status, revenueGraph, sessionGraph, stationStats, portStats, dateRange } = useSelector(state => state.dashboard);
   const { user } = useSelector(state => state.authentication);
 
   const [selectedOrgId, setSelectedOrgId] = useState(
@@ -81,7 +81,7 @@ const effectiveOrgId =
   selectedOrgId === "admin" ? user?.orgId?.toString() : selectedOrgId;
 
   const selectedWhitelabel = whiteLabels?.find(wl => wl.id === parseInt(selectedOrgId));
-  const selectedFranchise = franchises?.find(f => f.id === parseInt(selectedOrgId));
+  const selectedFranchise = owners?.find(f => f.id === parseInt(selectedOrgId));
   const orgName = selectedWhitelabel?.orgName || selectedFranchise?.orgName || 'EV Charger';
 
   const jsonRequests = useSelector(state => state.requests.jsonRequests);

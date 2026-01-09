@@ -169,8 +169,8 @@ export const fetchWhiteLabels = () => async (dispatch) => {
 export const fetchFranchises = () => async (dispatch) => {
   try {
     dispatch(getDashboardDataStart());
-    const response = await AxiosServices.getOwners();
-    dispatch(getDashboardDataSuccess({ type: 'owners', data: response }));
+    const response = await AxiosServices.getFranchises();
+    dispatch(getDashboardDataSuccess({ type: 'owners', data: response.data }));
   } catch (error) {
     dispatch(getDashboardDataFailure(error.message));
   }

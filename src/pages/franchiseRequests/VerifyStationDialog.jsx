@@ -144,82 +144,54 @@ const handleBlur = (field) => {
   const handleVerifySelectChange = (name, value) => {
     setVerifyFormData((prev) => ({ ...prev, [name]: value }));
   };
+
+// In your handleVerifySubmit function
 const handleVerifySubmit = async (e) => {
   e.preventDefault();
   setIsSubmitting(true);
 
-  // Mark all fields as touched to show errors
-  setTouched({
-    stationName: true,
-    capacity: true,
-    connectorType: true,
-    serialNumber: true,
-    portType: true,
-    email: true,
-    mobileNumber: true,
-    address: true
-  });
-
-  // Validate form before submission
-  const { isValid, errors } = validateVerifyForm(verifyFormData);
-  setFormErrors(errors);
-
-  // If form is not valid, stop submission
-  if (!isValid) {
-    setIsSubmitting(false);
-    toast({
-      title: 'Validation Error',
-      description: 'Please fix all errors before submitting',
-      variant: 'destructive',
-    });
-    return;
-  }
+  // Validate form...
 
   try {
+    // Build the station data in EXACT format expected by backend
     const stationData = {
-      franchiseName: verifyFormData.franchiseName,
-      siteName: verifyFormData.siteName,
-      stationName: verifyFormData.stationName,
-      capacity: verifyFormData.capacity,
-      serialNumber: verifyFormData.serialNumber,
-      connectorType: verifyFormData.connectorType,
-      portType: verifyFormData.portType,
-      siteId: selectedSite?.siteId,
-      stationId: selectedStation?.stationId,
-      portId: selectedStation?.portId,
-      address: verifyFormData.address || selectedSite?.address || selectedSite?.locations?.[0]?.address,
-      coordinates: {
-        latitude: selectedSite?.latitude || selectedSite?.locations?.[0]?.latitude,
-        longitude: selectedSite?.longitude || selectedSite?.locations?.[0]?.longitude,
-      },
-      email: verifyFormData.email,
-      mobileNumber: verifyFormData.mobileNumber
+      ev_stations: [
+        {
+          site_name: verifyFormData.siteName,
+          station_name: verifyFormData.stationName,
+          franchise_name: verifyFormData.franchiseName,
+          address: verifyFormData.address,
+          coordinates: {
+            latitude: (selectedSite?.latitude || selectedSite?.locations?.[0]?.latitude || "0").toString(),
+            longitude: (selectedSite?.longitude || selectedSite?.locations?.[0]?.longitude || "0").toString()
+          },
+          capacity: verifyFormData.capacity,
+          number_of_chargers: 1, // Assuming 1 charger per station
+          application_number: `APP_${Date.now()}`,
+          connectorType: verifyFormData.connectorType,
+          portType: verifyFormData.portType,
+          email: verifyFormData.email,
+          mobileNumber: verifyFormData.mobileNumber,
+          serialNumber: verifyFormData.serialNumber,
+          // Add default values for other required fields
+          district: "Unknown",
+          registration_date: new Date().toISOString().split('T')[0],
+          registration: `REG_${Date.now()}`,
+          icon: "default_icon.png"
+        }
+      ]
     };
 
-    await dispatch(verifyStation(stationData));
+    console.log("Sending station data:", JSON.stringify(stationData, null, 2));
     
-    if (onVerifySuccess) {
-      onVerifySuccess(selectedStation);
-    }
-
-    onOpenChange(false);
-
-    toast({
-      title: "Success",
-      description: "Station verified successfully!",
-    });
+    // Call the existing endpoint
+    await axios.post('http://localhost:8080/station/verify-and-import', stationData);
+    
+    // Handle success...
   } catch (error) {
-    console.error('Verification failed:', error);
-    toast({
-      title: "Error",
-      description: error.message || "Failed to verify station",
-      variant: "destructive",
-    });
-  } finally {
-    setIsSubmitting(false);
+    // Handle error...
   }
 };
-
   // Initialize form when station is selected
   React.useEffect(() => {
     if (selectedStation) {
@@ -255,6 +227,7 @@ const handleVerifySubmit = async (e) => {
                 id="verify-franchiseName"
                 name="franchiseName"
                 value={verifyFormData.franchiseName}
+                onChange={handleVerifyFormChange} // ADD THIS
                 // readOnly
                 // className="bg-gray-100"
               />
@@ -267,6 +240,7 @@ const handleVerifySubmit = async (e) => {
                 id="verify-siteName"
                 name="siteName"
                 value={verifyFormData.siteName}
+                onChange={handleVerifyFormChange} // ADD THIS
                 // readOnly
                 // className="bg-gray-100"
               />

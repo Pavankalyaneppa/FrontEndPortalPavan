@@ -441,7 +441,7 @@ const handleManufacturerChange = (e) => {
               <option value="">Select Charger Type</option>
               {selectedManufacturer.chargingStation.map(station => (
                 <option key={station.id} value={station.id}>
-                  {station.chargerType || 'Unnamed Charger Type'}
+                    {station.chargerType} ({station.totalCapacityKW} KW)  
                 </option>
               ))}
             </select>

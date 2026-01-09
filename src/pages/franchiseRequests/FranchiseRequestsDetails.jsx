@@ -1,4 +1,3 @@
-import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import {  useSelector, useDispatch } from 'react-redux';
@@ -8,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import AxiosServices from '@/services/AxiosServices';
 import { Input } from "@/components/ui/input";
-import { ReloadIcon,DownloadIcon } from "@radix-ui/react-icons";
+import { DownloadIcon } from "@radix-ui/react-icons";
 import { VerifyStationDialog } from './VerifyStationDialog';
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
@@ -35,18 +34,33 @@ export default function FranchiseRequestsDetails({ franchiseObj, onBack, onSiteC
   const { toast } = useToast();
   const [siteSearch, setSiteSearch] = useState("");
 
-  const filteredSites = sitesData.filter(site =>
-    site.siteName?.toLowerCase().includes(siteSearch.toLowerCase()) ||
-    site.locations?.[0]?.address?.toLowerCase().includes(siteSearch.toLowerCase())
+  const filteredSites = sitesData.filter(site => {
+  const name =
+    site.siteName ||
+    site.sitename ||
+    "";
+
+  const address =
+    site.locations?.[0]?.address ||
+    site.address ||
+    "";
+
+  return (
+    name.toLowerCase().includes(siteSearch.toLowerCase()) ||
+    address.toLowerCase().includes(siteSearch.toLowerCase())
   );
+});
 
   const { dbRequests, jsonRequests, status, error, verifyStatus } = useSelector(state => state.requests);
   const getAllData = () => {
-    return [
-      ...(Array.isArray(dbRequests) ? dbRequests : []),
-      ...(Array.isArray(jsonRequests) ? jsonRequests : [])
-    ];
-  };
+  const dbData = dbRequests?.requests || [];
+  const jsonData = jsonRequests?.requests || [];
+
+  console.log("DB DATA:", dbData);
+  console.log("JSON DATA:", jsonData);
+
+  return [...dbData, ...jsonData];
+};
 
   const [verifyFormData, setVerifyFormData] = useState({
     franchiseName: "GreenCharge EV Pvt Ltd",
@@ -84,7 +98,6 @@ export default function FranchiseRequestsDetails({ franchiseObj, onBack, onSiteC
     }));
   }, [siteSearch]);
 
-  // Site Pagination Controls Component
   const SitePaginationControls = ({ currentPage, totalItems, pageSize, onPageChange }) => {
     const totalPages = Math.ceil(totalItems / pageSize);
     const startItem = ((currentPage - 1) * pageSize) + 1;
@@ -187,7 +200,6 @@ const handleVerifySubmit = async (e) => {
 
     await dispatch(verifyStation(stationData));
 
-    // ✅ Update local state instantly
     setSelectedSite(prev => {
       if (!prev) return prev;
       return {
@@ -230,27 +242,18 @@ const handleVerifySubmit = async (e) => {
 
 const getStatusVariant = async (status, portType) => {
   try {
-    // Use your existing service method
-    const response = await AxiosServices.getStations({ size: 100 });
-    
-    // The response should already be in the format your Redux slice expects
+    const response = await AxiosServices.getStations({ size: 100 });    
     const stations = response?.data || response?.list || response?.stations || [];
     
     if (!Array.isArray(stations)) {
       console.error("Unexpected stations format:", stations);
       return 'secondary';
     }
-
-    // Rest of your existing logic...
     stations.forEach(station => console.log("Station OCPP ID:", station.ocppid, `OCPP_${portType}`));
-
     const matchedStation = stations.find((station) => {
       console.log("Checking station:", station.ocppid);
       return station.ocppid === `OCPP_${portType}`;
     });
-
-    console.log("Matched Station:", matchedStation);
-
     if (matchedStation) {
       status = 'Approved';
     }
@@ -277,7 +280,6 @@ const displayValue = (value) => {
 const getDateFromSerial = (serialNumber) => {
 
   if (!serialNumber) return "-";
-  // Split by slash or space
   const parts = serialNumber.split(/[\/\s]+/);
 
   const datePart = parts.find(p => /\d{5,}/.test(p)); 
@@ -328,10 +330,48 @@ const getDateFromSerial = (serialNumber) => {
   setVerifyDialogOpen(true);
 };
 
-  const handleSiteClick = (site) => {
-    setSelectedSite(site);
-    setActiveTab('stations');
-  };
+const getStationsForSite = (site) => {
+  const allData = getAllData();
+
+  const stationRows = allData.filter(item =>
+    item.category?.toLowerCase() === "station" &&
+    item.sitename === site.sitename &&
+    item.franchiseName === site.franchiseName
+  );
+
+  const stationMap = new Map();
+
+  stationRows.forEach(row => {
+    if (!stationMap.has(row.id)) {
+      stationMap.set(row.id, {
+        stationId: row.id,
+        stationName: row.stationName,
+        status: row.status || "Pending",
+        ports: []
+      });
+    }
+    stationMap.get(row.id).ports.push({
+      portId: row.portId || `${row.id}_${row.portType}`,
+      capacity: row.capacity,
+      connectorType: row.connectorType,
+      portType: row.portType,
+      status: row.status || "Pending"
+    });
+  });
+  const stations = Array.from(stationMap.values());
+  return stations;
+};
+
+const handleSiteClick = (site) => {
+  const stations = getStationsForSite(site);
+
+  setSelectedSite({
+    ...site,
+    stations,
+  });
+
+  setActiveTab("stations");
+};
 
   useEffect(() => {
   const loadVariants = async () => {
@@ -353,7 +393,6 @@ const getDateFromSerial = (serialNumber) => {
   loadVariants();
 }, [selectedSite]);
 
-  // Download Functions
   const downloadPDF = (data, filename) => {
     const printWindow = window.open('', '_blank');
     printWindow.document.write(`
@@ -402,14 +441,14 @@ const getDateFromSerial = (serialNumber) => {
     });
   };
 
-  // Get franchise data by name
   const getFranchiseData = (franchiseName) => {
     const allData = getAllData();
-    const franchiseData = allData.filter(f => 
-      f.managerName === franchiseName
-    );
+    const franchiseData = allData.filter(item =>
+  item.category?.toLowerCase() === "site" &&
+  item.franchiseName === franchiseName
+);
 
-    // Extract stations data
+
     const stationsData = franchiseData.flatMap(site => 
       (site.stations || []).flatMap(station => 
         (station.ports || []).map(port => ({
@@ -437,11 +476,9 @@ const getDateFromSerial = (serialNumber) => {
     };
   };
 
-  // Download Current Franchise Sites Only
 const handleDownloadCurrentFranchiseSites = (format) => {
-
-    if (!franchiseObj) return;
-    const franchiseData = getFranchiseData(franchiseObj.franchiseName);
+    if (!franchiseObj || sitesData.length ===0) return;
+    // const franchiseData = getFranchiseData(franchiseObj.franchiseName);
     const pdfContent = `
       <div class="section">
         <h2>${franchiseObj.franchiseName} - Sites</h2>
@@ -457,14 +494,14 @@ const handleDownloadCurrentFranchiseSites = (format) => {
             </tr>
           </thead>
           <tbody>
-            ${franchiseData.sites.map(site => `
+            ${sitesData.map(site => `
               <tr>
                 <td>${site.stations?.[0]?.["serial number"] || site.stations?.[0]?.ports?.[0]?.serialNumber || "-"}</td>
                 <td>${getDateFromSerial(site.stations?.[0]?.["serial number"] || site.stations?.[0]?.ports?.[0]?.serialNumber)}</td>
                 <td>${displayValue(site.siteName) || "-"}</td>
-                <td>${site.locations?.[0]?.address || "-"}</td>
-                <td>${site.locations?.[0]?.latitude || "-"}</td>
-                <td>${site.locations?.[0]?.longitude || "-"}</td>
+                <td>${site.locations?.[0]?.address || site.address || "-"}</td>
+                <td>${site.locations?.[0]?.latitude || site.latitude ||  "-"}</td>
+                <td>${site.locations?.[0]?.longitude || site.longitude || "-"}</td>
               </tr>
             `).join('')}
           </tbody>
@@ -474,8 +511,8 @@ const handleDownloadCurrentFranchiseSites = (format) => {
 
     const excelData = [
       "Site Name,Address,Latitude,Longitude",
-      ...franchiseData.sites.map(site => 
-        `"${site.siteName || "-"}","${site.locations?.[0]?.address || "-"}","${site.locations?.[0]?.latitude || "-"}","${site.locations?.[0]?.longitude || "-"}"`
+      ...sitesData.map(site => 
+        `"${site.siteName || "-"}","${site.locations?.[0]?.address || "-"}","${site.locations?.[0]?.latitude || site.latitude || "-"}","${site.locations?.[0]?.longitude || "-"}"`
       )
     ].join('\n');
 
@@ -497,7 +534,6 @@ const handleDownloadCurrentSite = (site, format) => {
     : "-";
   const date = serialNumber !== "-" ? getDateFromSerial(serialNumber) : "-";
 
-  // PDF content
   let pdfContent = `
     <div class="section">
       <h2>Site Details - ${site.siteName}</h2>
@@ -520,8 +556,6 @@ const handleDownloadCurrentSite = (site, format) => {
           <th>Status</th>
         </tr>
   `;
-
-  // Excel content
   let excelData = [
     "Site Details",   
     `Serial Number,${serialNumber}`,
@@ -536,14 +570,12 @@ const handleDownloadCurrentSite = (site, format) => {
     "Serial Number,Date,Station Name,Capacity,Connector Type,Port Type,Status"
   ];
 
-  // Loop through stations
   site.stations?.forEach(station => {
     (station.ports || []).forEach(port => {
       const sNumber = station["serial number"] || station.serialNumber || "-";
       const sDate = sNumber !== "-" ? getDateFromSerial(sNumber) : "-";
       const status = port.status || station.status || "-";
 
-      // PDF table row
       pdfContent += `
         <tr>
           <td>${sNumber}</td>
@@ -574,11 +606,10 @@ const handleDownloadCurrentSite = (site, format) => {
 
  const handleDownloadCurrentFranchise = (franchise, format) => {
 
-  if (!franchise) return; // make sure a franchise is selected
-  const franchiseData = getFranchiseData(franchise.franchiseName); // get detailed data
+  if (!franchise) return; 
+  const franchiseData = getFranchiseData(franchise.franchiseName);
   if (!franchiseData) return;
 
-  // PDF content
   const pdfContent = `
     <div class="section">
       <h2>Franchise Information</h2>
@@ -678,22 +709,18 @@ const handleDownloadCurrentSite = (site, format) => {
     dispatch(fetchRequestedData());
   }, [dispatch]);
 
-useEffect(() => {
-  if (!franchiseObj) return;
-
-  const allData = getAllData();
-
-  const franchiseData = allData.filter(f => {
-    const manager = f.managerName?.toLowerCase() || "";
-    const franchise = f.franchiseName?.toLowerCase() || "";
-    const selected = franchiseObj.franchiseName?.toLowerCase() || "";
-    return manager.includes(selected) || franchise.includes(selected);
-  });
-
-  console.log("Franchise Data for", franchiseObj.franchiseName, ":", franchiseData);
-  setSitesData(franchiseData);
-}, [franchiseObj, dbRequests, jsonRequests]);
-
+ useEffect(() => {
+  if (!franchiseObj || !dbRequests?.requests?.length) return;
+  const allRequests = dbRequests.requests;
+  const franchiseSites = allRequests.filter(item => item.category?.toLowerCase() === "site" && item.franchiseName === franchiseObj.franchiseName );
+  console.log( "Franchise:", franchiseObj.franchiseName, "Sites Found:", franchiseSites.length, franchiseSites );
+  const uniqueSitesMap = new Map();
+  franchiseSites.forEach(site => { 
+    const key = [ site.sitename || site.siteName, site.address, site.latitude, site.longitude ].join("_");
+    if (!uniqueSitesMap.has(key)) { uniqueSitesMap.set(key, { ...site, siteName: site.siteName || site.sitename });
+  }
+ });
+ setSitesData(Array.from(uniqueSitesMap.values())); }, [franchiseObj, dbRequests]);
 
   return (
     <div>
@@ -708,7 +735,6 @@ useEffect(() => {
           )}
         </div>
       </div>
-
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         {!selectedSite && (
           <TabsList className="grid w-full grid-cols-2">
@@ -772,8 +798,6 @@ useEffect(() => {
             </CardContent>
           </Card>
         </TabsContent>
-
-        {/* Sites Tab */}
         <TabsContent value="sites" className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold">Sites</h2>            
@@ -815,7 +839,6 @@ useEffect(() => {
                </DropdownMenuContent>
             </DropdownMenu>
           </div>
-
           <Input
             placeholder="Search sites..."
             value={siteSearch}
@@ -954,7 +977,7 @@ useEffect(() => {
                     </TableRow>
                   </TableHeader>
                <TableBody>
-  {selectedSite?.stations?.length > 0 ? (
+                {selectedSite?.stations?.length > 0 ? (
     selectedSite.stations.flatMap(station =>
       (station.ports || []).map(port => (
         <TableRow key={station.stationId + port.portId}>
@@ -1043,8 +1066,6 @@ useEffect(() => {
     }));
 
     setSelectedStation(null);
-    
-    // Refresh data by refetching
     dispatch(fetchRequestedData());
   }}
 />

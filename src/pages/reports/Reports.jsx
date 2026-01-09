@@ -309,7 +309,6 @@ const Reports = () => {
         [
           "Site",
           "Station",
-          "Port",
           "Start Time",
           "End Time",
           "Consumption (kW)",

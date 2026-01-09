@@ -1,6 +1,13 @@
 
-import { baseURL,baseOCPPURL } from '@/config';
+import { baseURL,baseOCPPURL,baseAlertsURL} from '@/config';
 import axios from 'axios';
+
+export const axiosAlerts = axios.create({
+  baseURL: baseAlertsURL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
 export const axiosInstance = axios.create({
   baseURL: baseURL,
@@ -78,11 +85,13 @@ getStationBySiteId:(id)=> {
     .then(response => ({ data: response.data }));
 },
 
-  // New method to get list of owners
-  getOwners: () => {
-    return axios.get(`${API_URL}/userprofile/getOwners`)
-      .then(response => response.data);
-  },
+ // In AxiosServices.js, check if you're passing the parameter correctly:
+getOwners: (id) => {
+  return axios.get(`services/userprofile/getOwners`, {
+    params: { id: id }  // Make sure this is correct
+  })
+  .then(response => response.data);
+},
   fetchSingleSiteDetails: (id) => {
     return axios.get(`${API_URL}/site/siteDetails/${id}`)
       .then(response => ({ data: response.data }));
@@ -112,10 +121,10 @@ getStationBySiteId:(id)=> {
     }
   },
 
-searchStations: async ({ siteName, stationStatus, currentType, page = 0, size = 10,roleId,orgId }) => {
+searchStations: async ({ siteName, stationStatus, currentType, page = 0, size = 10, orgId  }) => {
   try {
     const response = await axiosInstance.get("/services/station/search", {
-      params: { roleId, orgId, siteName, stationStatus, currentType, page, size },
+      params: { siteName, stationStatus, currentType, page, size, orgId },
     });
 
     return {
@@ -137,6 +146,27 @@ searchStations: async ({ siteName, stationStatus, currentType, page = 0, size = 
       throw error.response.data;
     }
   },
+
+registerLogs: async (payload) => {
+  try {
+    const response = await axiosAlerts.post('/api/logs/register', payload);
+    return response;
+  } catch (error) {
+    throw error.response?.data || error;
+  }
+},
+getAllAlerts: async () => {
+  const response = await axiosAlerts.get('/api/alerts');
+  return response.data;
+},
+getAlertsByCpId: async (cpId) => {
+  try {
+    const response = await axiosAlerts.get(`/api/alerts/${cpId}`);
+    return response.data; // ✅ ONLY data
+  } catch (error) {
+    throw error.response?.data || error;
+  }
+},
 
   getStations: async (params) => {
   try {
@@ -754,14 +784,14 @@ updateStationStatus :async (stationId, newStatus) => {
       throw error.response?.data?.message || error.message || "Failed to update station status";
     }
   },
-  getStationsByFilters: async (siteName, stationStatus, currentType, page = 0, size = 10, orgId, roleId) => {
+  getStationsByFilters: async (siteName, stationStatus, currentType, page = 0, size = 10, orgId) => {
   try {
     const params = new URLSearchParams();
     if (siteName) params.append('siteName', siteName); 
     if (stationStatus) params.append('stationStatus', stationStatus);
     if (currentType) params.append('currentType', currentType);
+    if (orgId) params.append('orgId', orgId);
     if (orgId) params.append('orgId', orgId); 
-    if (roleId) params.append('roleId', roleId); 
     params.append('page', page);
     params.append('size', size);
 
@@ -909,20 +939,31 @@ getResolvedIssuesByEmployeeId: async (employeeId) => {
 
 //apis for requesting franchsies
 
-verifyAndImportStations: async (stationData) => {
-  try {
-    console.log('Sending to backend:', stationData);
-    const response = await axiosInstance.post('/services/station/verify-and-import', stationData);
-    return response.data;
-  } catch (error) {
-    console.error('Backend error details:', {
-      status: error.response?.status,
-      data: error.response?.data,
-      message: error.response?.data?.message
-    });
-    throw error.response?.data?.message || error.message || "Failed to verify stations";
-  }
+  verifyAndImportStations: async (evStationData) => {
+    try {
+        // The backend expects an object with ev_stations array
+        const payload = {
+            evStations: evStationData.ev_stations || evStationData
+        };
+        
+        const response = await axios.post(
+            `/services/station/verify-and-import`,
+            payload,
+            {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            }
+        );
+        
+        return response.data;
+    } catch (error) {
+        console.error('Verify and import stations error:', error);
+        throw error.response?.data || error.message;
+    }
 },
+
 
 requestFranchise: async (requestData) => {
   try {
@@ -942,12 +983,21 @@ requestFranchise: async (requestData) => {
 },
 
 //fetching data from json
-getRequestedFranchises: async (params = {}) => {
+// getRequestedFranchises: async (params = {}) => {
+//   try {
+//     const response = await axiosInstance.get('/services/station/getstationsjson', { params });
+//     return response.data; 
+//   } catch (error) {
+//     throw error.response?.data?.message || error.message || "Failed to fetch requested data";
+//   }
+// },
+
+getFranchises: async () => {
   try {
-    const response = await axiosInstance.get('/services/station/getstationsjson', { params });
-    return response.data; 
+    const response = await axiosInstance.get('/services/userprofile/getOwners');
+    return response;
   } catch (error) {
-    throw error.response?.data?.message || error.message || "Failed to fetch requested data";
+    throw error.response?.data?.message || error.message || "Failed to fetch francshises";
   }
 },
 

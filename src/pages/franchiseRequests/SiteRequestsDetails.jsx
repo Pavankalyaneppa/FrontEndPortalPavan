@@ -44,13 +44,21 @@ export default function SiteRequestsDetails({ siteObj, onBack }) {
     status: "",
   });
 
-  // Get all available data
   const getAllData = () => {
-    return [
-      ...(Array.isArray(dbRequests) ? dbRequests : []),
-      ...(Array.isArray(jsonRequests) ? jsonRequests : [])
-    ];
-  };
+  const dbData = Array.isArray(dbRequests?.requests)
+    ? dbRequests.requests
+    : [];
+
+  const jsonData = Array.isArray(jsonRequests)
+    ? jsonRequests
+    : [];
+
+  return [...dbData, ...jsonData].map(item => ({
+    ...item,
+    category: (item.category || "").toLowerCase(),
+    siteName: item.siteName || item.sitename
+  }));
+};
 
   const cleanName = (name) => {
   if (!name) return "-";
@@ -248,17 +256,37 @@ useEffect(() => {
   if (!siteObj) return;
 
   const allData = getAllData();
-  
-  const siteData = allData.find(item => 
-    item.siteName === siteObj.siteName || item.siteId === siteObj.id || item.id === siteObj.id
+
+  const stations = allData.filter(item =>
+    item.category === "station" &&
+    (
+      item.siteName === siteObj.siteName ||
+      item.siteId === siteObj.id ||
+      item.id === siteObj.id
+    )
   );
 
-  if (siteData) {
-    setStationsData(siteData.stations || []);
-  } else {
-    setStationsData([]);
-  }
+  // Convert flat station rows into UI-friendly structure
+  const formattedStations = stations.map(st => ({
+    stationId: st.id,
+    stationName: st.stationName,
+    status: st.status || "Pending",
+    ports: [
+      {
+        portId: st.id,
+        capacity: st.chargerCapacity || "-",
+        connectorType: st.connectorType || "-",
+        portType: st.portType || "-",
+        status: st.status || "Pending"
+      }
+    ],
+    serialNumber: st.serialNumber || st["serial number"]
+  }));
+
+  setStationsData(formattedStations);
+
 }, [siteObj, dbRequests, jsonRequests]);
+
 
   // Download Functions
   const downloadPDF = (data, filename) => {
@@ -489,7 +517,6 @@ useEffect(() => {
           ← Back
         </Button>
       </div>
-
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="basic">Basic Details</TabsTrigger>

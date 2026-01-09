@@ -108,7 +108,9 @@ useClickOutside(filterRef, dropdownRef, () => {
       searchStations({ 
         search: globalFilter, 
         page, 
-        size: pageSize 
+        size: pageSize,
+        orgId: user.orgId // ✅ Pass orgId for search
+
       })
     );
   } else if (selectedFilters.site || selectedFilters.status || selectedFilters.currentType) {
@@ -119,8 +121,7 @@ useClickOutside(filterRef, dropdownRef, () => {
         selectedFilters.currentType,
         page,
         pageSize,
-        user.orgId,  
-        user.roleId 
+        user.orgId
       )
     );
   } else {
@@ -131,7 +132,6 @@ useClickOutside(filterRef, dropdownRef, () => {
         sortBy: 'id',
         orderBy: 'desc',
         orgId: user.orgId,
-        roleId: user.roleId
       })
     );
   }
@@ -146,7 +146,7 @@ useEffect(() => {
   }, 400);
 
   return () => clearTimeout(delay);
-}, [globalFilter, currentPage, user]);
+}, [globalFilter, currentPage]);
   useEffect(() => {
     fetchData();
   }, [currentPage, selectedFilters]);

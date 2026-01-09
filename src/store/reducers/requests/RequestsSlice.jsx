@@ -181,55 +181,56 @@ export const fetchRequestedDataDb = (params = {}) => async (dispatch) => {
 };
 
 export const verifyStation = (stationData) => async (dispatch) => {
-  dispatch(verifyStationStart());
-  try {
-    const requestData = {
-      ev_stations: [
-        {
-          site_name: stationData.siteName,
-          station_name: stationData.stationName,
-          franchise_name: stationData.franchiseName,
-          address: stationData.address,
-          coordinates: {
-            latitude: stationData.coordinates?.latitude?.toString(),
-            longitude: stationData.coordinates?.longitude?.toString(),
-          },
-          capacity: stationData.capacity,
-          number_of_chargers: 1,
-          application_number: stationData.serialNumber,
-          serial_number: stationData.serialNumber,
-          connector_type: stationData.connectorType,
-          port_type: stationData.portType,
-          email: stationData.email,
-          mobile_number: stationData.mobileNumber,
-          district: null,
-          registration_date: null,
-          registration: null,
-          icon: null,
-          status: null,
-          verification_notes: null,
-        },
-      ],
-    };
+    dispatch(verifyStationStart());
+    try {
+        const requestData = {
+            ev_stations: [
+                {
+                    franchise_name: stationData.franchiseName,
+                    site_name: stationData.siteName,
+                    station_name: stationData.stationName,
+                    address: stationData.address,
+                    coordinates: {
+                        latitude: stationData.coordinates?.latitude?.toString() || stationData.latitude?.toString(),
+                        longitude: stationData.coordinates?.longitude?.toString() || stationData.longitude?.toString()
+                    },
+                    capacity: stationData.capacity,
+                    number_of_chargers: 1,
+                    application_number: stationData.applicationNumber || stationData.serialNumber,
+                    serial_number: stationData.serialNumber,
+                    connector_type: stationData.connectorType,
+                    port_type: stationData.portType,
+                    email: stationData.email,
+                    mobile_number: stationData.mobileNumber,
+                    district: stationData.district || null,
+                    registration_date: stationData.registrationDate || null,
+                    registration: stationData.registration || null,
+                    icon: stationData.icon || null,
+                    status: stationData.status || null,
+                    verification_notes: stationData.verificationNotes || null
+                }
+            ]
+        };
 
-    const response = await AxiosServices.verifyAndImportStations(requestData);
-    dispatch(removeVerifiedStation(stationData.stationId || stationData.id));
-    dispatch(
-      verifyStationSuccess({
-        siteId: stationData.siteId,
-        stationId: stationData.stationId,
-        portId: stationData.portId,
-        response,
-      })
-    );
-    return response;
-  } catch (error) {
-    console.error("Verification error:", error);
-    dispatch(verifyStationFailure(error.message || "Failed to verify station"));
-    throw error;
-  }
+        const response = await AxiosServices.verifyAndImportStations(requestData);
+        
+        // Update the Redux state
+        dispatch(verifyStationSuccess({
+            stationId: stationData.stationId,
+            portId: stationData.portId,
+            data: response
+        }));
+        
+        // Also update the local list by removing the verified station
+        dispatch(removeVerifiedStation(stationData.stationId));
+        
+        return response;
+    } catch (error) {
+        console.error('Verification error:', error);
+        dispatch(verifyStationFailure(error.message || "Failed to verify station"));
+        throw error;
+    }
 };
-
 export const {
   fetchRequestsStart,
   fetchJsonRequestsSuccess,

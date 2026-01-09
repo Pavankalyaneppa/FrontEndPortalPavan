@@ -42,7 +42,7 @@ import EditSite from './pages/sites/EditSite';
 import ReferralCodes from './pages/referralcodes/ReferralCodes';
 import EditReferralCode from './pages/referralcodes/EditReferralCode';
 import ReferralCodeInfo from './pages/referralcodes/ReferralCodeInfo';
-import Chargerhealth from './users/Chargerhealth';
+
 import ForgotPassword from './setpassword/ForgotPassword';
 import ResetPassword from './setpassword/ResetPassword';
 import  CustomerSupport  from './pages/customerSupport/CustomerSupport';
@@ -72,6 +72,9 @@ import TechnicianDashboardDetails from './pages/technician/TechnicianDashboardDe
 import CompletedTasks from './pages/technician/CompletedTasks';
 import FranchiseRequests from './pages/franchiseRequests/FranchiseRequests';
 import StationLogsPage from './pages/stations/StationLogsPage';
+import Chargerhealth from './pages/chargerHealth/Chargerhealth';
+import EditAlertPage from './pages/chargerHealth/EditAlertPage';
+import Loadmanagement from './users/Loadmanagement';
 const router = createBrowserRouter([
   {
     path: "/",
@@ -110,8 +113,8 @@ const router = createBrowserRouter([
       { path:"/referral-codes", element:<ReferralCodes />},
       { path:"/referral-codes/:id/edit", element:<EditReferralCode />},
       { path:"/referral-codes/:id" ,element:< ReferralCodeInfo  />},
-      { path: "/loading", element: <Chargerhealth /> },
-      { path: "/1loading1", element: <Chargerhealth /> },
+      { path: "/loading", element:<Loadmanagement />},
+      { path: "/chargerhealth", element: <Chargerhealth /> },
       { path: "/customer-support", element: <CustomerSupport/>},
       { path: "/customer-support/:id", element: <CustomerSupportDetails /> },
       { path: "/customer-support/tasks", element: <CustomerSupportTasks /> },
@@ -138,7 +141,9 @@ const router = createBrowserRouter([
       { path: "/FranchiseRequests", element: <FranchiseRequests />},
       { path: "/sites-requests", element: <FranchiseRequests />},
       { path: "/stations-requests",element: <FranchiseRequests />},
-      { path:"/stations/:id/logs", element:<StationLogsPage />},
+      { path: "/stations/:id/logs", element:<StationLogsPage />},
+      { path: "/edit-alert/:cpId", element:<EditAlertPage />},
+
     ]
   },
 

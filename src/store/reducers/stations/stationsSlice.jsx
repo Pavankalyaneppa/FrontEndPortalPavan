@@ -89,19 +89,23 @@ export const fetchStations = (params) => async (dispatch) => {
 //   }
 // };
 
+
 export const fetchStationByFilters = (stationName, stationStatus, currentType, page = 0, size = 10) => async (dispatch, getState) => {
   try {
     dispatch(getStationsStart());
+    
+    // ⭐ GET orgId FROM REDUX STATE
     const state = getState();
-    const { orgId, roleId } = state.authentication.user;
+    const orgId = state.authentication?.user?.orgId;
+    
+    // ⭐ PASS orgId TO THE API CALL
     const response = await AxiosServices.getStationsByFilters(
       stationName, 
       stationStatus, 
       currentType, 
       page, 
       size, 
-      orgId,
-      roleId 
+      orgId  
     );
     
     dispatch(getStationsSuccess(response.data ?? response));
@@ -110,31 +114,10 @@ export const fetchStationByFilters = (stationName, stationStatus, currentType, p
   }
 };
 
-// export const searchStations = ({ search = '', page = 0, size = 10, searchField = '' }) => async (dispatch) => {
-//   try {
-//     dispatch(getStationsStart());
-//     const response = await AxiosServices.searchStations({ search, page, size, searchField });
-//     dispatch(getStationsSuccess(response.data ?? response));
-//   } catch (error) {
-//     dispatch(getStationsFailure(error.message || 'Search failed'));
-//   }
-// };
-export const searchStations = ({ search = '', page = 0, size = 10, searchField = '' }) => 
-  async (dispatch, getState) => {
+export const searchStations = ({ search = '', page = 0, size = 10, searchField = '', orgId }) => async (dispatch) => {
   try {
     dispatch(getStationsStart());
-
-    const { roleId, orgId } = getState().authentication.user;
-
-    const response = await AxiosServices.searchStations({
-      search,
-      page,
-      size,
-      searchField,
-      roleId,
-      orgId
-    });
-
+    const response = await AxiosServices.searchStations({ search, page, size, searchField,orgId });
     dispatch(getStationsSuccess(response.data ?? response));
   } catch (error) {
     dispatch(getStationsFailure(error.message || 'Search failed'));

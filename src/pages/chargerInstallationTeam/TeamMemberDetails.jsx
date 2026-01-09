@@ -656,7 +656,7 @@ const getPriorityClasses = (priority) => {
                         />
                          {touched.taskName && formErrors.taskName && (<p className="text-sm text-red-500 mt-1">{formErrors.taskName}</p>)}
                       </div>
-                      <div>
+                      <div className="space-y-2">
                         <Label htmlFor="taskLocation">Location</Label>
                         <Input
                           id="taskLocation"
@@ -667,7 +667,7 @@ const getPriorityClasses = (priority) => {
                         />
                         {touched.location && formErrors.location && (<p className="text-sm text-red-500 mt-1">{formErrors.location}</p>)}
                       </div>
-                      <div>
+                      <div className="space-y-2">
                         <Label htmlFor="taskPriority">Priority</Label>
                         <Select
                           value={newTask.priority}
@@ -683,7 +683,7 @@ const getPriorityClasses = (priority) => {
                           </SelectContent>
                         </Select>
                       </div>
-                      <div>
+                      <div className="space-y-2">
                         <Label htmlFor="dueDate">Due Date</Label>
                         <Input
                           id="dueDate"

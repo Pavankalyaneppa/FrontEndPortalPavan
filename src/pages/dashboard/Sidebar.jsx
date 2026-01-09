@@ -111,8 +111,9 @@ const Sidebar = () => {
       { icon: ExclamationTriangleIcon, label: 'Issues Tracker', href: '/issues-tracker' },
       { icon: Share2Icon, label: 'Referral Codes', href: '/referral-codes' },    
       { icon: PlayIcon, label: 'OCPP', href: '/ocpp' },
-      { icon: CardStackIcon, label: 'Load Management', href: '/loading' },
-      { icon: BsHeartPulse, label: "Charger Health", href: '/1loading1' },
+      { icon: BsHeartPulse, label: "Charger Health", href: '/chargerhealth' },
+      { icon: CardStackIcon, label: 'Loadmanagement', href: '/loading' },
+      
     ],
     3: [ // Whitelabel role
       { icon: DashboardIcon, label: 'Dashboard', href: '/' },
@@ -127,7 +128,7 @@ const Sidebar = () => {
       { icon: Share2Icon, label: 'Referral Codes', href: '/referral-codes' },
       { icon: PlayIcon, label: 'OCPP', href: '/ocpp' },     
       { icon: CardStackIcon, label: 'Load Management', href: '/loading' },
-      { icon: BsHeartPulse, label: "Charger Health", href: '/1loading1' },
+      { icon: BsHeartPulse, label: "Charger Health", href: '/chargerhealth' },
     ],
     4: [ // Franchise Owner role
       { icon: DashboardIcon, label: 'Dashboard', href: '/' },
@@ -136,7 +137,7 @@ const Sidebar = () => {
       { icon: LightningBoltIcon, label: 'Stations', href: '/stations' },
       { icon: ExclamationTriangleIcon, label: 'Issues Tracker', href: '/issues-tracker' },
       { icon: CardStackIcon, label: 'Load Management', href: '/loading' },
-      { icon: BsHeartPulse, label: "Charger Health", href: '/1loading1' },
+      { icon: BsHeartPulse, label: "Charger Health", href: '/chargerhealth' },
     ],
      6: (() => {
   const designation = user?.designation?.toLowerCase();
