@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
+import { ReloadIcon } from '@radix-ui/react-icons';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -13,7 +14,8 @@ import {
   updateReferral,
   selectCurrentReferral,
   selectReferralStatus,
-  selectReferralError
+  selectReferralError,
+  selectUpdateReferralStatus   
 } from '@/store/reducers/referralCode/referralSlice';
 import { fetchSites } from '@/store/reducers/sites/sitesSlice';
 
@@ -46,7 +48,8 @@ export default function EditReferralCode() {
   const { id } = useParams();
 
   const currentReferral = useSelector(selectCurrentReferral);
-  const status = useSelector(selectReferralStatus);
+  // const status = useSelector(selectReferralStatus);
+  const updateStatus = useSelector(selectUpdateReferralStatus);
   const error = useSelector(selectReferralError);
   const { list: sites } = useSelector((state) => state.sites);
   
@@ -304,9 +307,19 @@ export default function EditReferralCode() {
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={status === 'loading'}>
+                {/* <Button type="submit" disabled={status === 'loading'}>
                   {status === 'loading' ? 'Saving...' : 'Save Changes'}
-                </Button>
+                </Button> */}
+                <Button type="submit" disabled={updateStatus === "loading"}>
+  {updateStatus === "loading" ? (
+    <>
+      <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />
+      Updating...
+    </>
+  ) : (
+    "Save Changes"
+  )}
+</Button>
               </div>
             </form>
           </CardContent>

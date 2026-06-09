@@ -72,17 +72,15 @@ export function EVChargerDashboard() {
   const dispatch = useDispatch();
   const { whiteLabels, franchises, owners, stats, status, revenueGraph, sessionGraph, stationStats, portStats, dateRange } = useSelector(state => state.dashboard);
   const { user } = useSelector(state => state.authentication);
+  const [selectedOrgId, setSelectedOrgId] = useState("");
 
-  const [selectedOrgId, setSelectedOrgId] = useState(
-    user?.orgId === 1 ? "admin" : user?.orgId?.toString()
-  );
-
-const effectiveOrgId =
-  selectedOrgId === "admin" ? user?.orgId?.toString() : selectedOrgId;
+  const effectiveOrgId = selectedOrgId && selectedOrgId !== "admin" 
+  ? selectedOrgId 
+  : user?.orgId?.toString();
 
   const selectedWhitelabel = whiteLabels?.find(wl => wl.id === parseInt(selectedOrgId));
   const selectedFranchise = owners?.find(f => f.id === parseInt(selectedOrgId));
-  const orgName = selectedWhitelabel?.orgName || selectedFranchise?.orgName || 'EV Charger';
+  const orgName = selectedWhitelabel?.orgName || selectedFranchise?.orgName;
 
   const jsonRequests = useSelector(state => state.requests.jsonRequests);
   const dbRequests = useSelector(state => state.requests.dbRequests.requests || []);
@@ -356,7 +354,7 @@ useEffect(() => {
       )}
 <div
   className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 ${
-    Number(user?.roleId) === 4 ? "lg:grid-cols-4" : "lg:grid-cols-5"
+    Number(user?.roleId) === 4 ? "lg:grid-cols-4" : "lg:grid-cols-4"
   } gap-4 mb-6 `}
 >   <Card>
     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -382,7 +380,7 @@ useEffect(() => {
             <div className="text-2xl font-bold">{stats?.totalKWH?.toFixed(2) || ''} kWh</div>
           </CardContent>
         </Card> 
-          <Card>
+          {/* <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium">Pending Requests</CardTitle>
       </CardHeader>
@@ -392,7 +390,7 @@ useEffect(() => {
           Franchise: {pendingStats.pendingFranchises}, Site: {pendingStats.pendingSites}, Station: {pendingStats.pendingStations}
         </p>
       </CardContent>
-    </Card>
+    </Card> */}
           {(Number(user?.roleId) !== 4) ? (
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

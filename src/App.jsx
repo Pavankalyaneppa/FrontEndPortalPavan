@@ -75,6 +75,8 @@ import StationLogsPage from './pages/stations/StationLogsPage';
 import Chargerhealth from './pages/chargerHealth/Chargerhealth';
 import EditAlertPage from './pages/chargerHealth/EditAlertPage';
 import Loadmanagement from './users/Loadmanagement';
+import FileUpload from './pages/EvyaSense/FileUpload';
+import SenseDashboard from './pages/EvyaSense/SenseDashboard';
 const router = createBrowserRouter([
   {
     path: "/",
@@ -143,6 +145,8 @@ const router = createBrowserRouter([
       { path: "/stations-requests",element: <FranchiseRequests />},
       { path: "/stations/:id/logs", element:<StationLogsPage />},
       { path: "/edit-alert/:cpId", element:<EditAlertPage />},
+      { path: "/evyasense", element: <SenseDashboard /> },
+      { path: "/senseupload", element: <FileUpload /> },
 
     ]
   },
@@ -189,7 +193,16 @@ const router = createBrowserRouter([
   },
 ]);
 
+// function App() {
+//   return <><RouterProvider router={router} /><Toaster/></>;
+// }
 function App() {
-  return <><RouterProvider router={router} /><Toaster/></>;
+  return (
+    <div className="main-content">
+      <RouterProvider router={router} />
+      <Toaster />
+    </div>
+  );
 }
 export default App
+//app.jsx

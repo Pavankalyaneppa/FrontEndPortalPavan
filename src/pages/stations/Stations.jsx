@@ -160,8 +160,8 @@ useEffect(() => {
         return <span>{siteName}</span>;
       },
     },
-    { accessorKey: 'id', header: 'Station ID' },
-    { accessorKey: 'manufacturerId', header: 'Manufacturer Id' },
+    // { accessorKey: 'id', header: 'Station ID' },
+    // { accessorKey: 'manufacturerId', header: 'Manufacturer Id' },
     { accessorKey: 'ocppVersion', header: 'OcppVersion' },
     { accessorKey: 'max_output_power_kW', header: 'Power KW/h' },
     { accessorKey: 'number_of_ports', header: 'PortQuantity' },
@@ -197,7 +197,7 @@ useEffect(() => {
         };
       
         return (
-          <div className="relative" ref={filterRef}>
+        <div className="relative">
             <button
               className={`flex items-center px-4 py-1.5 border rounded-full transition ${
              (status || '').toUpperCase() === 'ACTIVE'
@@ -208,19 +208,19 @@ useEffect(() => {
               }`}
               onClick={() => setDropdownOpen((prev) => !prev)}
             >
-              {status}
+            {(status || '').toUpperCase()}
               <ChevronDown className="ml-2 h-4 w-4" />
             </button>
             {dropdownOpen && (
               <div className="absolute mt-2 w-48 bg-white dark:bg-gray-800 shadow-lg rounded-md z-10 p-3">
                 <p className="font-medium text-sm mb-2 text-gray-700 dark:text-gray-300">Select Status</p>
-                {['Active', 'Inactive', 'Maintenance'].map((option) => (
+                {['ACTIVE', 'INACTIVE', 'MAINTENANCE'].map((option) => (
                   <button
                     key={option}
                     className={`w-full text-left px-4 py-1.5 mb-1 rounded-full border transition ${
-                      option === 'Active'
+                      option === 'ACTIVE'
                         ? 'bg-green-100 text-green-800 border-green-400'
-                        : option === 'Maintenance'
+                        : option === 'MAINTENANCE'
                         ? 'bg-yellow-100 text-yellow-800 border-yellow-400'
                         : 'bg-red-100 text-red-800 border-red-400'
                     }`}
@@ -282,16 +282,22 @@ useEffect(() => {
       setCurrentPage(page);
     }
   };
+  //lavanya added
 
-  const applyFilter = (type, value) => {
-    setSelectedFilters((prev) => ({
-      ...prev,
-      [type]: value,
-    }));
-    setCurrentPage(0);
-    setSiteSearchQuery('');
-  };
+const applyFilter = (type, value) => {
+  setSelectedFilters((prev) => ({
+    ...prev,
+    [type]: value,
+  }));
 
+  setCurrentPage(0);
+  setSiteSearchQuery('');
+  // setActiveSubFilter(null);
+
+  // ✅ Close filter dropdown after selecting
+  // setIsFilterOpen(false);
+};
+  
   const clearFilter = (type) => {
     setSelectedFilters((prev) => ({
       ...prev,
@@ -388,7 +394,7 @@ const applyLogSearch = () => {
                           {key === 'site' && 'Site: '}
                           {key === 'status' && 'Status: '}
                           {key === 'currentType' && 'Type: '}
-                          {value}
+                         {value.toString().charAt(0).toUpperCase() + value.toString().slice(1).toLowerCase()}
                         </span>
                         <button
                           onClick={() => clearFilter(key)}

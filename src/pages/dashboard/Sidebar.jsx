@@ -3,7 +3,8 @@ import { useSelector } from 'react-redux';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ClipboardList, Logs, LogsIcon } from "lucide-react";
+import { ClipboardList, FileUpIcon, Logs, LogsIcon } from "lucide-react";
+import { FaAddressBook, FaFileUpload } from 'react-icons/fa';
 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
@@ -109,26 +110,29 @@ const Sidebar = () => {
       { icon: PersonIcon, label:'Charger Installation Team ', href: '/charger-installation-team'},
       { icon: Truck, label: 'Fleet', href: '/fleetManagement'},
       { icon: ExclamationTriangleIcon, label: 'Issues Tracker', href: '/issues-tracker' },
-      { icon: Share2Icon, label: 'Referral Codes', href: '/referral-codes' },    
       { icon: PlayIcon, label: 'OCPP', href: '/ocpp' },
-      { icon: BsHeartPulse, label: "Charger Health", href: '/chargerhealth' },
-      { icon: CardStackIcon, label: 'Loadmanagement', href: '/loading' },
-      
+      { icon: CardStackIcon, label: 'Evya Sense', href: '/evyasense' },
+      { icon: FileUpIcon, label: 'File Upload', href: '/senseupload' },
+      // { icon: BsHeartPulse, label: "Charger Health", href: '/chargerhealth' },
+      { icon: Share2Icon, label: 'Referral Codes', href: '/referral-codes' },    
+      { icon: CardStackIcon, label: 'Loadmanagement', href: '/loading' },      
     ],
     3: [ // Whitelabel role
       { icon: DashboardIcon, label: 'Dashboard', href: '/' },
-      { icon: ReaderIcon, label: "Requests", href: '/FranchiseRequests'},
+      // { icon: ReaderIcon, label: "Requests", href: '/FranchiseRequests'},
       { icon: ReaderIcon, label: 'Reports', href: '/reports' },
       { icon: PersonIcon, label: 'Franchise Owners', href: '/franchiseOwners' },
       { icon: TargetIcon, label: 'Sites', href: '/sites' },
-      { icon: LightningBoltIcon, label: 'Stations', href: '/stations' },     
+      { icon: LightningBoltIcon, label: 'Stations', href: '/stations' },
+      { icon: GearIcon, label: 'Manufacturers', href: '/manufacturers' },   
       { icon: PersonIcon, label: 'EV Users', href: '/evusers' },
       { icon: CardStackIcon, label: 'RFID Management', href: '/rfid' },
+      { icon: HeadsetIcon, label: 'Customer Support', href: '/customer-support' },
       { icon: ExclamationTriangleIcon, label: 'Issues Tracker', href: '/issues-tracker' },
       { icon: Share2Icon, label: 'Referral Codes', href: '/referral-codes' },
       { icon: PlayIcon, label: 'OCPP', href: '/ocpp' },     
       { icon: CardStackIcon, label: 'Load Management', href: '/loading' },
-      { icon: BsHeartPulse, label: "Charger Health", href: '/chargerhealth' },
+      // { icon: BsHeartPulse, label: "Charger Health", href: '/chargerhealth' },
     ],
     4: [ // Franchise Owner role
       { icon: DashboardIcon, label: 'Dashboard', href: '/' },
@@ -137,7 +141,7 @@ const Sidebar = () => {
       { icon: LightningBoltIcon, label: 'Stations', href: '/stations' },
       { icon: ExclamationTriangleIcon, label: 'Issues Tracker', href: '/issues-tracker' },
       { icon: CardStackIcon, label: 'Load Management', href: '/loading' },
-      { icon: BsHeartPulse, label: "Charger Health", href: '/chargerhealth' },
+      // { icon: BsHeartPulse, label: "Charger Health", href: '/chargerhealth' },
     ],
      6: (() => {
   const designation = user?.designation?.toLowerCase();

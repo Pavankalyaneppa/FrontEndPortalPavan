@@ -9,7 +9,7 @@ const Dashboard = () => {
 
   return (
     <div>
-              <div className="flex h-screen bg-background">
+          <div className="flex h-screen bg-background">
           <Sidebar />
           <div className="flex flex-col flex-1">
             <Header />

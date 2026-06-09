@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
-import { fetchIssues, deleteIssue } from '@/store/reducers/issues/issuesSlice';
+import { useNavigate, Link} from 'react-router-dom';
+import { fetchIssues, deleteIssue,updateIssueNote,deleteIssueNote } from '@/store/reducers/issues/issuesSlice';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -47,6 +47,31 @@ export default function IssuesTracker() {
   const totalPages = Math.max(1, Math.ceil((totalElements || 0) / pageSize));
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [currentIssue, setCurrentIssue] = useState(null);
+  const [editingNoteId, setEditingNoteId] = useState(null);
+  const [editedTitle, setEditedTitle] = useState("");
+  const [editedNotes, setEditedNotes] = useState("");
+  const [activeIssueTab, setActiveIssueTab] = useState("details");
+
+useEffect(() => {
+  if (activeTab !== "search") {
+    setSearchInput("");
+    setSearchedIssue(null);
+  }
+}, [activeTab]);
+
+useEffect(() => {
+  if (activeTab !== "search") return;
+
+  const delay = setTimeout(() => {
+    if (searchInput && searchInput.length >= 2) {
+      handleSearchIssue();
+    } else {
+      setSearchedIssue(null);
+    }
+  }, 400);
+
+  return () => clearTimeout(delay);
+}, [searchInput, activeTab]);
 
   useEffect(() => {
     if (activeTab === 'list') {
@@ -77,28 +102,27 @@ export default function IssuesTracker() {
     }
   };
 
-  const handleSearchIssue = async () => {
-    try {
-      const response = await AxiosServices.fetchIssueByTicketId(searchInput);
-      if (response.data) {
-        setSearchedIssue(response.data);
-      } else {
-        toast({
-          title: "Not Found",
-          description: "No issue found with that ID or ticket number",
-          variant: "destructive",
-        });
-        setSearchedIssue(null);
-      }
-    } catch (error) {
-      console.error('Error searching issue:', error);
-      toast({
-        title: "Error",
-        description: "Failed to search for issue",
-        variant: "destructive",
-      });
+const handleSearchIssue = async () => {
+  try {
+    const response = await AxiosServices.fetchIssueByTicketId(searchInput);
+
+    const issue = response?.data || response;
+
+    if (issue && issue !== "No Issues Found") {
+      setSearchedIssue(issue);
+    } else {
+      setSearchedIssue("No Issues Found");
     }
-  };
+
+  } catch (error) {
+    console.error('Error searching issue:', error);
+    toast({
+      title: "Error",
+      description: "Failed to search for issue",
+      variant: "destructive",
+    });
+  }
+};
 
   const handleRowClick = (issue) => {
     navigate(`/issues/${issue.id}`, { state: { issue } });
@@ -109,6 +133,17 @@ export default function IssuesTracker() {
     setIsDeleteDialogOpen(true);
   };
 
+  const handleEditNote = (note) => {
+  setEditingNoteId(note.id);
+  setEditedTitle(note.title);
+  setEditedNotes(note.notes);
+};
+
+const handleCancelEdit = () => {
+  setEditingNoteId(null);
+  setEditedTitle("");
+  setEditedNotes("");
+};
   const handleDelete = async (issueId) => {
     try {
       await dispatch(deleteIssue(issueId)).unwrap();
@@ -140,6 +175,62 @@ export default function IssuesTracker() {
     }
   };
 
+  const handleUpdateNote = async (issueId, noteId) => {
+  try {
+    await dispatch(
+      updateIssueNote(issueId, noteId, {
+        title: editedTitle,
+        notes: editedNotes,
+        lastModifiedBy: user?.id || "ADMIN"
+      })
+    ).unwrap();
+
+    toast({
+      title: "Success",
+      description: "Note updated successfully",
+    });
+
+    setEditingNoteId(null);
+    setEditedTitle("");
+    setEditedNotes("");
+
+    // Refresh searched issue
+    handleSearchIssue();
+
+  } catch (error) {
+    console.error("Error updating note:", error);
+
+    toast({
+      title: "Error",
+      description: "Failed to update note",
+      variant: "destructive",
+    });
+  }
+};
+
+const handleDeleteNote = async (issueId, noteId) => {
+  try {
+    await dispatch(deleteIssueNote(issueId, noteId)).unwrap();
+
+    toast({
+      title: "Success",
+      description: "Note deleted successfully",
+    });
+
+    // Refresh search result
+    handleSearchIssue();
+
+  } catch (error) {
+    console.error("Error deleting note:", error);
+
+    toast({
+      title: "Error",
+      description: "Failed to delete note",
+      variant: "destructive",
+    });
+  }
+};
+
   const handlePageChange = (page) => {
     if (page >= 0 && page < totalPages) {
       setCurrentPage(page);
@@ -158,14 +249,22 @@ export default function IssuesTracker() {
     accessorKey: "ticketId",
     header: "Ticket ID",
     cell: ({ row }) => {
+      const issue = row.original;
       const ticketId = row.original?.ticketId ?? "—";
       return (
-        <span
-          className="text-blue-600 cursor-pointer hover:underline"
-          onClick={() => handleRowClick(row.original)}
-        >
-          {ticketId}
-        </span>
+        // <span
+        //   className="text-blue-600 cursor-pointer hover:underline"
+        //   onClick={() => handleRowClick(row.original)}
+        // >
+        //   {ticketId}
+        // </span>
+          <Link
+        to={`/issues/${issue.id}`}
+        state={{ issue }}
+        className="text-blue-600 hover:underline"
+      >
+        {ticketId}
+      </Link>
       );
     },
   },
@@ -234,6 +333,26 @@ export default function IssuesTracker() {
     );
   },
 },
+//for copilot
+{
+  accessorKey: "assignedTo",
+  header: "Assigned To",
+  cell: ({ row }) => {
+    const employeeId = row.original?.employeeId;
+    const assignedTo = row.original?.assignedTo || "Unassigned";
+    if (employeeId) {
+      return (
+        <Link
+          to={`/customer-support/${employeeId}`}
+          className="text-blue-600 hover:underline"
+        >
+          {assignedTo}
+        </Link>
+      );
+    }
+    return <span>{assignedTo}</span>;
+  },
+},
   {
     id: "actions", 
     header: "Actions",
@@ -251,8 +370,6 @@ export default function IssuesTracker() {
     ),
   },
 ];
-
-
 
   const table = useReactTable({
     data: list || [],
@@ -287,7 +404,6 @@ export default function IssuesTracker() {
           <AddIssueDialog />
         </div>
       </div>
-
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="mb-4">
           <TabsTrigger value="list">All Issues</TabsTrigger>
@@ -300,8 +416,7 @@ export default function IssuesTracker() {
             value={globalFilter ?? ""}
             onChange={(e) => setGlobalFilter(e.target.value)}
             className="mb-4"
-          />
-          
+          />          
           <div className="rounded-md border">
             <Table>
               <TableHeader>
@@ -320,28 +435,31 @@ export default function IssuesTracker() {
                   </TableRow>
                 ))}
               </TableHeader>
-              <TableBody>
-                {table.getRowModel().rows?.length ? (
-                  table.getRowModel().rows.map((row) => (
-                    <TableRow
-                      key={row.id}
-                      data-state={row.getIsSelected() && "selected"}
-                    >
-                      {row.getVisibleCells().map((cell) => (
-                        <TableCell key={cell.id}>
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={columns.length} className="h-24 text-center">
-                      No results found.
+             <TableBody>
+            {status === "loading" ? (
+              <TableRow>
+                <TableCell colSpan={columns.length}>
+                  <Loading />
+                </TableCell>
+              </TableRow>
+            ) : table.getRowModel().rows?.length ? (
+              table.getRowModel().rows.map((row) => (
+                <TableRow key={row.id}>
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
+                  ))}
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={columns.length} className="h-24 text-center">
+                  No results found.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
             </Table>
           </div>          
           <div className="flex items-center justify-center gap-2 py-4">
@@ -382,7 +500,7 @@ export default function IssuesTracker() {
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 className="flex-1"
-                onKeyPress={(e) => e.key === 'Enter' && handleSearchIssue()}
+                // onKeyPress={(e) => e.key === 'Enter' && handleSearchIssue()}
               />
               <Button 
                 onClick={handleSearchIssue}
@@ -391,7 +509,6 @@ export default function IssuesTracker() {
                 Search
               </Button>
             </div>
-
             {searchedIssue && searchedIssue !== "No Issues Found" ? (
               <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
                 <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
@@ -440,21 +557,73 @@ export default function IssuesTracker() {
                   </div>
                   <div className="space-y-1 md:col-span-2">
                     <p className="text-sm text-gray-500">Notes</p>
-                    <div className="space-y-2">
-                      {searchedIssue.notes?.length > 0 ? (
-                        searchedIssue.notes.map(note => (
-                          <div key={note.id} className="border-l-4 border-gray-200 pl-3 py-1">
-                            <p className="font-medium text-gray-900">{note.title}</p>
-                            <p className="text-gray-700">{note.notes}</p>
-                            <p className="text-xs text-gray-500">
-                              {formatDate(note.modifiedDate)} by {note.createdBy}
-                            </p>
+                  <div className="space-y-2">
+                  {searchedIssue.notes?.map((note) => (
+                    <div key={note.id} className="border-l-4 border-gray-200 pl-3 py-2">
+
+                      {editingNoteId === note.id ? (
+                        <>
+                          <Input
+                            value={editedTitle}
+                            onChange={(e) => setEditedTitle(e.target.value)}
+                            className="mb-2"
+                          />
+
+                          <Input
+                            value={editedNotes}
+                            onChange={(e) => setEditedNotes(e.target.value)}
+                            className="mb-2"
+                          />
+
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              onClick={() => handleUpdateNote(searchedIssue.id, note.id)}
+                            >
+                              Save
+                            </Button>
+
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={handleCancelEdit}
+                            >
+                              Cancel
+                            </Button>
                           </div>
-                        ))
+                        </>
                       ) : (
-                        <p className="text-gray-500">No notes available</p>
+                        <>
+                          <p className="font-medium text-gray-900">{note.title}</p>
+                          <p className="text-gray-700">{note.notes}</p>
+
+                          <p className="text-xs text-gray-500">
+                            {formatDate(note.modifiedDate)} by {note.createdBy}
+                          </p>
+
+                          <div className="flex gap-2 mt-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleEditNote(note)}
+                            >
+                              Edit
+                            </Button>
+
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleDeleteNote(searchedIssue.id, note.id)}
+                            >
+                              Delete
+                            </Button>
+                          </div>
+                        </>
                       )}
+
                     </div>
+                  ))}
+                </div>
                   </div>
                 </div>
                 <div className="bg-gray-50 px-4 py-3 border-t border-gray-200 flex justify-end">

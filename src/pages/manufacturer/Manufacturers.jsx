@@ -20,8 +20,12 @@ const Manufacturers = () => {
   const [selectedStationId, setSelectedStationId] = useState(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+
+  //for copilot
+    const [isAddDialogOpen, setIsAddDialogOpen] = useState(false); 
+    
   const { manufacturers, totalPages, currentPage, loading, error } = useSelector((state) => {
-  
+
     const manufacturerState = state.manufacturer || {};
     return {
       manufacturers: manufacturerState.manufacturers || [],
@@ -42,6 +46,22 @@ const Manufacturers = () => {
     clearTimeout(timerId);
   };
 }, [searchTerm]);
+
+
+//for copilot
+ useEffect(() => {
+    const handleOpenAddDialog = () => {
+      console.log('🎯 Opening manufacturer dialog from Copilot');
+      setIsAddDialogOpen(true);
+    };
+
+    window.addEventListener('openAddManufacturerDialog', handleOpenAddDialog);
+    console.log('👂 Listening for openAddManufacturerDialog events');
+
+    return () => {
+      window.removeEventListener('openAddManufacturerDialog', handleOpenAddDialog);
+    };
+  }, []);
 
 useEffect(() => {
   if (debouncedSearchTerm) {
@@ -90,7 +110,16 @@ useEffect(() => {
     <div className="container mx-auto p-4">
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-2xl font-bold">Manufacturers</h1>
-          <AddManufacturer onSuccess={() => dispatch(fetchManufacturers({ page, pageSize }))} />
+          {/* <AddManufacturer onSuccess={() => dispatch(fetchManufacturers({ page, pageSize }))} /> */}
+
+           <AddManufacturer 
+          open={isAddDialogOpen}
+          onOpenChange={setIsAddDialogOpen}
+          onSuccess={() => {
+            setIsAddDialogOpen(false);
+            dispatch(fetchManufacturers({ page, pageSize }));
+          }} 
+        />
         </div>
         <div className="mb-4 text-sm">
        <input
@@ -105,7 +134,7 @@ useEffect(() => {
         <Table>
           <TableHeader>
             <TableRow>
-             <TableHead>Manufacturer Id</TableHead>
+             {/* <TableHead>Manufacturer Id</TableHead> */}
               <TableHead>Manufacturer Name</TableHead>
               <TableHead>Contact Info</TableHead>
               <TableHead>Mobile Number</TableHead>
@@ -123,7 +152,7 @@ useEffect(() => {
           ):  manufacturers.length > 0 ? (
        manufacturers.map((manufacturer) => (
       <TableRow key={manufacturer.id || manufacturer.manufacturerName} className="hover:bg-gray-100">
-        <TableCell>{manufacturer.id || 'N/A'}</TableCell>
+        {/* <TableCell>{manufacturer.id || 'N/A'}</TableCell> */}
         <TableCell className="font-medium">{manufacturer.manufacturerName}</TableCell>
         <TableCell>{manufacturer.contactInfo}</TableCell>
         <TableCell>{manufacturer.mobileNumber || 'N/A'}</TableCell>

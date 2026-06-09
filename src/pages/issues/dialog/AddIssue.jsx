@@ -78,6 +78,17 @@ export function AddIssueDialog() {
     setFormErrors(errors);
   }, [formData, touchedFields]);
 
+  //for copilot..
+  useEffect(() => {
+  const handleOpenFromTracker = () => {
+    setOpen(true);
+  };
+  window.addEventListener('openAddIssueFromTracker', handleOpenFromTracker);
+  return () => {
+    window.removeEventListener('openAddIssueFromTracker', handleOpenFromTracker);
+  };
+}, []);
+
   const validateForm = useCallback(() => {
     const errors = {};
     

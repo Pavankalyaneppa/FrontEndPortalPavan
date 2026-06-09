@@ -196,11 +196,21 @@ export const fetchIssueNotes = (issueId) => async (dispatch) => {
   }
 };
 
-export const updateIssueNote = (noteId, noteData) => async (dispatch) => {
+export const updateIssueNote = (issueId, noteId, noteData) => async (dispatch) => {
   try {
-    await AxiosServices.updateNote(noteId, noteData);
+    await AxiosServices.updateIssueNote(issueId, noteId, noteData);
+    dispatch(fetchIssueNotes(issueId)); // refresh notes
   } catch (error) {
     console.error("Error updating issue note:", error);
+    throw error;
+  }
+};
+export const deleteIssueNote = (issueId, noteId) => async (dispatch) => {
+  try {
+    await AxiosServices.deleteIssueNote(issueId, noteId);
+    dispatch(fetchIssueNotes(issueId));
+  } catch (error) {
+    console.error("Error deleting note:", error);
     throw error;
   }
 };

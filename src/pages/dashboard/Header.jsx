@@ -5,6 +5,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { EnterFullScreenIcon, PersonIcon, ExitIcon } from "@radix-ui/react-icons";
 import { NotificationBell } from "@/components/custom/NotificationBell";
 import { useSelector } from "react-redux";
+import CopilotChat from "../copilot/CopilotChat";
 
 const Header = () => {
   const { user } = useSelector(state => state.authentication);
@@ -51,9 +52,12 @@ const Header = () => {
         </div>
         <div className="flex items-center space-x-4">
           <NotificationBell/>
+          
           <Button variant="ghost" size="icon" onClick={toggleFullScreen}>
             <EnterFullScreenIcon className="h-4 w-4" />
+              
           </Button>
+          <CopilotChat/>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="flex items-center space-x-2">

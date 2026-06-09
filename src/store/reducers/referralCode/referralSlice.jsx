@@ -40,9 +40,10 @@ export const addReferral = createAsyncThunk(
 
 export const updateReferral = createAsyncThunk(
   'referral/updateReferral',
-  async ({ id, ...referralData }) => {
-    const response = await axios.put(`${API_BASE_URL}/edit/${id}`, referralData);
-    return response.data;
+  async ({ id, ...referralData }, { dispatch }) => {
+    await axios.put(`${API_BASE_URL}/edit/${id}`, referralData);
+    const refreshed = await axios.get(`${API_BASE_URL}/getAllReferral/${id}`);
+    return refreshed.data;
   }
 );
 
@@ -142,3 +143,5 @@ export const selectReferralById = (id) => (state) =>
 export const selectCurrentReferral = (state) => state.referral.currentReferral;
 export const selectReferralStatus = (state) => state.referral.status;
 export const selectReferralError = (state) => state.referral.error;
+export const selectUpdateReferralStatus = (state) =>
+  state.referral.updateReferralStatus;

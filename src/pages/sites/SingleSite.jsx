@@ -76,10 +76,35 @@ const handleStatusChange = async (newStatus) => {
   }
 };
 
+//lavanya added
+const formatTime = (time) => {
+  if (!time) return "-";
+
+  const [hour, minute] = time.split(":");
+  const date = new Date();
+  date.setHours(hour);
+  date.setMinutes(minute);
+
+  return date.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
 
 const normalizeStatus = (status) =>
   (status || '').toString().trim().toUpperCase();
 
+// const formatStatus = (status) => {
+//   if (!status) return "";
+  
+//   const s = status.toString().toLowerCase();
+
+//   if (s === "active") return "Active";
+//   if (s === "maintenance") return "Maintenance";
+//   if (s === "inactive") return "Inactive";
+
+//   return status;
+// };
 const getStatusClasses = (status) => {
   switch (normalizeStatus(status)) {
     case 'ACTIVE':
@@ -266,9 +291,9 @@ useEffect(() => {
                 </div>
                 <div>
                   <p className="font-semibold text-gray-600">Operating Hours</p>
-                  <p className="font-medium">
-                   {currentSite.openingTime || '-'} - {currentSite.closeTime || '-'}
-                  </p>
+                 <p className="font-medium">
+                  {formatTime(currentSite.openingTime)} - {formatTime(currentSite.closeTime)} ({currentSite.timezone})
+                </p>
                 </div>
               </div>          
               <div className="grid grid-cols-3 gap-4">
@@ -342,7 +367,7 @@ useEffect(() => {
               <Table className="border">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Station Id</TableHead>
+                    {/* <TableHead>Station Id</TableHead> */}
                     <TableHead>Station Name</TableHead>
                     <TableHead>Type</TableHead>
                     <TableHead>Port Quantity</TableHead>
@@ -353,7 +378,7 @@ useEffect(() => {
                 <TableBody>
                  {stationList.slice(startIndex, endIndex).map((station) => (
                     <TableRow key={station.id} onClick={()=>navigate(`/stations/${station.id}`)}>
-                      <TableCell>{station.id || '-'}</TableCell>
+                      {/* <TableCell>{station.id || '-'}</TableCell> */}
                       <TableCell>{station.stationName || '-'}</TableCell>
                       <TableCell>{station.model || '-'}</TableCell>
                       <TableCell>{station.number_of_ports || '-'}</TableCell>

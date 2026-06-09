@@ -53,7 +53,7 @@ const AddStationPage = () => {
     voltage_range: '',
     current_type: '',
     number_of_ports: 0,
-    V2G_support: false,
+    v2G_support: false,
     plug_and_charger: false,
     lastHeartBeat: new Date().toISOString().split('T')[0],
     siteId: '',
@@ -247,7 +247,7 @@ const handleSubmit = async (e) => {
       voltage_range: '',
       current_type: '',
       number_of_ports: 0,
-      V2G_support: false,
+      v2G_support: false,
       plug_and_charger: false,
       lastHeartBeat: new Date().toISOString().split('T')[0],
       siteId: '',
@@ -637,8 +637,8 @@ const handleManufacturerChange = (e) => {
                 <div className="flex items-center">
                   <input
                     type="checkbox"
-                    name="V2G_support"
-                    checked={formData.V2G_support}
+                    name="v2G_support"
+                    checked={formData.v2G_support}
                     onChange={handleInputChange}
                     className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                   />

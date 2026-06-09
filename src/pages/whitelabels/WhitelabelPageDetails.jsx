@@ -19,7 +19,7 @@ import AxiosServices from '@/services/AxiosServices';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 
 const WhitelabelPageDetails = () => {
-  const { id,orgId,orgName } = useParams();
+  // const { id,orgId,orgName } = useParams();
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState(null);
   console.log(currentUser);
@@ -32,6 +32,9 @@ const WhitelabelPageDetails = () => {
   const [editFormErrors, setEditFormErrors] = useState({});
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
   const [userStatus, setUserStatus] = useState('');
+  const [statusLoading, setStatusLoading] = useState(false);
+  const { id, orgId, orgName } = useParams();
+  
   const normalizeStatus = (status) =>
   (status || '').toString().trim().toUpperCase();
 
@@ -96,7 +99,7 @@ const endIndex = startIndex + itemsPerPage;
   };
 
     const [formData, setFormData] = useState({
-        orgName: orgName || "",
+        orgName: "",
         fullname: "",
         username: "",
         email: "",
@@ -235,6 +238,37 @@ useEffect(() => {
   }
 }, [currentUser]);
 
+//for copilot
+// Add this useEffect to listen for edit events from Copilot
+useEffect(() => {
+  const handleOpenEditDialog = () => {
+    if (currentUser) {
+      setEditMode(true);
+      // Pre-fill the edit form with current user data
+      setEditFormData({
+        orgName: orgName || '',
+        fullname: currentUser.fullname || '',
+        username: currentUser.username || '',
+        email: currentUser.email || '',
+        mobileNumber: currentUser.mobileNumber || '',
+        address: currentUser.address?.[0]?.address || '',
+        city: currentUser.address?.[0]?.city || '',
+        country: currentUser.address?.[0]?.country || '',
+        state: currentUser.address?.[0]?.state || '',
+        zipCode: currentUser.address?.[0]?.zipCode || '',
+        enabled: currentUser.enabled || false,
+        rolename: 'WhiteLabel',
+      });
+    }
+  };
+
+  window.addEventListener('openEditWhitelabelDialog', handleOpenEditDialog);
+  
+  return () => {
+    window.removeEventListener('openEditWhitelabelDialog', handleOpenEditDialog);
+  };
+}, [currentUser, orgName]);
+
 
  const handleAddFranchiseOwner = async (e) => {
   e.preventDefault();
@@ -320,11 +354,18 @@ useEffect(() => {
       resetForm();
     }
   } catch (error) {
+    console.log(error);
+    let errorMessage = "Failed to add site";
+    
+    if (error.response?.data.includes('ConstraintViolationException') || 
+        error.response?.data.includes('could not execute statement')) {
+      errorMessage = "Mobile Number already exists. Please choose a different Number.";
+    } else if (error.response?.data) {
+      errorMessage = error.response?.data;
+    }
     toast({
       title: "Error",
-      description: typeof error === 'string' ? error : 
-                 error.message || 
-                 "Failed to add franchise owner",
+      description: errorMessage || "Failed to add. Please try again.",
       variant: "destructive",
     });
   } finally {
@@ -345,7 +386,7 @@ useEffect(() => {
         country: "India",
         state: "",
         zipCode: "",
-        orgId: ""
+        orgId: orgId
       });
     };
 
@@ -468,6 +509,7 @@ const handleUserStatusChange = async (newStatus) => {
   const enabled = newStatus === 'ACTIVE';
 
   try {
+    setStatusLoading(true);
     await AxiosServices.updateUserStatus(id, enabled);
     setUserStatus(newStatus);
     setCurrentUser((prev) => ({
@@ -487,7 +529,9 @@ const handleUserStatusChange = async (newStatus) => {
       variant: 'destructive',
     });
   } finally {
+       setStatusLoading(false);  // stop loading
     setStatusDropdownOpen(false);
+
   }
 };
 
@@ -504,9 +548,6 @@ const handleUserStatusChange = async (newStatus) => {
       <div className="p-6">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">Edit User</h1>
-          <Button variant="outline" onClick={() => setEditMode(false)}>
-            Cancel
-          </Button>
         </div>
         <Card className="p-6">
           <form onSubmit={handleUpdateUser} className="space-y-4">
@@ -609,7 +650,7 @@ const handleUserStatusChange = async (newStatus) => {
                 />
                 {editFormErrors.zipCode && (  <p className="text-xs text-red-500 mt-1">{editFormErrors.zipCode}</p>)}
               </div>
-              <div className="flex items-center space-x-2">
+              {/* <div className="flex items-center space-x-2">
             <Checkbox
                 checked={editFormData.enabled}
                 onCheckedChange={(checked) => {
@@ -622,22 +663,25 @@ const handleUserStatusChange = async (newStatus) => {
                   setUserStatus(enabled ? 'ACTIVE' : 'INACTIVE');
                 }}
               />
-
-
-                <Label htmlFor="edit-enabled">Enabled</Label>
-              </div>
+              <Label htmlFor="edit-enabled">Enabled</Label>
+              </div> */}
             </div>
             <div className="flex justify-end gap-4 pt-4">
-              <Button type="submit" disabled={isSubmitting} >
-                {isSubmitting ? (
-                  <>
+            <div className="flex justify-end gap-4 pt-4">
+               <Button variant="outline" onClick={() => setEditMode(false)}>
+            Cancel
+          </Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
                   <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />
                   Updating...
-                  </>
-                  ) : (
-                  'Update'
-                  )}
-              </Button>
+                </>
+              ) : (
+                "Update"
+              )}
+            </Button>
+          </div>
             </div>
           </form>
         </Card>
@@ -657,7 +701,14 @@ const handleUserStatusChange = async (newStatus) => {
       ${getStatusClasses(userStatus)}`}
     onClick={() => setStatusDropdownOpen(prev => !prev)}
   >
-    {normalizeStatus(userStatus)}
+    {statusLoading ? (
+      <>
+      <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />
+       Updating...
+       </>
+    ) : (
+      normalizeStatus(userStatus)
+    )}
     {statusDropdownOpen ? (
       <ChevronUp className="ml-2 h-4 w-4" />
     ) : (
@@ -674,6 +725,7 @@ const handleUserStatusChange = async (newStatus) => {
       {['ACTIVE', 'INACTIVE'].map((option) => (
         <button
           key={option}
+          disabled={statusLoading}
           onClick={() => handleUserStatusChange(option)}
           className={`w-full text-left px-4 py-1.5 mb-1 rounded-full border transition ${
             option === 'ACTIVE'
@@ -704,7 +756,7 @@ const handleUserStatusChange = async (newStatus) => {
           <div>
             <div className="flex justify-between items-center mb-6">
               <div> <h2 className="text-xl font-semibold mb-4">Personal Information</h2></div>
-             <Button onClick={handleEditUser} className="flex gap-2  w-40" >Edit</Button>
+             <Button onClick={handleEditUser} className="flex gap-2  w-24" >Edit</Button>
         </div>
             <Card className="p-6 mb-6">
               <div className="grid grid-cols-3 gap-4 mb-6">
@@ -804,7 +856,7 @@ const handleUserStatusChange = async (newStatus) => {
             <Table className="border">
               <TableHeader>
                 <TableRow>
-                  <TableHead>ID</TableHead>
+                  {/* <TableHead>ID</TableHead> */}
                   <TableHead>Name</TableHead>
                   <TableHead>Phone No</TableHead>
                   <TableHead>Email</TableHead>
@@ -869,19 +921,21 @@ const handleUserStatusChange = async (newStatus) => {
                   <div className="space-y-2">
                     <Label htmlFor="orgId">White Label Organization *</Label>
                     <Input
-                id="orgName"
-                name="orgName"
-                value={orgName}
-                disabled
-              />                 
+                      value={orgName}
+                      disabled
+                    />                 
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="orgName">Organization Name *</Label>
-                    <Input 
-                      id="orgName" 
-                      name="orgName" 
-                      value={formData.orgName} 
-                      onChange={handleInputChange} 
+                 <div>
+                    <Label className="text-sm font-medium text-gray-600">
+                      Organization Name *
+                    </Label>
+
+                    <Input
+                      name="orgName"
+                      value={formData.orgName}
+                      onChange={handleInputChange}
+                      placeholder="Enter Organization Name"
+                      className="mt-1"
                     />
                   </div>
                   <div className="space-y-2">

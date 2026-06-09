@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { Separator } from "@/components/ui/separator";
 import Loading from '@/users/Loading';
+import { ReloadIcon } from "@radix-ui/react-icons";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   validateSiteName,
@@ -234,198 +235,229 @@ export default function EditSite() {
     return <div className="p-4">No site data found</div>;
   }
 
-  return (
-    <div className="container mx-auto p-4">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">{currentSite.siteName}</h1>
-      </div>
+return (
+  <div className="p-6">
 
-      <Card className="w-full max-w-4xl mx-auto">
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium py-4">Site Information</h3>
-              <div className="space-y-2">
-                <Label htmlFor="siteName">Site Name</Label>
-                <Input
-                  id="siteName"
-                  name="siteName"
-                  value={formData.siteName}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-            </div>
-            <Separator />
-
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium">Manager Information</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="managerName">Name</Label>
-                  <Input
-                    id="managerName"
-                    name="managerName"
-                    value={formData.managerName}
-                    onChange={handleChange}
-                    required
-                  />
-                  {formErrors.managerName && <p className="text-xs text-red-500 mt-1">{formErrors.managerName}</p>}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="managerEmail">Email</Label>
-                  <Input
-                    id="managerEmail"
-                    name="managerEmail"
-                    type="email"
-                    value={formData.managerEmail}
-                    onChange={handleChange}
-                    required
-                  />
-                  {formErrors.managerEmail && <p className="text-xs text-red-500 mt-1">{formErrors.managerEmail}</p>}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="managerPhone">Phone</Label>
-                  <Input
-                    id="managerPhone"
-                    name="managerPhone"
-                    type="tel"
-                    value={formData.managerPhone}
-                    onChange={handleChange}
-                    required
-                  />
-                  {formErrors.managerPhone && <p className="text-xs text-red-500 mt-1">{formErrors.managerPhone}</p>}
-                </div>
-              </div>
-            </div>
-            <Separator />
-
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium">Location</h3>
-              <div className="space-y-2">
-                <Label htmlFor="address">Address</Label>
-                <Textarea
-                  id="address"
-                  name="address"
-                  value={formData.location.address}
-                  onChange={(e) => handleNestedChange('location', e)}
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="latitude">Latitude</Label>
-                  <Input
-                    id="latitude"
-                    name="latitude"
-                    type="number"
-                    step="any"
-                    value={formData.location.latitude}
-                    onChange={(e) => handleNestedChange('location', e)}
-                    required
-                  />
-                  {formErrors.latitude && <p className="text-xs text-red-500 mt-1">{formErrors.latitude}</p>}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="longitude">Longitude</Label>
-                  <Input
-                    id="longitude"
-                    name="longitude"
-                    type="number"
-                    step="any"
-                    value={formData.location.longitude}
-                    onChange={(e) => handleNestedChange('location', e)}
-                    required
-                  />
-                  {formErrors.longitude && <p className="text-xs text-red-500 mt-1">{formErrors.longitude}</p>}
-                </div>
-              </div>
-            </div>
-            <Separator />
-
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium">Operations</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="openingTime">Opening Time</Label>
-                  <Input
-                    id="openingTime"
-                    name="openingTime"
-                    type="time"
-                    value={formData.operations.openingTime}
-                    onChange={(e) => handleNestedChange('operations', e)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="closeTime">Closing Time</Label>
-                  <Input
-                    id="closeTime"
-                    name="closeTime"
-                    type="time"
-                    value={formData.operations.closeTime}
-                    onChange={(e) => handleNestedChange('operations', e)}
-                    required
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="timezone">Timezone</Label>
-                  <Select
-                    value={formData.operations.timezone}
-                    onValueChange={(value) => handleNestedChange('operations', value)}
-                  >
-                    <SelectTrigger id="timezone">
-                      <SelectValue placeholder="Select timezone" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="IST">IST (Indian Standard Time)</SelectItem>
-                      <SelectItem value="UTC">UTC (Coordinated Universal Time)</SelectItem>
-                      <SelectItem value="EST">EST (Eastern Standard Time)</SelectItem>
-                      <SelectItem value="PST">PST (Pacific Standard Time)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {formErrors.timezone && <p className="text-xs text-red-500 mt-1">{formErrors.timezone}</p>}
-                </div>
-              </div>
-            </div>
-            <Separator />
-
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium">Facilities</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {['parking', 'wifi', 'food', 'restrooms'].map((facility) => (
-                  <div key={facility} className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id={facility}
-                      checked={formData.facilities[facility]}
-                      onChange={(e) => handleCheckboxChange('facilities', facility, e.target.checked)}
-                    />
-                    <Label htmlFor={facility} className="capitalize">{facility}</Label>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-4 pt-6">
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => navigate(`/site/${id}`)}
-              >
-                Cancel
-              </Button>
-              <Button 
-                type="submit"
-                disabled={updateSiteStatus === 'loading'|| update=='loading'}
-              >
-                {updateSiteStatus === 'loading'|| update=='loading' ? 'Saving...' : 'Save Changes'}
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+    <div className="flex justify-between items-center mb-6">
+      <h1 className="text-2xl font-bold">Edit Site</h1>
     </div>
-  );
+    <Card className="p-6">
+      <form onSubmit={handleSubmit} className="space-y-4">
+
+        {/* Site Information */}
+        <h2 className="text-lg font-semibold">Site Information</h2>
+
+        <div className="grid grid-cols-2 gap-4">
+
+          <div className="space-y-2">
+            <Label>Site Name *</Label>
+            <Input
+              name="siteName"
+              value={formData.siteName}
+              onChange={handleChange}
+            />
+            {formErrors.siteName && (
+              <p className="text-sm text-red-500">{formErrors.siteName}</p>
+            )}
+          </div>
+
+        </div>
+
+        {/* Manager Information */}
+        <h2 className="text-lg font-semibold pt-4">Manager Information</h2>
+
+        <div className="grid grid-cols-2 gap-4">
+
+          <div className="space-y-2">
+            <Label>Manager Name *</Label>
+            <Input
+              name="managerName"
+              value={formData.managerName}
+              onChange={handleChange}
+            />
+            {formErrors.managerName && (
+              <p className="text-sm text-red-500">{formErrors.managerName}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label>Email *</Label>
+            <Input
+              type="email"
+              name="managerEmail"
+              value={formData.managerEmail}
+              onChange={handleChange}
+            />
+            {formErrors.managerEmail && (
+              <p className="text-sm text-red-500">{formErrors.managerEmail}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label>Phone *</Label>
+            <Input
+              name="managerPhone"
+              value={formData.managerPhone}
+              onChange={handleChange}
+            />
+            {formErrors.managerPhone && (
+              <p className="text-sm text-red-500">{formErrors.managerPhone}</p>
+            )}
+          </div>
+
+        </div>
+
+        {/* Location */}
+        <h2 className="text-lg font-semibold pt-4">Location</h2>
+
+        <div className="grid grid-cols-2 gap-4">
+
+          <div className="space-y-2 col-span-2">
+            <Label>Address *</Label>
+            <Textarea
+              name="address"
+              value={formData.location.address}
+              onChange={(e) => handleNestedChange('location', e)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Latitude *</Label>
+            <Input
+              name="latitude"
+              value={formData.location.latitude}
+              onChange={(e) => handleNestedChange('location', e)}
+            />
+            {formErrors.latitude && (
+              <p className="text-sm text-red-500">{formErrors.latitude}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label>Longitude *</Label>
+            <Input
+              name="longitude"
+              value={formData.location.longitude}
+              onChange={(e) => handleNestedChange('location', e)}
+            />
+            {formErrors.longitude && (
+              <p className="text-sm text-red-500">{formErrors.longitude}</p>
+            )}
+          </div>
+
+        </div>
+
+        {/* Operations */}
+        <h2 className="text-lg font-semibold pt-4">Operations</h2>
+
+        <div className="grid grid-cols-2 gap-4">
+
+          <div className="space-y-2">
+            <Label>Opening Time *</Label>
+            <Input
+              type="time"
+              name="openingTime"
+              value={formData.operations.openingTime}
+              onChange={(e) => handleNestedChange('operations', e)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Closing Time *</Label>
+            <Input
+              type="time"
+              name="closeTime"
+              value={formData.operations.closeTime}
+              onChange={(e) => handleNestedChange('operations', e)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Timezone *</Label>
+
+            <Select
+              value={formData.operations.timezone}
+              onValueChange={(value) =>
+                handleNestedChange("operations", value)
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select timezone" />
+              </SelectTrigger>
+
+             <SelectContent>
+            <SelectItem value="IST">IST (Indian Standard Time)</SelectItem>
+             <SelectItem value="UTC">UTC (Coordinated Universal Time)</SelectItem> 
+             <SelectItem value="EST">EST (Eastern Standard Time)</SelectItem> 
+             <SelectItem value="PST">PST (Pacific Standard Time)</SelectItem> 
+             </SelectContent>
+            </Select>
+
+            {formErrors.timezone && (
+              <p className="text-sm text-red-500">{formErrors.timezone}</p>
+            )}
+          </div>
+
+        </div>
+
+        {/* Facilities */}
+        <h2 className="text-lg font-semibold pt-4">Facilities</h2>
+
+        <div className="grid grid-cols-4 gap-4">
+
+          {['parking','wifi','food','restrooms'].map((facility) => (
+
+            <div key={facility} className="flex items-center gap-2">
+
+              <input
+                type="checkbox"
+                checked={formData.facilities[facility]}
+                onChange={(e) =>
+                  handleCheckboxChange(
+                    "facilities",
+                    facility,
+                    e.target.checked
+                  )
+                }
+              />
+
+              <Label className="capitalize">
+                {facility}
+              </Label>
+
+            </div>
+
+          ))}
+
+        </div>
+
+        {/* Update Button */}
+
+       <div className="flex justify-end gap-3 pt-4">
+         <Button variant="outline" onClick={() => navigate(-1)}>
+        Cancel
+      </Button>
+
+  <Button
+    type="submit"
+    disabled={updateSiteStatus === 'loading' || update === 'loading'}
+  >
+    {updateSiteStatus === 'loading' || update === 'loading' ? (
+      <div className="flex items-center gap-2">
+        <ReloadIcon className="h-4 w-4 animate-spin" />
+        Updating...
+      </div>
+    ) : (
+      "Update"
+    )}
+  </Button>
+
+</div>
+
+      </form>
+
+    </Card>
+
+  </div>
+);
 }

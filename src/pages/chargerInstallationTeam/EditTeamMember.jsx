@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { useParams, useNavigate } from 'react-router-dom';
 import BackButton from '@/users/BackButton';
 import { useDispatch, useSelector } from 'react-redux';
+import { ReloadIcon } from '@radix-ui/react-icons';
 import { 
   fetchEmployeeById, 
   editTeam, 
@@ -38,6 +39,8 @@ const EditTeamMember = () => {
   const { currentTeam, loading, error, currentPage } = useSelector(state => state.chargerInstallation);
   
   const [activeTab, setActiveTab] = useState("basic");
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [touched, setTouched] = useState({
         username: false,
@@ -202,6 +205,8 @@ const handleSubmit = async (e) => {
   }
 
   try {
+
+    setIsSubmitting(true);
   
     const { designation, ...rest } = formData;
     const payload = {
@@ -225,6 +230,9 @@ const handleSubmit = async (e) => {
       description: error || "Failed to upate team member",
       variant: "destructive",
     });
+  }
+  finally{
+    setIsSubmitting(false);
   }
 };
   if (loading && !currentTeam) {
@@ -373,15 +381,25 @@ const handleSubmit = async (e) => {
             </div>
 
             <div className="flex justify-end mt-6 gap-2">
+
               <Button 
                 type="button"
                 variant="outline"
+                disabled={isSubmitting}
                 onClick={() => navigate(`/charger-installation-team/${id}`)}
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={loading}>
-                {loading ? "Saving..." : "Save Changes"}
+              
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <>
+                    <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  "Save Changes"
+                )}
               </Button>
             </div>
           </form>

@@ -328,6 +328,18 @@ useEffect(() => {
     }
   }, [formData, isAddDialogOpen, validateForm]);
 
+
+  // Inside EVUsers component, after other useEffects
+// Add this inside the EVUsers component
+useEffect(() => {
+  const handleOpenAddDialog = () => {
+    console.log('🎯 Opening Add EV User dialog from Copilot');
+    setIsAddDialogOpen(true);
+  };
+  window.addEventListener('openAddEVUserDialog', handleOpenAddDialog);
+  return () => window.removeEventListener('openAddEVUserDialog', handleOpenAddDialog);
+}, []);
+  
   return (
     <div className="container mx-auto p-6">
       <div className="flex justify-between items-center mb-6">

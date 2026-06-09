@@ -95,17 +95,24 @@ export const fetchReportData = (filters) => async (dispatch) => {
   try {
     dispatch(setLoading(true));
     dispatch(setError(null));
+//lavanya added
+   if (!filters.reportType) {
+  throw new Error('Please select report type');
+}
 
-    if (!filters.reportType || !filters.selectedItemId) {
-      throw new Error('Please select a site or station');
-    }
 
-    const params = {
-      siteId: filters.reportType === 'sites' ? filters.selectedItemId : null,
-      stationId: filters.reportType === 'stations' ? filters.selectedItemId : null,
-      startDate: filters.startDate || getDefaultStartDate(filters.dateRange),
-      endDate: filters.endDate || new Date().toISOString().split('T')[0]
-    };
+   const params = {
+  startDate: filters.startDate || getDefaultStartDate(filters.dateRange),
+  endDate: filters.endDate || new Date().toISOString().split('T')[0]
+};
+
+if (filters.selectedItemId) {
+  if (filters.reportType === "sites") {
+    params.siteId = filters.selectedItemId;
+  } else {
+    params.stationId = filters.selectedItemId;
+  }
+}
 
     console.log(params);
     if (filters.dateRange === 'Custom' && (!filters.startDate || !filters.endDate)) {

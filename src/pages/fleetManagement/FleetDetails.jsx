@@ -67,8 +67,10 @@ const [fleetStatus, setFleetStatus] = useState(initialFleet?.status || "Active")
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
+
 const handleFleetStatusChange = async (newStatus) => {
   if (!currentFleet?.id) return;
+  setUpdatingStatus(true);
 
   try {
     setUpdatingStatus(true);
@@ -89,11 +91,9 @@ const handleFleetStatusChange = async (newStatus) => {
       })
     ).unwrap();
 
-    // ✅ Update all local states
     setFleetStatus(newStatus);
     setEditedFleet(prev => ({ ...prev, status: normalizedStatus }));
     
-    // Force refresh fleet details to get updated data from server
     dispatch(fetchFleetDetails(id));
     
     setDropdownOpen(false);
@@ -273,10 +273,7 @@ useEffect(() => {
   if (fleetDetailsStatus === 'loading') {
     return (
       <div className="container mx-auto p-4">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">Loading Fleet Details...</h1>
-          <BackButton />
-        </div>
+        
         <Loading />
       </div>
     );
@@ -351,43 +348,54 @@ useEffect(() => {
     <div className="flex justify-between items-center mb-6">
   <div className="flex items-center gap-4">  {/* wrap name + status */}
     <h1 className="text-2xl font-bold">{currentFleet?.fleetName || 'Unknown Fleet'}</h1>
-    <div className="relative">
-      <button
-        className={`flex items-center px-4 py-1.5 border rounded-full transition ${
-          fleetStatus === "Active"
-            ? "bg-green-100 text-green-800 border-green-400"
-            : "bg-red-200 text-red-800 border-red-400"
-        } ${updatingStatus ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
-        onClick={() => !updatingStatus && setDropdownOpen(prev => !prev)}
-        disabled={updatingStatus}
-      >
-        {fleetStatus}
-        <ChevronDown className="ml-2 h-4 w-4" />
-      </button>
-      {dropdownOpen && (
-        <div className="absolute mt-2 w-48 bg-white shadow-lg rounded-md z-50 p-3">
-          {["Active", "Inactive"].map(option => (
-            <button
-              key={option}
-              className={`w-full text-left px-4 py-1.5 mb-1 rounded-full border transition ${
-                option === "Active"
-                  ? "bg-green-100 text-green-800 border-green-400 hover:bg-green-200"
-                  : "bg-red-200 text-red-800 border-red-400 hover:bg-red-300"
-              }`}
-              onClick={() => {
-                handleFleetStatusChange(option);
-                setDropdownOpen(false);
-              }}
-            >
-              {option}
-            </button>
-          ))}
-        </div>
-      )}
+   <div className="relative">
+  <button
+    className={`flex items-center px-4 py-1.5 border rounded-full transition ${
+      fleetStatus === "Active"
+        ? "bg-green-100 text-green-800 border-green-400"
+        : "bg-red-200 text-red-800 border-red-400"
+    } ${updatingStatus ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+    onClick={() => !updatingStatus && setDropdownOpen(prev => !prev)}
+    disabled={updatingStatus}
+  >
+    {updatingStatus ? (
+      <>
+        <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+        Updating...
+      </>
+    ) : (
+      fleetStatus
+    )}
+    {dropdownOpen ? (
+      <ChevronUp className="ml-2 h-4 w-4" />
+    ) : (
+      <ChevronDown className="ml-2 h-4 w-4" />
+    )}
+  </button>
+  
+  {dropdownOpen && (
+    <div className="absolute mt-2 w-48 bg-white shadow-lg rounded-md z-50 p-3">
+      {["Active", "Inactive"].map(option => (
+        <button
+          key={option}
+          className={`w-full text-left px-4 py-1.5 mb-1 rounded-full border transition ${
+            option === "Active"
+              ? "bg-green-100 text-green-800 border-green-400 hover:bg-green-200"
+              : "bg-red-200 text-red-800 border-red-400 hover:bg-red-300"
+          }`}
+          onClick={() => {
+            handleFleetStatusChange(option);
+            setDropdownOpen(false);
+          }}
+        >
+          {option}
+        </button>
+      ))}
     </div>
+  )}
+</div>
   </div>
-
-  <BackButton />  {/* right-aligned */}
+  <BackButton /> 
 </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">

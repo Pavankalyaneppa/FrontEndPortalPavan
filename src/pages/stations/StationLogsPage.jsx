@@ -430,17 +430,7 @@ const handleFilteredDownload = async () => {
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="mr-3 hover:bg-gray-100"
-            onClick={() => navigate(`/stations/${currentStation.id}`)}
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
-          <div>
+        <div>
             <h1 className="text-2xl font-bold text-gray-900">
               {currentStation.stationName || currentStation.serialNo} - Logs & OCPP Control
             </h1>
@@ -448,6 +438,18 @@ const handleFilteredDownload = async () => {
               OCPP ID: {currentStation.ocppid}
             </p>
           </div>
+        <div className="flex items-center">
+          
+          <Button
+            variant="outline"
+            size="md"
+            className="mr-3 p-2 hover:bg-gray-100"
+            onClick={() => navigate(`/stations/${currentStation.id}`)}
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
+          </Button>
+          
         </div>
       </div>
 <div className="bg-white border border-gray-200 rounded-xl p-6 mb-6 shadow-sm">

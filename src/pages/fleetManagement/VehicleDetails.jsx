@@ -10,7 +10,8 @@ import Loading from '@/users/Loading';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ReloadIcon } from '@radix-ui/react-icons';
 const VehicleDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -234,9 +235,6 @@ const handleSave = async () => {
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-2xl font-bold">Edit Vehicle</h1>
-            <Button variant="outline" onClick={handleCancel}>
-              Cancel
-            </Button>
           </div>
           
           <Card className="p-6">
@@ -309,7 +307,7 @@ const handleSave = async () => {
                     onChange={handleInputChange}
                   />
                 </div>
-                <div className="space-y-2">
+                {/* <div className="space-y-2">
                   <Label htmlFor="status">Status</Label>
                   <Input
                     id="status"
@@ -317,12 +315,45 @@ const handleSave = async () => {
                     value={editForm.status}
                     onChange={handleInputChange}
                   />
+                </div> */}
+
+            <div className="space-y-2">
+                  <Label>Status *</Label>
+                  <Select 
+                    value={editForm.status} 
+                    onValueChange={(value) => handleInputChange({ target: { name: 'status', value } })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ACTIVE">Active</SelectItem>
+                      <SelectItem value="CHARGING">Charging</SelectItem>
+                      <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
+                      <SelectItem value="INACTIVE">Inactive</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               
-              <div className="flex justify-end gap-4 pt-4">
+           <div className="flex justify-end gap-4 pt-4">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={handleCancel}
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </Button>
                 <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? "Saving..." : "Save Changes"}
+                  {isSubmitting ? (
+                    <>
+                      <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    "Save Changes"
+                  )}
                 </Button>
               </div>
             </form>
@@ -392,22 +423,26 @@ const handleSave = async () => {
                     <p className="font-semibold text-gray-600">Bookings</p>
                     <p className="font-medium">{currentVehicle.bookings || '-'}</p>
                   </div>
-                  <div>
-                    <p className="font-semibold text-gray-600">Status</p>
-                    <p className="font-medium">
-                      {currentVehicle.status ? (
-                        <span className={`${
-                          currentVehicle.status.toLowerCase() === 'active' 
-                            ? 'text-green-600' 
-                            : 'text-red-600'
-                        }`}>
-                          {currentVehicle.status}
-                        </span>
-                      ) : (
-                        '-'
-                      )}
-                    </p>
-                  </div>
+                <div>
+                  <p className="font-semibold text-gray-600">Status</p>
+                  <p className="font-medium">
+                    {currentVehicle.status ? (
+                      <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
+                        currentVehicle.status.toUpperCase() === 'ACTIVE' 
+                          ? 'bg-green-100 text-green-800'
+                          : currentVehicle.status.toUpperCase() === 'CHARGING'
+                          ? 'bg-blue-100 text-blue-800'
+                          : currentVehicle.status.toUpperCase() === 'MAINTENANCE'
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {currentVehicle.status}
+                      </span>
+                    ) : (
+                      '-'
+                    )}
+                  </p>
+                </div>
                 </div>
               </Card>
             </div>

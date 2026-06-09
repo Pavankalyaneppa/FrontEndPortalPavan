@@ -649,6 +649,16 @@ addEVUser: async (userData) => {
       throw response
   }},
 
+  getOwnerWithWhiteLabel: async (franchiseId) => {
+  try {    
+    const response = await axiosInstance.get(`/services/userprofile/ownerWithWhiteLabel/${franchiseId}`);    
+    console.log("Response data is an object:", response.data);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data?.message || error.message || "Failed to fetch franchise details";
+  }
+},
+
   getWhiteLabelDetails: async (userId, orgId) => {
     try {
       const [userResponse, orgResponse] = await Promise.all([
@@ -1030,18 +1040,56 @@ getStationsRequest: async ({ latitude, longitude, radiusKm, nameFilter, fromAddr
 
 //apis for adding notes to an issue
 
-addIssueNote: async (noteData) => {
+addNoteToTicket: async (issueId, noteData) => {
   try {
     const response = await axiosInstance.post(
-      `/services/notes/add`,
+      `/services/issues/notes/${issueId}`,
       noteData
     );
-    return response.data; // backend returns { message: "Note added successfully with ID: ..." }
+    return response;
   } catch (error) {
-    throw error.response?.data?.message || error.message || "Failed to add note";
+    console.error("Add note error:", error.response?.data || error.message);
+    throw error;
   }
 },
 
+// updateIssueNote: async (issueId, noteId, noteData) => {
+//   try {
+//     const response = await axios.put(
+//       `http://localhost:8800/services/issues/${issueId}/notes/${noteId}`,
+//       noteData
+//     );
+//     return response.data;
+//   } catch (error) {
+//     console.error("Update note error:", error.response?.data || error.message);
+//     throw error;
+//   }
+// },
+
+updateIssueNote: async (issueId, noteId, noteData) => {
+  try {
+    const response = await axiosInstance.put(
+      `/services/issues/${issueId}/notes/${noteId}`,
+      noteData
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Update note error:", error.response?.data || error.message);
+    throw error;
+  }
+},
+
+deleteIssueNote: async (issueId, noteId) => {
+  try {
+    const response = await axiosInstance.delete(
+      `/services/issues/${issueId}/notes/${noteId}`
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Delete note error:", error);
+    throw error;
+  }
+},
 // Get all notes for a specific issue
 getNotesByIssueId: async (issueId) => {
   try {
@@ -1056,12 +1104,16 @@ getNotesByIssueId: async (issueId) => {
   }
 },
 
-updateNote: async (noteId, data) => {
+updateNote: async (noteId, noteData) => {
   try {
-    const response = await axiosInstance.put(`/services/notes/update/${noteId}`, data);
+    const response = await axiosInstance.put(
+      `/services/notes/update/${noteId}`,
+      noteData
+    );
     return response.data;
   } catch (error) {
-    throw error.response?.data?.message || error.message || "Failed to update note";
+    console.error("Update note error:", error.response?.data || error.message);
+    throw error;
   }
 },
 
@@ -1482,21 +1534,21 @@ export const getFleetDetails = async (id) => {
   }
 };
 
-export const addFleet = async (fleetData) => {
-  try {
-    console.log('API - Sending fleet data:', fleetData);
-    const response = await axiosInstance.post('/services/fleet/addFleet', fleetData);
-    console.log('API - Fleet added successfully:', response.data);
-    return response.data;
-  } catch (error) {
-    console.error('API - Add fleet error:', {
-      status: error.response?.status,
-      data: error.response?.data,
-      message: error.message
-    });
-    throw error.response?.data || error.message;
-  }
-};
+// export const addFleet = async (fleetData) => {
+//   try {
+//     console.log('API - Sending fleet data:', fleetData);
+//     const response = await axiosInstance.post('/services/fleet/addFleet', fleetData);
+//     console.log('API - Fleet added successfully:', response.data);
+//     return response.data;
+//   } catch (error) {
+//     console.error('API - Add fleet error:', {
+//       status: error.response?.status,
+//       data: error.response?.data,
+//       message: error.message
+//     });
+//     throw error.response?.data || error.message;
+//   }
+// };
 
 export const updateFleet = async (id, fleetData) => {
   try {

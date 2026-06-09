@@ -258,19 +258,6 @@ useEffect(() => {
                   <p className="text-red-500 text-sm">{errors.batteryLeft}</p>
                 )}
               </div>
-
-              {/* <div className="space-y-2">
-                <Label htmlFor="bookings">Bookings</Label>
-                <Input 
-                  id="bookings" 
-                  name="bookings" 
-                  type="number" 
-                  min="0"
-                  value={formData.bookings} 
-                  onChange={handleChange} 
-                />
-              </div> */}
-
               <div className="space-y-2">
                 <Label>Status *</Label>
                 <Select 
@@ -289,15 +276,6 @@ useEffect(() => {
                 </Select>
               </div>
 
-              {/* <div className="space-y-2">
-                <Label htmlFor="fleetId">Fleet ID</Label>
-                <Input 
-                  id="fleetId" 
-                  name="fleetId" 
-                  value={formData.fleetId} 
-                  disabled 
-                />
-              </div> */}
             </div>
                <div className="flex justify-end space-x-4 pt-4">
               <Button 

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import Loading from "@/users/Loading";
 import {
   Select,
   SelectContent,
@@ -168,7 +169,7 @@ const formatDate = (arr) => {
 
       {/* Add Note Form */}
       {isAddingNote && (
-        <div className="space-y-4 border p-4 rounded-lg bg-muted/50">
+        <div className="space-y-4 border p-4 rounded-lg bg-white">
           <h4 className="font-medium text-lg">Add New Note</h4>
           {/* Recipient Dropdown */}
           <div>
@@ -193,13 +194,6 @@ const formatDate = (arr) => {
               </SelectContent>
             </Select>
           </div>
-          {/* <div className="flex flex-col">
-            <label className="text-sm font-medium text-gray-700 mb-1">Employee ID</label>
-            <input type="text"
-            value = {employeeId}
-            readOnly
-            className="w-full rounded-md border border-gray-300 px-3 py-2 bg-gray-100 cursor-not-allowed" />
-            </div> */}
 
           {/* Created By Role Dropdown */}
            <div>
@@ -302,10 +296,11 @@ const formatDate = (arr) => {
 
       {/* Notes List */}
       <div className="space-y-3">
-        {taskNotesLoading && <div className="text-center py-4">Loading notes...</div>}
-        {taskNotesError && <div className="text-center py-4 text-red-500">Error: {taskNotesError}</div>}
-        {taskNotes?.length === 0 && !taskNotesLoading && <div className="text-center py-8 text-muted-foreground">No notes found.</div>}
-
+        {taskNotesLoading && (
+          <div className="text-center py-4">
+            <Loading />
+          </div>
+        )}
         {taskNotes?.map(note => (
           <div key={note.id} className="p-4 border rounded-lg bg-card">
             <div className="flex justify-between items-start mb-2">
@@ -333,3 +328,5 @@ const formatDate = (arr) => {
 };
 
 export default NotesSection;
+
+//NOTES.

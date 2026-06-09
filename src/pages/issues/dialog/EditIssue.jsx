@@ -42,6 +42,7 @@ export default function EditIssuePage() {
   const [editedNoteTitle, setEditedNoteTitle] = useState('');
   const [isLoadingNotes, setIsLoadingNotes] = useState(false);
   const [assignedToId, setAssignedToId] = useState(issue?.assignedTo || null);
+  const [activeTab, setActiveTab] = useState("details");
 
   const { employees: allEmployees, loading: employeesLoading } = useSelector(state => state.employee);
   const customerSupport = allEmployees.filter(
@@ -106,6 +107,16 @@ dispatch(fetchEmployeesByDesignation('Customer Support'));
   }
 
   const handleSave = async () => {
+
+     if (!assignedToId) {
+    toast({
+      title: "Validation Error",
+      description: "Please select Assigned To",
+      variant: "destructive",
+    });
+    return;
+  }
+
     const updatedIssue = { 
       ...issue, 
       status: selectedStatus,
@@ -161,6 +172,7 @@ const getPriorityBadgeClass = (priority) => {
       const response = await AxiosServices.addNoteToTicket(issue.id, noteData);
       setNotes(prev => [...prev, response.data]);
       setNewNote('');
+      setActiveTab("notes"); 
       toast({
         title: "Success",
         description: "Note added successfully",
@@ -183,58 +195,64 @@ const getPriorityBadgeClass = (priority) => {
     setEditedNoteTitle(note.title);
   };
 
-  const updateNote = async () => {
-    if (!editedNoteText.trim() || !editedNoteTitle.trim()) return;
+const updateNote = async () => {
+  if (!editedNoteText.trim() || !editedNoteTitle.trim()) return;
 
-    try {
-      setIsLoadingNotes(true);
-      const updatedNote = {
-        title: editedNoteTitle,
-        notes: editedNoteText
-      };
-      
-      const response = await AxiosServices.updateNote(issue.id, editingNoteId, updatedNote);
+  try {
+    setIsLoadingNotes(true);
 
-      setNotes(prevNotes => 
-        prevNotes.map(note => note.id === editingNoteId ? response.data : note)
-      );      
-      toast({
-        title: "Success",
-        description: "Note updated successfully",
-      });
-      fetchIssueById()
-      cancelEditing();
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update note",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoadingNotes(false);
-    }
-  };
+    const updatedNote = {
+      title: editedNoteTitle,
+      notes: editedNoteText,
+      lastModifiedBy: "ADMIN"
+    };
 
-  const deleteNote = async (noteId) => {
-    try {
-      setIsLoadingNotes(true);
-      await AxiosServices.deleteNote(issue.id, noteId);
-      setNotes(prevNotes => prevNotes.filter(note => note.id !== noteId));
-      toast({
-        title: "Success",
-        description: "Note deleted successfully",
-      });
-      fetchIssueById()
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to delete note",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoadingNotes(false);
-    }
-  };
+    await AxiosServices.updateIssueNote(issue.id, editingNoteId, updatedNote);
+
+    toast({
+      title: "Success",
+      description: "Note updated successfully",
+    });
+
+    fetchIssueById();
+    cancelEditing();
+
+  } catch (error) {
+    toast({
+      title: "Error",
+      description: error.message || "Failed to update note",
+      variant: "destructive",
+    });
+  } finally {
+    setIsLoadingNotes(false);
+  }
+};
+
+const deleteNote = async (noteId) => {
+  try {
+    setIsLoadingNotes(true);
+
+    await AxiosServices.deleteIssueNote(issue.id, noteId);
+
+    setNotes(prevNotes => prevNotes.filter(note => note.id !== noteId));
+
+    toast({
+      title: "Success",
+      description: "Note deleted successfully",
+    });
+
+    fetchIssueById();
+
+  } catch (error) {
+    toast({
+      title: "Error",
+      description: error.message || "Failed to delete note",
+      variant: "destructive",
+    });
+  } finally {
+    setIsLoadingNotes(false);
+  }
+};
 
   const cancelEditing = () => {
     setEditingNoteId(null);
@@ -272,8 +290,8 @@ const getPriorityBadgeClass = (priority) => {
         <Badge variant="secondary" className="ml-4">{issue.ticketId}</Badge>
       </div>
 
-      <Tabs defaultValue="details" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="details">Issue Details</TabsTrigger>
           <TabsTrigger value="notes">Notes</TabsTrigger>
         </TabsList>
@@ -322,26 +340,19 @@ const getPriorityBadgeClass = (priority) => {
                   </Select>
                 </div>
                 <div>
-  <Label className="me-1">Current Priority</Label>
-<Badge
-  className={`mt-1 capitalize ${getPriorityBadgeClass(issue.priority)}`}
->
-  {issue.priority}
-</Badge>
-</div>
-                {/* <div>
-                    <Label>Assigned To</Label>
-                    <Input
-                      value={assignedTo}
-                      onChange={(e) => setAssignedTo(e.target.value)}
-                      placeholder="Assign team member"
-                    />
-                  </div> */}
+                <Label className="me-1">Current Priority</Label>
+              <Badge
+                className={`mt-1 capitalize ${getPriorityBadgeClass(issue.priority)}`}
+              >
+                {issue.priority}
+              </Badge>
+              </div>
                   <div>
                     <Label>Assigned To</Label>
                     <Select
                       value={assignedToId?.toString() || ""}
                       onValueChange={(value) => setAssignedToId(Number(value))}
+                      required
                     >
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="Select team member" />

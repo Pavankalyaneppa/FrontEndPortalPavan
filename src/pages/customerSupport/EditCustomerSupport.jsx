@@ -147,9 +147,6 @@ const handleSubmit = async (e) => {
       {/* Header with Cancel button replacing the old BackButton */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Edit Customer Support</h1>
-        <Button type="button" variant="outline" onClick={handleCancel}>
-          Cancel
-        </Button>
       </div>
       <Card className="max-w-4xl mx-auto p-5 bg-white shadow rounded-lg">
         <CardContent>
@@ -242,6 +239,9 @@ const handleSubmit = async (e) => {
             </div>
             <div className="flex justify-end space-x-4 pt-4">
               {/* Save button only here */}
+               <Button type="button" variant="outline" onClick={handleCancel}>
+                Cancel
+              </Button>
               <Button type="submit" disabled={loading}>
                 {loading ? "Saving..." : "Save Changes"}
               </Button>

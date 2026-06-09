@@ -45,12 +45,27 @@ export const validateVehicleNumber = (value) => {
   return '';
 };
 
+// organization vaildation written by prasad for organization name should be taken on letter stop some words  tested everything working  fine
 export const validateOrganizationName = (value) => {
   const error = safeStringValidation(value, 'Organization name');
   if (error) return error;
 
-  const trimmed = value.trim();
-}
+  const trimmed = value?.trim();
+
+  
+  const nameRegex = /^[A-Za-z]+$/;
+  if (!nameRegex.test(trimmed)) {
+    return "Organization name must contain only letters";
+  }
+
+  const restrictedWords = ['root', 'system', 'null', 'undefined', 'guest', 'anonymous', 'na', 'n/a'];
+
+  if (restrictedWords.includes(trimmed.toLowerCase())) {
+    return "This Organization name is not allowed";
+  }
+
+  return "";
+};
 
 export const validateMobileNumber = (value) => {
   const error = safeStringValidation(value, 'Mobile number');
@@ -198,18 +213,17 @@ export const validateLocation = (value) => {
 
   return "";
 };
-
 export const validateChargerType = (value) => {
   const error = safeStringValidation(value, 'Charger type');
   if (error) return error;
 
   const trimmedValue = value.trim();
   const validChargerTypes = [
-    'AC', 'Alternating Current', 'DC', 'Direct Current', 'Fast Charger', 
-    'Rapid Charger', 'Level 1', 'L1', 'Level 2', 'L2', 'Level 3', 'L3', 
-    'DCFC', 'Ultra Fast', 'High Power', 'Bidirectional', 'V2G', 
-    'Vehicle-to-Grid', 'Wireless', 'Inductive'
-  ];
+  'AC Level 1',
+  'AC Level 2',
+  'DC Fast Charger',
+  'Ultra Fast Charger'
+];
 
   if (/[^a-zA-Z0-9 /-]/.test(trimmedValue)) {
     return "Only letters, numbers, spaces, and hyphens are allowed";
@@ -223,7 +237,7 @@ export const validateChargerType = (value) => {
 
   if (!isKnownType) {
     const commonTypes = ['AC', 'DC', 'Level 2', 'DCFC', 'V2G'];
-    return `Unknown charger type. Common types: ${commonTypes.join(', ')}`;
+    return `Unknown charger type. Common types: ${validChargerTypes.join(', ')}`;
   }
   if (trimmedValue.length > 30) return "Charger type should not exceed 30 characters";
   if (/\bLevel\s*[1-3]\b/i.test(trimmedValue)) {
@@ -238,8 +252,6 @@ export const validateChargerType = (value) => {
 
   return "";
 };
-
-
 
 export const validateZipCode = (value) => {
   if (typeof value !== 'string') return "Zip code must be a string";
@@ -799,20 +811,30 @@ export const validateTimezone = (value) => {
 
   const trimmedValue = value.trim();
 
-  const indianFriendlyAliases = ['IST','ist', 'Indian Standard Time', 'India'];
+  const validAbbreviations = [
+    'IST', 'EST', 'PST', 'CST', 'MST',
+    'EDT', 'PDT', 'CDT', 'MDT',
+    'BST', 'CET', 'EET'
+  ];
+
+  if (validAbbreviations.includes(trimmedValue.toUpperCase())) {
+    return "";
+  }
+
+  const indianFriendlyAliases = ['IST', 'Indian Standard Time', 'India'];
   if (indianFriendlyAliases.includes(trimmedValue)) {
     return "";
   }
 
   const validRegions = [
-    'Africa', 'America', 'Antarctica', 'Arctic', 'Asia',
-    'Atlantic', 'Australia', 'Europe', 'Indian', 'Pacific'
+    'Africa','America','Antarctica','Arctic','Asia',
+    'Atlantic','Australia','Europe','Indian','Pacific'
   ];
 
   if (trimmedValue.includes('/')) {
     const [region] = trimmedValue.split('/');
     if (!validRegions.includes(region)) {
-      return `Please enter a valid timezone region like "Asia/Kolkata", "Europe/London", or "America/New_York"`;
+      return `Please enter a valid timezone like "Asia/Kolkata", "Europe/London", or "America/New_York"`;
     }
     return "";
   }
@@ -822,10 +844,12 @@ export const validateTimezone = (value) => {
     return "";
   }
 
-  return `Invalid timezone. Please enter:
-- A standard name like "Asia/Kolkata" (for India)
-- Or "IST", "Indian Standard Time", or "India"
-- Or UTC/GMT format like "GMT+5:30"`;
+  return `Invalid timezone. Examples:
+- Asia/Kolkata
+- IST
+- PST
+- EST
+- GMT+5:30`;
 };
 
 
@@ -864,6 +888,8 @@ export const validatePortType = (value) => {
 
   return '';
 };
+
+
 
 
 export const validateForm = (formData) => {
@@ -943,4 +969,4 @@ export const validateConfirmPassword = (password, confirmPassword) => {
   return "";
 };
 
-//validations component...
+//validation...

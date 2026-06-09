@@ -14,11 +14,15 @@ import {
   validateEmail,
   validateMobileNumber,
 } from '@/pages/validations/Validation';
-export function AddManufacturer({ onSuccess }) {
+export function AddManufacturer({ onSuccess, open: externalOpen, onOpenChange: externalOnOpenChange }) {
   const dispatch = useDispatch();
   const { toast } = useToast();
   const [errors, setErrors]=useState({});
-  const [open, setOpen] = useState(false);
+   const [internalOpen, setInternalOpen] = useState(false);
+  const open = externalOpen !== undefined ? externalOpen : internalOpen;
+  const setOpen = externalOnOpenChange || setInternalOpen;
+  // const [isSubmitting, setIsSubmitting] = useState(false);
+  // const [open, setOpen] = useState(false);
   const[isSubmitting,setIsSubmitting]=useState(false);
   const [manufacturerData, setManufacturerData] = useState({
     manufacturerName: '',

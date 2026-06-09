@@ -69,6 +69,35 @@ export function AddCharger({ onSuccess }) {
   }
 }, [selectedManufacturer]);
 
+
+
+useEffect(() => {
+  const handleOpenAddCharger = () => {
+    console.log('🎯 Navigating to Add Charger page from Copilot');
+    // Already on the page if the route matches
+    // No need to do anything extra
+  };
+
+  window.addEventListener('openAddChargerDialog', handleOpenAddCharger);
+  
+  return () => {
+    window.removeEventListener('openAddChargerDialog', handleOpenAddCharger);
+  };
+}, []);
+
+
+// In AddCharger.jsx, add this after the useState declarations
+useEffect(() => {
+  if (!id) {
+    toast({
+      title: "Error",
+      description: "No manufacturer selected. Please go to a manufacturer details page first.",
+      variant: "destructive",
+    });
+    navigate('/manufacturers');
+  }
+}, [id, navigate, toast]);
+
   const handleChange = (e) => {
     setManufacturerData({
       ...manufacturerData,

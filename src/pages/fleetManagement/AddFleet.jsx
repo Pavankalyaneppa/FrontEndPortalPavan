@@ -246,7 +246,7 @@ const handleBlur = (e) => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="baseLocation">Base Location *</Label>
+              <Label htmlFor="baseLocation">Address *</Label>
               <Input 
                 id="baseLocation" 
                 name="baseLocation" 

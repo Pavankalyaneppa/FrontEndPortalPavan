@@ -37,7 +37,7 @@ const getDefaultStartDate = (range) => {
   
   switch (range) {
     case '7':
-      startDate.setDate(endDate.getDate() - 7);
+      startDate.setDate(endDate.getDate() - 6);
       break;
     case '30':
       startDate.setDate(endDate.getDate() - 30);
@@ -72,6 +72,37 @@ const Reports = () => {
     if (!sites.length) dispatch(fetchSites());
     if (!stations.length) dispatch(fetchStations());
   }, [dispatch, sites.length, stations.length]);
+
+  //for copilot
+  // Listen for "Generate Report" from Copilot
+useEffect(() => {
+  const handleGenerate = () => {
+    console.log('🎯 Generating report from Copilot');
+    handleGenerateReport();
+  };
+  window.addEventListener('generateReport', handleGenerate);
+  return () => window.removeEventListener('generateReport', handleGenerate);
+}, []);
+
+// Listen for "Download PDF"
+useEffect(() => {
+  const handlePDF = () => {
+    console.log('🎯 Downloading PDF from Copilot');
+    downloadPDF();
+  };
+  window.addEventListener('downloadPDF', handlePDF);
+  return () => window.removeEventListener('downloadPDF', handlePDF);
+}, []);
+
+// Listen for "Download Excel"
+useEffect(() => {
+  const handleExcel = () => {
+    console.log('🎯 Downloading Excel from Copilot');
+    downloadExcel();
+  };
+  window.addEventListener('downloadExcel', handleExcel);
+  return () => window.removeEventListener('downloadExcel', handleExcel);
+}, []);
 
   // Transform data to proper format
   const transformedData = useMemo(() => {
@@ -118,22 +149,33 @@ const Reports = () => {
   const handleFilterChange = (key, value) => {
     dispatch(setFilters({ [key]: value }));
   };
-
-  const handleItemSelection = (value) => {
-    const selectedData = filters.reportType === 'sites' 
-      ? sites.find(s => s.id.toString() === value)
-      : stations.find(s => s.id.toString() === value);
-    
-    const displayName = filters.reportType === 'sites' 
-      ? selectedData?.siteName 
-      : `${selectedData?.stationName} (${selectedData?.referNo})`;
-    
-    dispatch(setFilters({ 
-      selectedItem: displayName,
-      selectedItemId: parseInt(value)
+//lavanya added
+ const handleItemSelection = (value) => {
+  if (value === "all") {
+    dispatch(setFilters({
+      selectedItem: filters.reportType === "sites" ? "All Sites" : "All Stations",
+      selectedItemId: "all"
     }));
-  };
+    return;
+  }
 
+  const selectedData =
+    filters.reportType === "sites"
+      ? sites.find((s) => s.id.toString() === value)
+      : stations.find((s) => s.id.toString() === value);
+
+  const displayName =
+    filters.reportType === "sites"
+      ? selectedData?.siteName
+      : `${selectedData?.stationName} (${selectedData?.referNo})`;
+
+  dispatch(
+    setFilters({
+      selectedItem: displayName,
+      selectedItemId: parseInt(value),
+    })
+  );
+};
   const handleDateRangeChange = (value) => {
     if (value === 'Custom') {
       handleFilterChange('dateRange', value);
@@ -144,7 +186,7 @@ const Reports = () => {
       // Calculate start date based on the selected range
       switch (value) {
         case '7':
-          startDate.setDate(endDate.getDate() - 7);
+          startDate.setDate(endDate.getDate() - 6);
           break;
         case '30':
           startDate.setDate(endDate.getDate() - 30);
@@ -169,12 +211,14 @@ const Reports = () => {
 
   const handleGenerateReport = () => {
     if (filters.reportType && filters.selectedItemId) {
+    //lavanya added
       // Always ensure we have startDate and endDate, even if not custom range
-      const params = {
-        ...filters,
-        startDate: filters.startDate || getDefaultStartDate(filters.dateRange),
-        endDate: filters.endDate || new Date().toISOString().split('T')[0]
-      };
+     const params = {
+  ...filters,
+  selectedItemId: filters.selectedItemId === "all" ? null : filters.selectedItemId,
+  startDate: filters.startDate || getDefaultStartDate(filters.dateRange),
+  endDate: filters.endDate || new Date().toISOString().split("T")[0],
+};
       
       dispatch(fetchReportData(params));
     }
@@ -379,13 +423,17 @@ const Reports = () => {
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="mb-2"
                   />
-                  {filteredItems.map((item) => (
-                    <SelectItem key={item.id} value={item.id.toString()}>
-                      {filters.reportType === 'sites'
-                        ? item.siteName
-                        : `${item.stationName} `}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="all">
+  {filters.reportType === "sites" ? "All Sites" : "All Stations"}
+</SelectItem>
+{/*lavanya added*/}
+{filteredItems.map((item) => (
+  <SelectItem key={item.id} value={item.id.toString()}>
+    {filters.reportType === "sites"
+      ? item.siteName
+      : `${item.stationName}`}
+  </SelectItem>
+))}
                 </SelectContent>
               </Select>
             </div>
@@ -435,14 +483,15 @@ const Reports = () => {
             </div>
           </div>
         )}
-
+{/*lavanya added*/}
         <div className="flex justify-end mt-4 mb-6">
+          
           <Button
             disabled={
-              !filters.reportType ||
-              !filters.selectedItemId ||
-              (filters.dateRange === "Custom" && (!filters.startDate || !filters.endDate))
-            }
+  !filters.reportType ||
+  (!filters.selectedItemId && filters.selectedItemId !== "all") ||
+  (filters.dateRange === "Custom" && (!filters.startDate || !filters.endDate))
+}
             onClick={handleGenerateReport}
           >
             {loading ? (

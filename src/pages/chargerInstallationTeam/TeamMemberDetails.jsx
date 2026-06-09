@@ -72,6 +72,7 @@ const TeamMemberDetails = () => {
   const [assigningTaskLoading, setAssigningTaskLoading] = useState(false);
   const [isAssignTaskDialogOpen, setIsAssignTaskDialogOpen] = useState(false);
   const { currentTeam, loading, error } = useSelector(state => state.chargerInstallation);  
+  const [statusLoading, setStatusLoading] = useState(false);
   const { 
     tasksByEmployee, 
     loading: tasksLoading, 
@@ -87,9 +88,10 @@ const TeamMemberDetails = () => {
   const [isAssigningTask, setIsAssigningTask] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(null);
   const filterRef = useRef(null);
-  
+
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
   const [employeeStatus, setEmployeeStatus] = useState("");
+
 
   const handleBackToTasks = () => {
   setViewingTaskNotes(false);
@@ -147,6 +149,7 @@ useEffect(() => {
 }, [currentTeam]);
 
 const handleEmployeeStatusChange = async (newStatus) => {
+  setStatusLoading(true);
   try {
     const payload = {
       username: currentTeam.username || '',
@@ -160,7 +163,7 @@ const handleEmployeeStatusChange = async (newStatus) => {
         : null,
     };
     console.log("Payload sent to update team:", payload);
-await dispatch(
+    await dispatch(
       editTeam({
         id,
         teamData: {
@@ -187,6 +190,9 @@ await dispatch(
       description: error.message || "Failed to update status",
       variant: "destructive",
     });
+  }
+  finally{
+        setStatusLoading(false);
   }
 };
 
@@ -230,14 +236,16 @@ await dispatch(
     console.log("tasksByEmployee updated:", tasksByEmployee);
   }, [tasksByEmployee]);
 
-  useEffect(() => {
-    if (state?.activeTab) {
-      setActiveTab(state.activeTab);
-    }
-    if (state?.assignNewTask) {
-      setIsAssigningTask(true);
-    }
-  }, [state]);
+useEffect(() => {
+  if (state?.activeTab) {
+    setActiveTab(state.activeTab);
+  }
+
+  if (state?.assignNewTask) {
+    setActiveTab("tasks");
+    setIsAssignTaskDialogOpen(true);
+  }
+}, [state]);
 
   // Add validation effect
   useEffect(() => {
@@ -254,6 +262,24 @@ await dispatch(
 
     setFormErrors(errors);
   }, [newTask]);
+
+  //for copilot
+  useEffect(() => {
+    const handleOpenAssignTask = () => setIsAssignTaskDialogOpen(true);
+    window.addEventListener('openAssignTaskDialog', handleOpenAssignTask);
+    return () => window.removeEventListener('openAssignTaskDialog', handleOpenAssignTask);
+}, []);
+
+//for copilot
+useEffect(() => {
+    const handleSwitchTab = (e) => {
+        if (e.detail.tab === 'tasks') {
+            setActiveTab('tasks');
+        }
+    };
+    window.addEventListener('switchTab', handleSwitchTab);
+    return () => window.removeEventListener('switchTab', handleSwitchTab);
+}, []);
 
   useClickOutside(filterRef, () => {
     setDropdownOpen(null);
@@ -386,6 +412,7 @@ const getPriorityClasses = (priority) => {
 };
 
   const handleStatusChange = async (taskId, newStatus) => {
+     
     try {
       const result = await dispatch(updateTaskStatus({ taskId, status: newStatus })).unwrap();
       
@@ -428,9 +455,60 @@ const getPriorityClasses = (priority) => {
       return currentTeam?.installationTasks || currentTeam?.tasks || currentTeam?.assignedTasks || [];
   };
 
-  const tasks = getTasksFromState();
-  
-  console.log("Final tasks array:", tasks);
+    const tasks = getTasksFromState();
+// After defining tasks
+console.log('Tasks loaded:', tasks);
+
+useEffect(() => {
+  console.log('State effect: openAddTaskNote =', state?.openAddTaskNote, 'tasks length =', tasks?.length);
+  if (state?.openAddTaskNote && tasks && tasks.length > 0) {
+    console.log('Opening notes from state effect');
+    setSelectedTaskId(tasks[0].id);
+    setViewingTaskNotes(true);
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('autoOpenAddNoteInNotesSection'));
+    }, 100);
+  } else if (state?.openAddTaskNote && (!tasks || tasks.length === 0)) {
+    console.log('No tasks yet, waiting...');
+    // Don't show toast immediately; wait for tasks to load
+  }
+}, [state?.openAddTaskNote, tasks]);
+
+useEffect(() => {
+  const handleOpenTaskNote = () => {
+    console.log('Event received: openAddTaskNote, tasks =', tasks);
+    if (tasks && tasks.length > 0) {
+      console.log('Opening notes from event');
+      setSelectedTaskId(tasks[0].id);
+      setViewingTaskNotes(true);
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('autoOpenAddNoteInNotesSection'));
+      }, 100);
+    } else {
+      // If tasks not ready, set a flag to retry when tasks load
+      console.log('Tasks not ready, will retry when loaded');
+      window.retryOpenTaskNote = true;
+    }
+  };
+  window.addEventListener('openAddTaskNote', handleOpenTaskNote);
+  return () => {
+    window.removeEventListener('openAddTaskNote', handleOpenTaskNote);
+    delete window.retryOpenTaskNote;
+  };
+}, [tasks]);
+
+// Also, when tasks finish loading, check if we need to retry
+useEffect(() => {
+  if (window.retryOpenTaskNote && tasks && tasks.length > 0) {
+    console.log('Retrying open notes after tasks loaded');
+    window.retryOpenTaskNote = false;
+    setSelectedTaskId(tasks[0].id);
+    setViewingTaskNotes(true);
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('autoOpenAddNoteInNotesSection'));
+    }, 100);
+  }
+}, [tasks]);
 
   const priorityOrder = { high: 1, medium: 2, low: 3 };
   const sortedEmployeeTasks = tasks
@@ -489,8 +567,16 @@ const getPriorityClasses = (priority) => {
         className={`flex items-center px-4 py-1.5 border rounded-full transition whitespace-nowrap
           ${getStatusClasses(employeeStatus)}`}
         onClick={() => setStatusDropdownOpen(prev => !prev)}
+        disabled={statusLoading}
       >
-        {normalizeStatus(employeeStatus)}
+        {statusLoading ? (
+          <>
+            <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />
+            Updating...
+          </>
+        ) : (
+          normalizeStatus(employeeStatus)
+        )}
         {statusDropdownOpen ? (
           <ChevronUp className="ml-2 h-4 w-4 flex-shrink-0" />
         ) : (

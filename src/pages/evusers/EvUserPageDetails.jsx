@@ -51,6 +51,7 @@ const MAX_RFID_REQUESTS = 5;
 const EvUserPageDetails = () => {
   const { id } = useParams();
   const dispatch = useDispatch();
+  const [loadingRfid, setLoadingRfid] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
@@ -80,6 +81,10 @@ const EvUserPageDetails = () => {
  const totalPages = Math.ceil(walletHistory.length / recordsPerPage);
  const [activeTab, setActiveTab] = useState("details"); 
  const [loadedTabs, setLoadedTabs] = useState(new Set(["details"])); 
+
+ //added for refresh the rfid tables
+ const [rfidRefreshTrigger, setRfidRefreshTrigger] = useState(0);
+
 
  const approvedRfidCount = Array.isArray(rfidRequests)
   ? rfidRequests.filter(item => item?.rfId).length
@@ -133,6 +138,14 @@ const getPageNumbers = () => {
     }
   }, [activeTab, walletDetails, dispatch, loadedTabs]);
 
+  //rfid refresh tables
+useEffect(() => {
+  if (id && activeTab === "rfid") {
+    fetchRfidRequests(id);
+  }
+}, [id, rfidRefreshTrigger, activeTab]);
+
+
   useEffect(() => {
   const errors = {};
 
@@ -177,6 +190,7 @@ const getPageNumbers = () => {
   model: "",
   year: "",
   make: "",
+  variant: "" 
 });
 
 const { evBrands, evBrandStatus } = useSelector(state => state.evuser);
@@ -186,6 +200,11 @@ const selectedBrand = evBrands.find(
 );
 
 const availableModels = selectedBrand?.models || [];
+
+const selectedModel = availableModels.find(
+  m => m.model === vehicleFormData.model
+);
+const availableVariants = selectedModel?.variants || [];
 
   useEffect(() => {
   if (evBrandStatus === "idle") {
@@ -228,6 +247,7 @@ const [newRfid, setNewRfid] = useState({
   userId: id,
   address: '',
   orgId:user.orgId,
+  requestedBy: 'Admin',
 });
 
   const handleRfidInputChange = (e) => {
@@ -237,69 +257,110 @@ const [newRfid, setNewRfid] = useState({
       [name]: value
     }));
   };
-   const handleRequestRfid = async () => {
-    try {
-       setIsSubmitting(true);
-      if (rfidRequests.length >= MAX_RFID_REQUESTS) {
-        toast({
-          title: "Limit Reached",
-          description: `Maximum ${MAX_RFID_REQUESTS} RFID cards allowed per user.`,
-          variant: "destructive",
-        });
-        setIsRfidDialogOpen(false);
-        return;
-      }
-      const response = await AxiosServices.requestRfid(newRfid,id);
-      console.log(response);
-      console.log("newRfid",newRfid);
+
+  const totalRequestedCards = Array.isArray(rfidRequests)
+  ? rfidRequests.reduce((sum, item) => {
+      if (item.rfId) return sum + 1; // issued RFID
+      if (item.status === "PENDING") return sum + (item.rfidCount || 0); // requested
+      return sum;
+    }, 0)
+  : 0;
+
+const remainingCards = MAX_RFID_REQUESTS - totalRequestedCards;
+
+const handleRequestRfid = async () => {
+  try {
+    setIsSubmitting(true);
+
+    const requestedCount = Number(newRfid.rfidCount);
+
+    const totalRequestedCards = rfidRequests.reduce((sum, item) => {
+      if (item.rfId) return sum + 1;
+      if (item.status === "PENDING") return sum + (item.rfidCount || 0);
+      return sum;
+    }, 0);
+
+    const remainingCards = MAX_RFID_REQUESTS - totalRequestedCards;
+
+    if (requestedCount > remainingCards) {
       toast({
-        title: "Success",
-        description: "RFID request submitted successfully!",
-      });
-      
-      setIsRfidDialogOpen(false);
-      fetchRfidRequests(id);
-      setNewRfid({
-        firstName:currentUser?.fullname ,
-        username: currentUser.username,
-        email: currentUser?.email ,
-        mobile: currentUser?.mobileNumber ,
-        status: 'Pending',
-        rfidCount: 1,
-        userId: id,
-         orgId:user.orgId,
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: error.response?.data || "Failed to submit RFID request",
+        title: "Limit Exceeded",
+        description: `User can request only ${remainingCards} more RFID cards.`,
         variant: "destructive",
       });
+      return;
     }
-     finally {
+
+    const response = await AxiosServices.requestRfid(newRfid, id);
+    console.log(response);
+    console.log("newRfid", newRfid);
+    toast({
+      title: "Success",
+      description: "RFID request submitted successfully!",
+    });
+    
+    setIsRfidDialogOpen(false);
+    
+    // Trigger refresh instead of direct fetch
+    setRfidRefreshTrigger(prev => prev + 1);
+    
+    setNewRfid({
+      address: addressParts.street,
+      city: addressParts.city,
+      state: addressParts.state,
+      country: addressParts.country,
+      zipCode: addressParts.zipCode,
+      requestedBy: "Admin",
+      firstName: currentUser?.fullname,
+      username: currentUser.username,
+      email: currentUser?.email,
+      mobile: currentUser?.mobileNumber,
+      status: 'Pending',
+      rfidCount: 1,
+      userId: id,
+      orgId: user.orgId,
+    });
+     if (currentUser?.address?.[0]) {
+      setAddressParts({
+        street: currentUser.address[0].address || '',
+        city: currentUser.address[0].city || '',
+        state: currentUser.address[0].state || '',
+        country: currentUser.address[0].country || '',
+        zipCode: currentUser.address[0].zipCode || '',
+      });
+    }    
+    setUseDefaultAddress(true);
+
+  } catch (error) {
+    toast({
+      title: "Error",
+      description: error.response?.data || "Failed to submit RFID request",
+      variant: "destructive",
+    });
+  } finally {
     setIsSubmitting(false);
   }
-  };
+};
+const handleRfidStatusChange = async (rfidId, newStatus) => {
+  try {
+    await AxiosServices.updateRfidStatus(rfidId);
 
-  const handleRfidStatusChange = async (rfidId, newStatus) => {
-    try {
-      await AxiosServices.updateRfidStatus(rfidId);
+    toast({
+      title: "Success",
+      description: `RFID status updated to ${newStatus}`,
+    });
 
-      toast({
-        title: "Success",
-        description: `RFID status updated to ${newStatus}`,
-      });
-
-      fetchRfidRequests(id);
-    } catch (error) {
-      console.error('Error updating RFID status:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update RFID status",
-        variant: "destructive",
-      });
-    }
-  };
+    // Trigger refresh instead of direct fetch
+    setRfidRefreshTrigger(prev => prev + 1);
+  } catch (error) {
+    console.error('Error updating RFID status:', error);
+    toast({
+      title: "Error",
+      description: error.message || "Failed to update RFID status",
+      variant: "destructive",
+    });
+  }
+};
 
 const handleDelete = async (id) => {
   try {
@@ -311,7 +372,8 @@ const handleDelete = async (id) => {
         description: "RFID request deleted successfully!",
       });
 
-     AxiosServices.getRfidRequests(id);
+      // Trigger refresh instead of direct fetch
+      setRfidRefreshTrigger(prev => prev + 1);
     } else {
       toast({
         title: "Error",
@@ -328,7 +390,6 @@ const handleDelete = async (id) => {
     });
   }
 };
-
  const fetchVehicles = async (id) => {
     if (!id || loadedTabs.has("vehicles")) return;
     
@@ -391,35 +452,41 @@ const handleInfoClick = (vehicle) => {
     model: vehicle.model || "",
     year: vehicle.year || "",
     make: vehicle.make || "",
+    variant: vehicle.variant || ""
   });
   
   setVechileId(vehicle.id); 
   setIsEditVehicleDialogOpen(true);
 };
 
-  const fetchRfidRequests = async (userId) => {
-    if (!userId || loadedTabs.has("rfid")) return;
-    
-    try {
-      const response = await AxiosServices.getRfidRequests(userId);
-      if (response && response.data) {
-        setRfidRequests(response.data);
+ const fetchRfidRequests = async (userId) => {
+  if (!userId) return;
+  
+  try {
+        setLoadingRfid(true);
+    const response = await AxiosServices.getRfidRequests(userId);
+    if (response && response.data) {
+      setRfidRequests(response.data);
+      if (!loadedTabs.has("rfid")) {
         setLoadedTabs(prev => new Set([...prev, "rfid"]));
-      } else {
-        setRfidRequests([]);
       }
-    } catch (error) {
-      console.error('Error fetching RFID requests:', error);
-      if (activeTab === "rfid") {
-        toast({
-          title: "Error",
-          description: error.response?.data?.message || "Failed to fetch RFID requests",
-          variant: "destructive",
-        });
-      }
+    } else {
       setRfidRequests([]);
     }
-  };
+  } catch (error) {
+    console.error('Error fetching RFID requests:', error);
+    if (activeTab === "rfid") {
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to fetch RFID requests",
+        variant: "destructive",
+      });
+    }
+    setRfidRequests([]);
+  }finally {
+    setLoadingRfid(false);
+  }
+};
   const handleTabChange = (value) => {
     setActiveTab(value);
     
@@ -490,12 +557,54 @@ const handleEditInputChange = (e) => {
 };
 
   useEffect(() => {
-  const fullAddress = `${addressParts.street}, ${addressParts.city}, ${addressParts.state}, ${addressParts.country} - ${addressParts.zipCode}`;
+  const fullAddress = `${addressParts.street}`;
   setNewRfid((prev) => ({
     ...prev,
     address: fullAddress,
+    city: addressParts.city,
   }));
 }, [addressParts]);
+
+//for copilot
+// Add Vehicle dialog
+useEffect(() => {
+    const handleOpenVehicle = () => setIsAddVehicleDialogOpen(true);
+    window.addEventListener('openAddVehicleDialog', handleOpenVehicle);
+    return () => window.removeEventListener('openAddVehicleDialog', handleOpenVehicle);
+}, []);
+
+// Request RFID dialog
+useEffect(() => {
+    const handleOpenRfid = () => setIsRfidDialogOpen(true);
+    window.addEventListener('openRequestRfidDialog', handleOpenRfid);
+    return () => window.removeEventListener('openRequestRfidDialog', handleOpenRfid);
+}, []);
+
+// Tab switching
+useEffect(() => {
+    const handleSwitchTab = (e) => {
+        const { tab } = e.detail;
+        if (tab === 'wallet') setActiveTab('wallet');
+        if (tab === 'transactions') setActiveTab('transactions');
+    };
+    window.addEventListener('switchTab', handleSwitchTab);
+    return () => window.removeEventListener('switchTab', handleSwitchTab);
+}, []);
+
+
+//for copilot
+useEffect(() => {
+    const handleSwitchTab = (e) => {
+        const { tab } = e.detail;
+        if (tab === 'wallet') setActiveTab('wallet');
+        if (tab === 'transactions') setActiveTab('transactions');
+        if (tab === 'vehicles') setActiveTab('vehicles');  // add this line
+    };
+    window.addEventListener('switchTab', handleSwitchTab);
+    return () => window.removeEventListener('switchTab', handleSwitchTab);
+}, []);
+
+
 const handleAddressPartsChange = (e) => {
   const { name, value } = e.target;
   setAddressParts((prev) => ({
@@ -585,6 +694,7 @@ const handleAddVehicle = async (e) => {
         model: "",
         year: "",
         make: "",
+        variant: ""
       });
     }
   } catch (error) {
@@ -640,6 +750,7 @@ const handleUpdateVehicle = async (e) => {
       year: vehicleFormData.year || "",
       make: vehicleFormData.make || "",
       model: vehicleFormData.model || "",
+       variant: vehicleFormData.variant || "",
       description: vehicleFormData.description || "",
       connectorType: vehicleFormData.connectorType || "",
       registrationNo: vehicleFormData.registrationNo || ""
@@ -663,6 +774,7 @@ const handleUpdateVehicle = async (e) => {
         model: "",
         year: "",
         make: "",
+        variant: ""
       });
       setVechileId(null);
     } else {
@@ -721,29 +833,28 @@ const handleUpdateUser = async (e) => {
 
   console.log(newErrors)
   // Check if any errors exist
-  const hasErrors = Object.values(newErrors).some(error => error !== "");
-  
-  // if (hasErrors) {
-  //   toast({
-  //     title: "Validation Error",
-  //     description: "Please fix the errors in the form",
-  //     variant: "destructive",
-  //   });
-  //   return;
-  // }
+ const hasErrors = Object.values(newErrors).some(Boolean);
 
+if (hasErrors) {
+  toast({
+    title: "Validation Error",
+    description: "Please fix the errors in the form",
+    variant: "destructive",
+  });
+  return; 
+}
   try {
     setIsSubmitting(true);
     
        const updateData = {
       fullname: editFormData.fullname,
       mobileNumber: editFormData.mobileNumber,
-      address: editFormData.address, // Individual address field
-      city: editFormData.city,       // Individual city field
-      country: editFormData.country, // Individual country field
-      state: editFormData.state,     // Individual state field
-      zipCode: editFormData.zipCode, // Individual zipCode field
-      passwordchange: false // Set to true if password is being changed
+      address: editFormData.address, 
+      city: editFormData.city,       
+      country: editFormData.country, 
+      state: editFormData.state,     
+      zipCode: editFormData.zipCode, 
+      passwordchange: false 
     };
 
     const response = await AxiosServices.updateUser(id, updateData);
@@ -798,7 +909,6 @@ const handleUpdateUser = async (e) => {
       <div className="p-6">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">Edit EV User</h1>
-          <Button variant="outline" onClick={() => setEditMode(false)}>Cancel</Button>
         </div>
 
         <Card className="p-6">
@@ -894,6 +1004,7 @@ const handleUpdateUser = async (e) => {
                 </div>
               </div>
             <div className="flex justify-end gap-4 pt-4">
+              <Button variant="outline" onClick={() => setEditMode(false)}>Cancel</Button>
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting?(
                   <>
@@ -916,7 +1027,7 @@ const handleUpdateUser = async (e) => {
       <div className="flex justify-between items-center mb-6">
          <div className="flex justify-between items-center mb-6">
                 <div><h1 className="text-2xl font-bold">{currentUser.username}</h1></div>
-                <StatusButton status={currentUser.enabled?"Active":"In Active"}/>
+                {/* <StatusButton status={currentUser.enabled?"Active":"In Active"}/> */}
                 </div>
         <div className="flex gap-2">
          <BackButton/>
@@ -959,6 +1070,12 @@ const handleUpdateUser = async (e) => {
                     <p className="font-semibold text-gray-600 mt-4">Mobile Number</p>
                     <p className="font-medium">{currentUser.mobileNumber}</p>
                   </div>
+                  <div>
+  <p className="font-semibold text-gray-600 mt-4">Status</p>
+  <p className={`font-medium ${currentUser.enabled ? "text-green-600" : "text-red-600"}`}>
+    {currentUser.enabled ? "Active" : "Inactive"}
+  </p>
+</div>
                 </div>
               </Card>
             </div>
@@ -1004,10 +1121,10 @@ const handleUpdateUser = async (e) => {
             </div>       
             {!loadedTabs.has("vehicles") ? (
               <div className="text-center py-4">
-                <p>Click the Vehicles tab to load vehicle data</p>
+                {/* <p>Click the Vehicles tab to load vehicle data</p> */}
               </div>
             ) : loadingVehicles ? (
-              <p>Loading vehicles...</p>
+              <Loading />
             ) : vehicleList.length > 0 ? (
               <Table className="border">
                 <TableHeader>
@@ -1015,6 +1132,7 @@ const handleUpdateUser = async (e) => {
                     <TableHead>ConnectorType</TableHead>
                     <TableHead>Make</TableHead>
                     <TableHead>Model</TableHead>
+                    <TableHead>Variant</TableHead>
                     <TableHead>VIN</TableHead>
                     <TableHead>Registration</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -1026,6 +1144,7 @@ const handleUpdateUser = async (e) => {
                       <TableCell>{vehicle.connectorType}</TableCell>
                       <TableCell>{vehicle.make}</TableCell>
                       <TableCell>{vehicle.model}</TableCell>
+                      <TableCell>{vehicle.variant || "-"}</TableCell>
                       <TableCell>{vehicle.vin}</TableCell>
                       <TableCell>{vehicle.registrationNo}</TableCell>
                       <TableCell className="text-right">
@@ -1060,6 +1179,9 @@ const handleUpdateUser = async (e) => {
           </div>
         </TabsContent>
         <TabsContent value="rfid">
+          {loadingRfid ? (
+    <Loading />
+  ) : (
           <div className="bg-white rounded-lg shadow p-6 mt-4">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold">RFID Information</h2>
@@ -1069,13 +1191,13 @@ const handleUpdateUser = async (e) => {
                 </span>
                 <Button
                   onClick={() => setIsRfidDialogOpen(true)}
-                  disabled={Array.isArray(rfidRequests) && rfidRequests.length >= MAX_RFID_REQUESTS}
+                  disabled={approvedRfidCount >= MAX_RFID_REQUESTS}
                 >
                   Request RFID
                 </Button>
               </div>
             </div>
-            {Array.isArray(rfidRequests) && rfidRequests.length >= MAX_RFID_REQUESTS && (
+            {approvedRfidCount >= MAX_RFID_REQUESTS && (
               <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
                 <p className="text-yellow-800">
                   This user has reached the maximum limit of {MAX_RFID_REQUESTS} RFID cards.
@@ -1087,7 +1209,7 @@ const handleUpdateUser = async (e) => {
       <TableHeader>
         <TableRow>
           <TableHead>RFID ID</TableHead>
-          <TableHead>RFID Hex</TableHead>
+          {/* <TableHead>RFID Hex</TableHead> */}
           <TableHead>Phone</TableHead>
           <TableHead>Expiry</TableHead>
           <TableHead>Status</TableHead>
@@ -1101,7 +1223,7 @@ const handleUpdateUser = async (e) => {
             .map((rfid, index) => (
               <TableRow key={index}>
                 <TableCell>{rfid.rfId}</TableCell>
-                <TableCell>{rfid.rfidHex}</TableCell>
+                {/* <TableCell>{rfid.rfidHex}</TableCell> */}
                 <TableCell>{rfid.phone}</TableCell>
                 <TableCell>{rfid.expiryDate ? new Date(rfid.expiryDate).toLocaleDateString() : 'N/A'}</TableCell>
                 <TableCell>
@@ -1142,12 +1264,10 @@ const handleUpdateUser = async (e) => {
     <Table className="border">
       <TableHeader>
         <TableRow>
-          <TableHead>First Name</TableHead>
-          <TableHead>Last Name</TableHead>
+          <TableHead>Full Name</TableHead>
           <TableHead>Email</TableHead>
           <TableHead>Phone</TableHead>
           <TableHead>Address</TableHead>
-          <TableHead>Created By</TableHead>
           <TableHead>Status</TableHead>
           <TableHead>Action</TableHead>
         </TableRow>
@@ -1158,14 +1278,12 @@ const handleUpdateUser = async (e) => {
             .filter(item =>item.status === "PENDING")
             .map((rfid, index) => (
               <TableRow key={index}>
-                <TableCell>{rfid.firstName || 'N/A'}</TableCell>
-                <TableCell>{rfid.lastName || 'N/A' }</TableCell>
+                <TableCell>{rfid.fullname || 'N/A'}</TableCell>
                 <TableCell>{rfid.email || 'N/A'}</TableCell>
                 <TableCell>{rfid.mobile || 'N/A'}</TableCell>
                 <TableCell>
                   {rfid.address ? `${rfid.address}, ${rfid.city || ''}, ${rfid.state || ''}, ${rfid.country || ''} - ${rfid.zipCode || ''}` : 'N/A'}
                 </TableCell>
-                <TableCell>{rfid.requestedBy || 'N/A'}</TableCell>
                 <TableCell>
                   <span className={`px-2 py-1 rounded-full text-xs ${
                     rfid.status === 'APPROVED' ? 'bg-green-100 text-green-800' :
@@ -1194,15 +1312,18 @@ const handleUpdateUser = async (e) => {
         </TableBody>
        </Table>
       </div>
+        )}
         </TabsContent>     
        <TabsContent value="wallet">
           <div className="bg-white rounded-lg shadow p-6 mt-4">
             <h2 className="text-xl font-semibold mb-4">Wallet Details</h2>
-                        {!loadedTabs.has("wallet") ? (
-              <div className="text-center py-4">
-                <p>Click the Wallet tab to load wallet data</p>
-              </div>
-            ) : walletStatus === "failed" ? (
+                 {!loadedTabs.has("wallet") ? (
+  <div className="text-center py-4">
+    <p>Click the Wallet tab to load wallet data</p>
+  </div>
+) : walletStatus === "loading" ? (
+  <Loading />
+) : walletStatus === "failed" ? (
               <p className="text-red-500">{walletError}</p>
             ) : walletStatus === "succeeded" && walletDetails ? (
               <div className="grid grid-cols-2 gap-4">
@@ -1225,11 +1346,13 @@ const handleUpdateUser = async (e) => {
      <TabsContent value="transactions">
         <div className="bg-white rounded-xl mt-4">
         <h2 className="text-xl font-semibold mb-6">Transaction History</h2>
-       {!loadedTabs.has("transactions") ? (
-              <div className="text-center py-4">
-                <p>Click the Transactions tab to load transaction data</p>
-              </div>
-            ) : currentRecords?.length === 0 ? (
+      {!loadedTabs.has("transactions") ? (
+  <div className="text-center py-4">
+    {/* <p>Click the Transactions tab to load transaction data</p> */}
+  </div>
+) : walletStatus === "loading" ? (
+  <Loading />
+) : currentRecords?.length === 0 ? (
               <div className="text-center py-10 text-gray-500">
                 <p className="text-lg">No wallet transactions found.</p>
               </div>
@@ -1378,7 +1501,15 @@ const handleUpdateUser = async (e) => {
     id="model"
     name="model"
     value={vehicleFormData.model}
-    onChange={handleVehicleInputChange}
+    onChange={(e) => {
+  const selectedModel = e.target.value;
+
+  setVehicleFormData(prev => ({
+    ...prev,
+    model: selectedModel,
+    variant: ""   // reset variant
+  }));
+}}
     disabled={!vehicleFormData.make}
     className="w-full border rounded-md p-2 disabled:bg-gray-100"
     required
@@ -1395,6 +1526,32 @@ const handleUpdateUser = async (e) => {
     <p className="text-xs text-red-500">{vehicleFormErrors.model}</p>
   )}
       </div>
+
+      <div className="space-y-2">
+  <Label htmlFor="variant">Variant</Label>
+
+  {availableVariants.length > 0 ? (
+    <select
+      id="variant"
+      name="variant"
+      value={vehicleFormData.variant}
+      onChange={handleVehicleInputChange}
+      className="w-full border rounded-md p-2"
+    >
+      <option value="">Select Variant</option>
+
+      {availableVariants.map((v) => (
+        <option key={v.id} value={v.variantName}>
+          {v.variantName}
+        </option>
+      ))}
+    </select>
+  ) : (
+    <p className="text-sm text-gray-500">
+      No variants available for this model
+    </p>
+  )}
+</div>
         <div className="space-y-2">
           <Label htmlFor="vin">VIN *</Label>
           <Input
@@ -1487,6 +1644,15 @@ const handleUpdateUser = async (e) => {
           />
             {vehicleFormErrors.model && (  <p className="text-xs text-red-500 mt-1">{vehicleFormErrors.model}</p>)}
         </div>
+        <div className="space-y-2">
+  <Label htmlFor="edit-variant">Variant</Label>
+  <Input
+    id="edit-variant"
+    name="variant"
+    value={vehicleFormData.variant}
+    onChange={handleVehicleInputChange}
+  />
+</div>
         <div className="space-y-2">
           <Label htmlFor="edit-vin">VIN *</Label>
           <Input
@@ -1701,14 +1867,14 @@ const handleUpdateUser = async (e) => {
           name="rfidCount"
           type="number"
           min="1"
-          max={MAX_RFID_REQUESTS - rfidRequests.length}
+          max={remainingCards}
           value={newRfid.rfidCount}
           onChange={handleRfidInputChange}
           placeholder="Number of RFID cards required"
           required
         />
         <p className="text-sm text-muted-foreground">
-          Maximum {MAX_RFID_REQUESTS - rfidRequests.length} cards can be requested
+          Maximum {remainingCards} cards can be requested
         </p>
       </div>
     </div>
@@ -1727,8 +1893,19 @@ const handleUpdateUser = async (e) => {
             mobile: currentUser?.mobileNumber ,
             status: 'Pending',
             rfidCount: 1,
-            userId: id
+            userId: id,
+            requestedBy: 'Admin',
           });
+
+           if (currentUser?.address?.[0]) {
+            setAddressParts({
+              street: currentUser.address[0].address || '',
+              city: currentUser.address[0].city || '',
+              state: currentUser.address[0].state || '',
+              country: currentUser.address[0].country || '',
+              zipCode: currentUser.address[0].zipCode || '',
+            });
+          }
           setUseDefaultAddress(true);
         }}
       >
@@ -1737,7 +1914,7 @@ const handleUpdateUser = async (e) => {
       <Button
         type="button"
         onClick={handleRequestRfid}
-        disabled={rfidRequests.length >= MAX_RFID_REQUESTS || isSubmitting}
+        disabled={remainingCards <= 0 || isSubmitting}
       >
         {isSubmitting ? (
           <>

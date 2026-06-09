@@ -50,6 +50,7 @@ const FranchisePageDetails = () => {
   const [formErrors, setFormErrors] = useState({});
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
   const [userStatus, setUserStatus] = useState('');
+  const [statusLoading, setStatusLoading] = useState(false);
   
   const [editFormData, setEditFormData] = useState({
     orgName: "",
@@ -120,9 +121,12 @@ const handleUserStatusChange = async (newStatus) => {
   const enabled = newStatus === 'ACTIVE';
 
   try {
+    setStatusLoading(true);
+
     await AxiosServices.updateUserStatus(id, enabled);
+
     setUserStatus(newStatus);
-    
+
     setCurrentOwner(prev => ({
       ...prev,
       userDetails: {
@@ -135,13 +139,16 @@ const handleUserStatusChange = async (newStatus) => {
       title: 'Success',
       description: 'User status updated successfully',
     });
+
   } catch (error) {
     toast({
       title: 'Error',
       description: error?.response?.data?.message || 'Failed to update status',
       variant: 'destructive',
     });
+
   } finally {
+    setStatusLoading(false);
     setStatusDropdownOpen(false);
   }
 };
@@ -185,6 +192,10 @@ useEffect(() => {
       AxiosServices.getUserDetails(userId),
       AxiosServices.getSitesByOrg(orgId)
     ]);
+
+    console.log("User details from API:", userDetails);
+    console.log("Enabled value:", userDetails.enabled);
+    console.log("Enabled type:", typeof userDetails.enabled);
     
     return {
       userDetails,
@@ -201,8 +212,8 @@ useEffect(() => {
   }
 };
 
-  const handleUpdateOwner = async (e) => {
-    e.preventDefault();
+const handleUpdateOwner = async (e) => {
+  e.preventDefault();
     
   if (Object.keys(formErrors).length > 0) {
     toast({
@@ -212,42 +223,57 @@ useEffect(() => {
     });
     return;
   }
+  
   console.log("Submitting update data:", editFormData);
-    try {
-      setIsSubmitting(true);
-      const payload = {
-        ...editFormData,
-        rolename: "FranchiseOwner",
-        passwordChange: passwordChangeEnabled
-      };
-      // const response = await axios.put(`http://localhost:8800/services/userprofile/updateUser/${id}`, payload);
-       const response=await AxiosServices.updateUser(id,payload);
-      if (response.status === 200) {
-        toast({
-          title: "Success",
-          description: "Franchise owner updated successfully!",
-        });
-        setUserStatus(editFormData.enabled ? 'ACTIVE' : 'INACTIVE');
-        const updatedDetails = await fetchOwnerDetails(id, orgId);
-        if (updatedDetails) {
-          setCurrentOwner(updatedDetails);
-        }
-        
-        setEditMode(false);
-        setPasswordChangeEnabled(false);
+  
+  try {
+    setIsSubmitting(true);
+    
+    // Create payload WITHOUT the enabled field
+    const { enabled, ...restPayload } = editFormData;
+    const payload = {
+      ...restPayload,
+      rolename: "FranchiseOwner",
+      passwordChange: passwordChangeEnabled
+    };
+    
+    // Update user details (without status)
+    const response = await AxiosServices.updateUser(id, payload);
+    
+    if (response.status === 200) {
+      // If enabled status was changed, call the status update endpoint
+      if (enabled !== currentOwner.userDetails?.enabled) {
+        await AxiosServices.updateUserStatus(id, enabled);
       }
-    } catch (error) {
-      console.error('Error updating franchise owner:', error);
+      
       toast({
-        title: "Error",
-        description: error.response?.data?.message || "Failed to update franchise owner.",
-        variant: "destructive",
+        title: "Success",
+        description: "Franchise owner updated successfully!",
       });
-    }finally{
-      setIsSubmitting(false);
+      
+      setUserStatus(enabled ? 'ACTIVE' : 'INACTIVE');
+      
+      // Refresh user details
+      const updatedDetails = await fetchOwnerDetails(id, orgId);
+      if (updatedDetails) {
+        // Ensure the enabled status is set correctly in the refreshed data
+        updatedDetails.userDetails.enabled = enabled;
+        setCurrentOwner(updatedDetails);
+      }         
+      setEditMode(false);
+      setPasswordChangeEnabled(false);
     }
-  };
-
+  } catch (error) {
+    console.error('Error updating franchise owner:', error);
+    toast({
+      title: "Error",
+      description: error.response?.data?.message || "Failed to update franchise owner.",
+      variant: "destructive",
+    });
+  } finally {
+    setIsSubmitting(false);
+  }
+};
   const handleEditClick = () => {
     if (!currentOwner.userDetails) return;
     const address = currentOwner.userDetails.address?.[0] || {};
@@ -264,7 +290,7 @@ useEffect(() => {
       country: address.country || "",
       state: address.state || "",
       zipCode: address.zipCode || "",
-      enabled: enabled,
+      enabled: currentOwner.userDetails.enabled,
       password: "",
       confirmPassword: "",
       passwordChange: false
@@ -272,23 +298,11 @@ useEffect(() => {
     setEditMode(true);
   };
 
-  useEffect(() => {
-    const loadDetails = async () => {
-      try {
-        setLoading(true);
-        const details = await fetchOwnerDetails(id, orgId);
-        if (details) {
-          setCurrentOwner(details);
-        }
-        setLoading(false);
-      } catch (error) {
-        console.error("Failed to load owner details", error);
-        setLoading(false);
-      }
-    };
+  
+useEffect(() => {
+  console.log("editFormData.enabled changed:", editFormData.enabled);
+}, [editFormData.enabled]);
 
-    loadDetails();
-  }, [id, orgId]);
 
 useEffect(() => {
   if (currentOwner.userDetails) {
@@ -310,7 +324,6 @@ useEffect(() => {
       <div className="p-6">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">Edit Franchise Owner</h1>
-          <Button variant="outline" onClick={() => setEditMode(false)}>Cancel</Button>
         </div>        
         <Card className="p-6">
            <form onSubmit={handleUpdateOwner} className="space-y-4">
@@ -423,34 +436,34 @@ useEffect(() => {
                 />
                 {formErrors.zipCode && <p className="text-sm text-red-500">{formErrors.zipCode}</p>}
               </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox 
-                  id="edit-enabled" 
-                  name="enabled" 
-                  checked={editFormData.enabled}
-                  onCheckedChange={(checked) => {
-                  const enabled = Boolean(checked);
-                  setEditFormData(prev => ({...prev, enabled}));
-                  setUserStatus(enabled ? 'ACTIVE' : 'INACTIVE');
+           <div className="flex items-center space-x-2">
+              <Checkbox 
+                id="edit-enabled" 
+                checked={editFormData.enabled === true}
+                onCheckedChange={(checked) => {
+                  setEditFormData(prev => ({
+                    ...prev,
+                    enabled: checked === true
+                  }));
                 }}
-                />
-                <Label htmlFor="edit-enabled">Enabled</Label>
-              </div>
+              />  
+              <Label htmlFor="edit-enabled">Enabled</Label>
+            </div>
             </div>
             <div className="flex justify-end gap-4 pt-4">
-             <Button 
-             type="submit" 
-             disabled={isSubmitting}
-             >
-             {isSubmitting ? (
-             <>
-             <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />
-             Updating...
-             </>
-             ) : (
-             'Update'
-            )}
-           </Button>
+            <div className="flex justify-end gap-4 pt-4">
+              <Button variant="outline" onClick={() => setEditMode(false)}>Cancel</Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <>
+                    <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />
+                    Updating...
+                  </>
+                ) : (
+                  "Update"
+                )}
+              </Button>
+            </div>
             </div>
           </form>
         </Card>
@@ -464,18 +477,28 @@ useEffect(() => {
         <div className="flex items-center gap-2">
         <div><h1 className="text-2xl font-bold">{orgName}</h1></div>
 <div className="relative">
-  <button
-    className={`flex items-center px-4 py-1.5 border rounded-full transition 
-      ${getStatusClasses(userStatus)}`}
-    onClick={() => setStatusDropdownOpen(prev => !prev)}
-  >
-    {normalizeStatus(userStatus)}
-    {statusDropdownOpen ? (
-      <ChevronUp className="ml-2 h-4 w-4" />
-    ) : (
-      <ChevronDown className="ml-2 h-4 w-4" />
-    )}
-  </button>
+ <button
+  className={`flex items-center px-4 py-1.5 border rounded-full transition 
+    ${getStatusClasses(userStatus)}`}
+  onClick={() => setStatusDropdownOpen(prev => !prev)}
+  disabled={statusLoading}
+>
+  {statusLoading ? (
+    <>
+      <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />
+      Updating...
+    </>
+  ) : (
+    <>
+      {normalizeStatus(userStatus)}
+      {statusDropdownOpen ? (
+        <ChevronUp className="ml-2 h-4 w-4" />
+      ) : (
+        <ChevronDown className="ml-2 h-4 w-4" />
+      )}
+    </>
+  )}
+</button>
 
   {statusDropdownOpen && (
     <div className="absolute mt-2 w-44 bg-white shadow-lg rounded-md z-20 p-3">
@@ -485,6 +508,7 @@ useEffect(() => {
       {['ACTIVE', 'INACTIVE'].map((option) => (
         <button
           key={option}
+          disabled={statusLoading}
           onClick={() => handleUserStatusChange(option)}
           className={`w-full text-left px-4 py-1.5 mb-1 rounded-full border transition ${
             option === 'ACTIVE'
@@ -656,7 +680,7 @@ useEffect(() => {
                 <Table className="border">
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Site Id</TableHead>
+                      {/* <TableHead>Site Id</TableHead> */}
                       <TableHead>Site Name</TableHead>
                       <TableHead>Manager Name</TableHead>
                       <TableHead>Manager Phone</TableHead>
@@ -665,7 +689,7 @@ useEffect(() => {
                   <TableBody>
                     {currentSites.map(site => (
                       <TableRow key={site.id} onClick={()=>navigate(`/site/${site.id}`)}>
-                        <TableCell>{site.id}</TableCell>
+                        {/* <TableCell>{site.id}</TableCell> */}
                         <TableCell>{site.siteName}</TableCell>
                         <TableCell>{site.managerName || '-'}</TableCell>
                         <TableCell>{site.managerPhone || '-'}</TableCell>

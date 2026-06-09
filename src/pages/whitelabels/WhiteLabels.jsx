@@ -30,16 +30,15 @@ const WhiteLabels = () => {
   const [pageSize, setPageSize] = useState(10);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formErrors, setFormErrors] = useState({});
- 
   const dispatch = useDispatch();
   const { toast } = useToast();
   const navigate = useNavigate();
   const searchTimeoutRef = useRef(null);
   const columns = [
-    {
-      accessorKey: "orgId",
-      header: "Organization Id",
-    },
+    // {
+    //   accessorKey: "orgId",
+    //   header: "Organization Ijjjjd",
+    // },
     {
       accessorKey: "orgName",
       header: "Organization Name",
@@ -168,6 +167,8 @@ const fetchWhiteLabels = useCallback(async (searchValue = '') => {
 }, [dispatch, currentPage, pageSize, toast]);
 
 useEffect(() => {
+  setLoading(true);
+
   if (searchTimeoutRef.current) {
     clearTimeout(searchTimeoutRef.current);
   }
@@ -179,9 +180,24 @@ useEffect(() => {
   return () => clearTimeout(searchTimeoutRef.current);
 }, [globalFilter, fetchWhiteLabels]);
 
+
+useEffect(() => {
+  const handleOpenDialog = () => {
+    console.log("EVENT RECEIVED ✅");
+    setIsAddDialogOpen(true);
+  };
+
+  window.addEventListener('openAddWhitelabelDialog', handleOpenDialog);
+
+  return () => {
+    window.removeEventListener('openAddWhitelabelDialog', handleOpenDialog);
+  };
+}, []);
+
+//prasad removed the globalfilter dependency for search loading for every letter remaining all tested working fine 
  useEffect(() => {
   fetchWhiteLabels(globalFilter);
-}, [currentPage, pageSize, globalFilter, fetchWhiteLabels]);
+}, [currentPage, pageSize, fetchWhiteLabels]);
 
  useEffect(() => {
   const enrichedData = Array.isArray(list) 
@@ -559,3 +575,5 @@ const handleAddWhiteLabel = async (e) => {
   );
 };
 export default WhiteLabels
+
+//WhiteLabels.jsx

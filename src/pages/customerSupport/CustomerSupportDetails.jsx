@@ -41,6 +41,8 @@ export function CustomerSupportDetails() {
 
   const customer = location.state?.customer;
   const [statusFilter, setStatusFilter] = useState("open");
+  const [selectedIssueId, setSelectedIssueId] = useState(null);
+  const [viewingIssueNotes, setViewingIssueNotes] = useState(false);
   const { employeeIssues } = useSelector((state) => state.employee);
   const [localCustomer, setLocalCustomer] = useState(customer);
   const [supportStatus, setSupportStatus] = useState(
@@ -48,6 +50,8 @@ export function CustomerSupportDetails() {
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
+    const issues = (employeeIssues && customer) ? (employeeIssues[localCustomer.id] || []) : [];
+
 
   useEffect(() => {
   if (customer) {
@@ -97,7 +101,56 @@ const handleStatusChange = async (newStatus) => {
   }
 }, [customer?.id, dispatch]);
 
-const issues = (employeeIssues && customer) ? (employeeIssues[localCustomer.id] || []) : [];
+
+//for copilot
+useEffect(() => {
+    const handleOpenReportIssue = () => setIsReporting(true);
+    window.addEventListener('openReportIssueDialog', handleOpenReportIssue);
+    return () => window.removeEventListener('openReportIssueDialog', handleOpenReportIssue);
+}, []);
+
+//for copilot
+useEffect(() => {
+    const handleSwitchTab = (e) => {
+        if (e.detail.tab === 'issues') {
+            setActiveTab('issues');
+        }
+    };
+    window.addEventListener('switchTab', handleSwitchTab);
+    return () => window.removeEventListener('switchTab', handleSwitchTab);
+}, []);
+
+//for copilot issue note
+// ========== 1. Listen for custom event from Copilot ==========
+useEffect(() => {
+  const handleOpenIssueNote = () => {
+    if (issues && issues.length > 0) {
+      setSelectedIssueId(issues[0].id);
+      setViewingIssueNotes(true);
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('autoOpenAddNoteInIssueNotes'));
+      }, 100);
+    } else {
+      toast({ title: "No Issues", description: "This member has no issues yet. Please report an issue first.", variant: "info" });
+    }
+  };
+  window.addEventListener('openAddIssueNote', handleOpenIssueNote);
+  return () => window.removeEventListener('openAddIssueNote', handleOpenIssueNote);
+}, [issues]);
+
+// ========== 2. Handle navigation from Copilot (when coming from list page) ==========
+useEffect(() => {
+  if (location.state?.openAddIssueNote && issues && issues.length > 0) {
+    setSelectedIssueId(issues[0].id);
+    setViewingIssueNotes(true);
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('autoOpenAddNoteInIssueNotes'));
+    }, 100);
+  } else if (location.state?.openAddIssueNote && (!issues || issues.length === 0)) {
+    toast({ title: "No Issues", description: "This member has no issues yet. Please report an issue first.", variant: "info" });
+  }
+}, [location.state?.openAddIssueNote, issues]);
+
 
 const getStatusBadge = (status) => {
   const s = (status || "").toLowerCase();

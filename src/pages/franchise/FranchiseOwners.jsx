@@ -241,6 +241,24 @@ const FranchiseOwners = () => {
     setData(enrichedData);
   }, [list]);
 
+  //for copilot
+//for copilot
+useEffect(() => {
+  const handleOpenAddDialog = () => {
+    console.log("✅ openAddFranchiseDialog event received!");
+    console.log("Current isAddDialogOpen state:", isAddDialogOpen);
+    setIsAddDialogOpen(true);
+    console.log("Set isAddDialogOpen to true");
+  };
+
+  console.log("🎧 Adding event listener for openAddFranchiseDialog");
+  window.addEventListener('openAddFranchiseDialog', handleOpenAddDialog);
+  
+  return () => {
+    console.log("🔇 Removing event listener for openAddFranchiseDialog");
+    window.removeEventListener('openAddFranchiseDialog', handleOpenAddDialog);
+  };
+}, []);
   // Handle page change
   const handlePageChange = (page) => {
     if (page >= 0 && page < totalPages) {
@@ -472,41 +490,55 @@ const handleAddFranchiseOwner = async (e) => {
           </DialogHeader>
           <form onSubmit={handleAddFranchiseOwner} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              {Number(user?.roleId) === 1 && (
-                <div className="space-y-2">
-                  <Label htmlFor="orgId">White Label Organization *</Label>
-                {Number(user?.orgId) === 1 ? (
-              <Select
-                onValueChange={(value) =>
-                  setFormData((prev) => ({ ...prev, orgId: value }))
-                }
-                value={formData.orgId?.toString() || ""}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a White Label" />
-                </SelectTrigger>
-                <SelectContent>
-                  {whiteLabels.map((whiteLabel) => (
-                    <SelectItem
-                      key={whiteLabel.id}
-                      value={whiteLabel.id.toString()}
-                    >
-                      {whiteLabel.orgName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+             {Number(user?.roleId) === 1 && (
+  <div className="space-y-2">
+    <Label htmlFor="orgId">White Label Organization *</Label>
+    {Number(user?.orgId) === 1 ? (
+      <>
+        <Select
+          onValueChange={(value) =>
+            setFormData((prev) => ({ ...prev, orgId: value }))
+          }
+          value={formData.orgId?.toString() || ""}
+          required
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select a White Label Organization" />
+          </SelectTrigger>
+          <SelectContent>
+            {whiteLabels.length > 0 ? (
+              whiteLabels.map((whiteLabel) => (
+                <SelectItem
+                  key={whiteLabel.id || whiteLabel.orgId}
+                  value={(whiteLabel.id || whiteLabel.orgId).toString()}
+                >
+                  {whiteLabel.orgName || whiteLabel.organizationName}
+                </SelectItem>
+              ))
             ) : (
-              <Input
-                type="hidden"
-                id="orgId"
-                name="orgId"
-                value={user.orgId}
-                readOnly
-              />
+              <SelectItem value="no-data" disabled>
+                No white labels available
+              </SelectItem>
             )}
-                </div>
-              )}
+          </SelectContent>
+        </Select>
+        {whiteLabels.length === 0 && (
+          <p className="text-sm text-amber-500 mt-1">
+            No white label organizations found. Please add white labels first.
+          </p>
+        )}
+      </>
+    ) : (
+      <Input
+        type="hidden"
+        id="orgId"
+        name="orgId"
+        value={user.orgId}
+        readOnly
+      />
+    )}
+  </div>
+)}
               <div className="space-y-2">
                 <Label htmlFor="orgName">Organization Name *</Label>
                 <Input 

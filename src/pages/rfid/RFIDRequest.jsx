@@ -76,6 +76,26 @@ export default function RFIDRequests() {
     }
   }, [actionSuccess, actionError, toast]);
 
+  //for copilot
+  useEffect(() => {
+    const handleOpenActivate = () => {
+        // Find the first pending request (or simply the first request in the list)
+        if (list && list.length > 0) {
+            const firstRequest = list[0];
+            setSelectedRequest(firstRequest);
+            setIsActivateDialogOpen(true);
+        } else {
+            toast({
+                title: "No pending requests",
+                description: "There are no RFID requests to activate.",
+                variant: "destructive",
+            });
+        }
+    };
+    window.addEventListener('openActivateRfidDialog', handleOpenActivate);
+    return () => window.removeEventListener('openActivateRfidDialog', handleOpenActivate);
+}, [list, toast]);
+
   const formatDate = (timestamp) => {
     if (!timestamp) return '-';
     return new Date(timestamp).toLocaleString('en-US', {

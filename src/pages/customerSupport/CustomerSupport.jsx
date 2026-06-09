@@ -42,6 +42,20 @@ useEffect(() => {
     }
   }, [employees, dispatch]);
 
+
+  // Inside the CustomerSupport component, after the existing useState declarations
+useEffect(() => {
+  const handleOpenAddDialog = () => {
+    setIsAddDialogOpen(true);
+  };
+
+  window.addEventListener('openAddCustomerSupportDialog', handleOpenAddDialog);
+
+  return () => {
+    window.removeEventListener('openAddCustomerSupportDialog', handleOpenAddDialog);
+  };
+}, []);
+
   const getEmployeeIssueCounts = (employeeId) => {
     const issues = employeeIssues[employeeId] || [];
     return {

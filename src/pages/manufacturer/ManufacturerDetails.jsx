@@ -20,6 +20,20 @@ const ManufacturerDetails = () => {
     }
   }, [dispatch, id]);
 
+  // In ManufacturerDetails.jsx, add this useEffect
+useEffect(() => {
+  const handleAddChargerFromCopilot = () => {
+    console.log('🎯 Adding charger from Copilot for manufacturer:', id);
+    navigate(`/addcharger/${id}`);
+  };
+
+  window.addEventListener('openAddChargerDialog', handleAddChargerFromCopilot);
+  
+  return () => {
+    window.removeEventListener('openAddChargerDialog', handleAddChargerFromCopilot);
+  };
+}, [id, navigate]);
+
   if (error) return <div>Error: {error}</div>;
 if (loading) {
   return (

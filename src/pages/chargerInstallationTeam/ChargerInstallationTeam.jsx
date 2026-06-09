@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { InfoIcon, Plus } from 'lucide-react';
 import AddTeamMember from './AddTeamMember';
+import Loading from '@/users/Loading';
 import {
   Table,
   TableBody,
@@ -64,6 +65,14 @@ export default function ChargerInstallationTeam() {
       dispatch(fetchAllTasks({ page: tasksPage, size: pageSize, search: globalFilter }));
     }
   }, [dispatch, showAllTasks, globalFilter, tasksPage]);
+
+  //for copilot
+  // Add this after the existing useEffects
+useEffect(() => {
+    const handleOpenAddDialog = () => setIsAddDialogOpen(true);
+    window.addEventListener('openAddChargerInstallationTeamDialog', handleOpenAddDialog);
+    return () => window.removeEventListener('openAddChargerInstallationTeamDialog', handleOpenAddDialog);
+}, []);
 
   const handleAllTasksClick = () => {
     setShowAllTasks(true);
@@ -224,14 +233,10 @@ export default function ChargerInstallationTeam() {
               <>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan="7" className="text-center">Loading...</TableCell>
-                  </TableRow>
-                ) : error ? (
-                  <TableRow>
-                    <TableCell colSpan="7" className="text-center text-red-500">
-                      Error: {error}
-                    </TableCell>
-                  </TableRow>
+        <TableCell colSpan="7" className="text-center py-4">
+          <Loading />
+        </TableCell>
+      </TableRow>
                 ) : teams.length > 0 ? (
                   teams.map((member) => (
                     <TableRow key={member.id}>

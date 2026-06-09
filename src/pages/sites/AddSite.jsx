@@ -14,7 +14,7 @@ import Loading from '@/users/Loading';
 import LocationPicker from './LocationPicker';
 import { fetchSites } from '@/store/reducers/reports/reportsSlice';
 import { validateSiteName, validateManagerEmail, validateManagerName, validateManagerPhone, validateLatitude, validateLongitude }from '@/pages/validations/Validation';
-
+import { ReloadIcon } from "@radix-ui/react-icons";
 export default function AddSite() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -22,7 +22,7 @@ export default function AddSite() {
   const { user } = useSelector(state => state.authentication);
   const [showMap, setShowMap] = useState(false);
   const location = useLocation();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  // const [isSubmitting, setIsSubmitting] = useState(false);
   const { from, orgId, orgName, franchiseId } = location.state || {};
   const [formErrors, setFormErrors] = useState({});
   
@@ -162,7 +162,7 @@ export default function AddSite() {
 }
  
   try {
-    setIsSubmitting(true);
+    // setIsSubmitting(true);
      await dispatch(addSite(formData));
    
     toast({
@@ -185,9 +185,10 @@ export default function AddSite() {
       variant: "destructive",
     });
   } finally {
-    setIsSubmitting(false);
+    // setIsSubmitting(false);
   }
 };
+
 
 const handleCancel = () => {
     if (from === 'franchise' && franchiseId && orgId && orgName) {
@@ -453,12 +454,20 @@ const handleCancel = () => {
               >
                 Cancel
               </Button>
-              <Button 
-                type="submit"
-                disabled={addSiteStatus === 'loading'}
-              >
-                {addSiteStatus === 'loading' ? 'Saving...' : 'Save Site'}
-              </Button>
+              
+                          <Button 
+              type="submit"
+              disabled={addSiteStatus === 'loading'}
+            >
+              {addSiteStatus === 'loading' ? (
+                <>
+                  <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Save Site"
+              )}
+            </Button>
             </div>
           </form>
         </CardContent>

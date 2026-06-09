@@ -18,6 +18,8 @@ import OCPPControl from './OCPPControl';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription} from "@/components/ui/dialog";
 import { FileText, Download, RefreshCw } from "lucide-react";
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import { QRCodeCanvas } from 'qrcode.react';
+import { QrCodeIcon } from 'lucide-react';
 import { 
   Select,
   SelectContent,
@@ -40,6 +42,7 @@ export default function StationDetails() {
   const [stationStatus, setStationStatus] = useState('INACTIVE');
   const [billingAmounts, setBillingAmounts] = useState({});
   const [editingPortId, setEditingPortId] = useState(null);  
+  const [qrDialogOpen, setQrDialogOpen] = useState(false);
 
   // Add these states near your other useState declarations
 const [ocppDialogOpen, setOcppDialogOpen] = useState(false);
@@ -56,6 +59,30 @@ const [fileSearchTerm, setFileSearchTerm] = useState("");
 const [autoRefresh, setAutoRefresh] = useState(false);
 const LOGS_BASE_URL = "http://13.232.8.31:8085/ocpp";
 // Fetch log files for the current station
+
+const qrUrl = currentStation
+  ? `https://backend.chargeevya.com/?siteId=0&stationId=${currentStation.id}&portId=0`
+  : "";
+const handleQrView = () => {
+  window.open(qrUrl, "_blank");
+};
+
+const handleQrDownload = () => {
+  const canvas = document.getElementById("stationQrCode");
+  if (!canvas) return;
+
+  const pngUrl = canvas
+    .toDataURL("image/png")
+    .replace("image/png", "image/octet-stream");
+
+  const link = document.createElement("a");
+  link.href = pngUrl;
+  link.download = `${currentStation.stationName || "station"}-QR.png`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
 const fetchLogFiles = async () => {
   if (!currentStation?.ocppid) return;
   
@@ -348,35 +375,34 @@ const handleUpdateBillingAmount = async (portId) => {
               Logs
             </Button>
           <div className="flex gap-2">
-            <Button variant="ghost" size="icon" aria-label="View">
-              <EyeNoneIcon className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="icon" aria-label="Analytics">
-              <BarChartIcon className="h-4 w-4" />
-            </Button>
+            <Button variant="outline" size="icon"  onClick={() => setQrDialogOpen(true)}>
+            <QrCodeIcon className="w-5 h-5" />
+          </Button>
           </div>
-          <button
-            className="flex items-center gap-2 px-2 py-1 rounded bg-gray-100 hover:bg-gray-200"
+          <Button
+           variant="outline"
+            size="md"
+            className="mr-3 p-2 hover:bg-gray-100"
             onClick={() => navigate("/stations")}
           >
-            <ArrowLeft className="h-3 w-3" />
+            <ArrowLeft className="h-4 w-4 mr-2" />
             Back
-          </button>
+          </Button>
           </div>
           </div>
      <Tabs defaultValue="overview" className="w-full mt-6">
-      <TabsList className="grid grid-cols-3 w-full mb-4">
+      {/* <TabsList className="grid grid-cols-3 w-full mb-4">
         <TabsTrigger value="overview">Basic Info</TabsTrigger>
         <TabsTrigger value="logs">Logs</TabsTrigger>
         <TabsTrigger value="port">Port Instructions</TabsTrigger>
-      </TabsList>
+      </TabsList> */}
 
       <TabsContent value="overview">
         <Tabs defaultValue="details" className="w-full">          
          <div className="space-y-6">
-          <div className="flex justify-between items-center mb-6">
-            <div><h2 className="text-xl font-semibold mt-8 mb-4">Basic Details</h2></div>
-            <Button  className="flex gap-2  w-24" onClick={()=>navigate(`/editstation/${id}`)}>Edit</Button>
+          <div className="flex justify-between items-center mb-2">
+            <div><h2 className="text-xl font-semibold mb-4">Basic Details</h2></div>
+            {/* <Button  className="flex gap-2  w-24" onClick={()=>navigate(`/editstation/${id}`)}>Edit</Button> */}
             </div>          
             <Card className="p-6">
             <div className="p-2 rounded-lg mb-2">
@@ -455,7 +481,7 @@ const handleUpdateBillingAmount = async (portId) => {
                   <p className="font-medium">{currentStation.voltage_range || '-'} V</p>
                 </div>
                 <div className="space-y-2">
-                  <p className="font-semibold text-gray-600">Number of Ports</p>
+                  <p className="font-semibold text-gray-600">Number of Ports</p>  
                   <p className="font-medium">{currentStation.number_of_ports || '-'}</p>
                 </div>
                 <div className="space-y-2">
@@ -573,7 +599,37 @@ const handleUpdateBillingAmount = async (portId) => {
             </Tabs>
           </TabsContent>
         </Tabs>
+        <Dialog open={qrDialogOpen} onOpenChange={setQrDialogOpen}>
+  <DialogContent className="max-w-sm">
+    <DialogHeader>
+      <DialogTitle>Station QR Code</DialogTitle>
+      <DialogDescription>
+        Scan to access charging station
+      </DialogDescription>
+    </DialogHeader>
+
+    <div className="flex flex-col items-center gap-4">
+      {qrUrl && (
+        <QRCodeCanvas
+          id="stationQrCode"
+          value={qrUrl}
+          size={220}
+          includeMargin={true}
+        />
+      )}
+
+      {/* <p className="text-xs text-center break-all text-gray-500">
+        {qrUrl}
+      </p> */}
+
+      <Button onClick={handleQrDownload} className="w-full">
+        <Download className="h-4 w-4 mr-2" />
+        Download QR
+      </Button>
+    </div>
+  </DialogContent>
+</Dialog>
     </div>
   );
 }
-
+//stationDetails.jsx
